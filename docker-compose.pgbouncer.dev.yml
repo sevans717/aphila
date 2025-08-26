@@ -1,0 +1,55 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-sav3}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    networks:
+      - sav3-network
+
+  pgbouncer:
+    image: edoburu/pgbouncer:1.16.0
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@db:5432/sav3}
+    volumes:
+      - ./pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+      - ./pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
+    ports:
+      - "6432:6432"
+    depends_on:
+      - db
+    networks:
+      - sav3-network
+
+  api:
+    build: .
+    depends_on:
+      pgbouncer:
+        condition: service_started
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@pgbouncer:6432/sav3}
+      JWT_SECRET: ${JWT_SECRET:-change_me}
+      PORT: ${PORT:-4000}
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./:/usr/src/app
+    command: sh -c "npm run dev"
+    networks:
+      - sav3-network
+
+volumes:
+  db-data:
+
+networks:
+  sav3-network:
+    driver: bridge
