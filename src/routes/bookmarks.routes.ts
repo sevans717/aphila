@@ -44,7 +44,7 @@ router.get('/collections', auth, async (req, res) => {
 });
 
 // Bookmark routes
-router.post('/posts/:postId/toggle', auth, async (req, res) => {
+router.post('/posts/:postId/toggle', auth, validateRequest({ params: z.object({ postId: z.string().min(1) }), body: z.object({ collectionId: z.string().optional() }) }), async (req, res) => {
   try {
     const result = await BookmarkService.togglePostBookmark(
       req.user!.userId,
@@ -58,7 +58,7 @@ router.post('/posts/:postId/toggle', auth, async (req, res) => {
   }
 });
 
-router.post('/media/:mediaId/toggle', auth, async (req, res) => {
+router.post('/media/:mediaId/toggle', auth, validateRequest({ params: z.object({ mediaId: z.string().min(1) }) }), async (req, res) => {
   try {
     const result = await BookmarkService.toggleMediaBookmark(
       req.user!.userId,

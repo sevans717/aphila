@@ -356,7 +356,7 @@ router.post("/mark-read", auth_1.auth, (0, validate_1.validateRequest)(markReadS
  * Mark all notifications as read
  * POST /api/v1/notifications/mark-all-read
  */
-router.post("/mark-all-read", auth_1.auth, async (req, res) => {
+router.post("/mark-all-read", auth_1.auth, (0, validate_1.validateRequest)({}), async (req, res) => {
     try {
         const userId = req.user.userId;
         const result = await notification_service_1.NotificationService.markAllRead(userId);

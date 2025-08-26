@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_1 = require("../middleware/auth");
+const validate_1 = require("../middleware/validate");
 const category_service_1 = require("../services/category.service");
 const router = (0, express_1.Router)();
 // Get all categories
@@ -29,7 +30,7 @@ router.get('/:slug', async (req, res) => {
     }
 });
 // Join category
-router.post('/:categoryId/join', auth_1.requireAuth, async (req, res) => {
+router.post('/:categoryId/join', auth_1.requireAuth, (0, validate_1.validateRequest)({ params: undefined }), async (req, res) => {
     try {
         const { categoryId } = req.params;
         const userId = req.user.userId;

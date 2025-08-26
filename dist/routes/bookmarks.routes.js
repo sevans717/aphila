@@ -43,7 +43,7 @@ router.get('/collections', auth_1.auth, async (req, res) => {
     }
 });
 // Bookmark routes
-router.post('/posts/:postId/toggle', auth_1.auth, async (req, res) => {
+router.post('/posts/:postId/toggle', auth_1.auth, (0, validate_1.validateRequest)({ params: zod_1.z.object({ postId: zod_1.z.string().min(1) }), body: zod_1.z.object({ collectionId: zod_1.z.string().optional() }) }), async (req, res) => {
     try {
         const result = await bookmark_service_1.BookmarkService.togglePostBookmark(req.user.userId, req.params.postId, req.body.collectionId || null);
         res.json({ success: true, data: result });
@@ -53,7 +53,7 @@ router.post('/posts/:postId/toggle', auth_1.auth, async (req, res) => {
         res.status(500).json({ success: false, message: 'Failed to toggle bookmark' });
     }
 });
-router.post('/media/:mediaId/toggle', auth_1.auth, async (req, res) => {
+router.post('/media/:mediaId/toggle', auth_1.auth, (0, validate_1.validateRequest)({ params: zod_1.z.object({ mediaId: zod_1.z.string().min(1) }) }), async (req, res) => {
     try {
         const result = await bookmark_service_1.BookmarkService.toggleMediaBookmark(req.user.userId, req.params.mediaId);
         res.json({ success: true, data: result });

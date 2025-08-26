@@ -64,7 +64,7 @@ router.post("/subscribe", auth_1.requireAuth, (0, validate_1.validateRequest)({ 
     }
 });
 // POST /cancel - Cancel subscription
-router.post("/cancel", auth_1.requireAuth, async (req, res) => {
+router.post("/cancel", auth_1.requireAuth, (0, validate_1.validateRequest)({}), async (req, res) => {
     try {
         const userId = req.user.id;
         const result = await subscription_service_1.SubscriptionService.cancelSubscription(userId);
@@ -98,7 +98,7 @@ router.get("/usage", auth_1.requireAuth, async (req, res) => {
     }
 });
 // POST /boost - Use a boost
-router.post("/boost", auth_1.requireAuth, async (req, res) => {
+router.post("/boost", auth_1.requireAuth, (0, validate_1.validateRequest)({}), async (req, res) => {
     try {
         const userId = req.user.id;
         const boost = await subscription_service_1.SubscriptionService.useBoost(userId);

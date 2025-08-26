@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { requireAuth } from '../middleware/auth';
+import { validateRequest } from '../middleware/validate';
 import { CategoryService } from '../services/category.service';
 
 const router = Router();
@@ -31,7 +32,7 @@ router.get('/:slug', async (req, res) => {
 });
 
 // Join category
-router.post('/:categoryId/join', requireAuth, async (req, res) => {
+router.post('/:categoryId/join', requireAuth, validateRequest({ params: undefined }), async (req, res) => {
   try {
     const { categoryId } = req.params;
     const userId = req.user!.userId;

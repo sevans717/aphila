@@ -78,7 +78,7 @@ router.post(
 );
 
 // POST /cancel - Cancel subscription
-router.post("/cancel", requireAuth, async (req: any, res: any) => {
+router.post("/cancel", requireAuth, validateRequest({}), async (req: any, res: any) => {
   try {
     const userId = req.user.id;
     const result = await SubscriptionService.cancelSubscription(userId);
@@ -114,7 +114,7 @@ router.get("/usage", requireAuth, async (req: any, res: any) => {
 });
 
 // POST /boost - Use a boost
-router.post("/boost", requireAuth, async (req: any, res: any) => {
+router.post("/boost", requireAuth, validateRequest({}), async (req: any, res: any) => {
   try {
     const userId = req.user.id;
     const boost = await SubscriptionService.useBoost(userId);
