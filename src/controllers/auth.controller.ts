@@ -13,12 +13,10 @@ async function registerHandler(req: any, res: any) {
     env.jwtSecret,
     { expiresIn: "15m" }
   );
-  return res
-    .status(201)
-    .json({
-      token,
-      user: { id: user.id, email: user.email, createdAt: user.createdAt },
-    });
+  return res.status(201).json({
+    token,
+    user: { id: user.id, email: user.email, createdAt: user.createdAt },
+  });
 }
 
 async function loginHandler(req: any, res: any) {

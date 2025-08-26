@@ -28,6 +28,7 @@ export declare const env: {
     enableEmailNotifications: boolean;
     enableGeospatial: boolean;
     enableAnalytics: boolean;
+    disablePayments: boolean;
     maxFileSize: number;
     allowedFileTypes: string[];
 };

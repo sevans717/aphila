@@ -18,9 +18,7 @@ async function registerHandler(req, res) {
         return res.status(409).json({ error: "EmailInUse" });
     const user = await (0, user_service_1.createUser)(email, password);
     const token = jsonwebtoken_1.default.sign({ userId: user.id, email: user.email }, env_1.env.jwtSecret, { expiresIn: "15m" });
-    return res
-        .status(201)
-        .json({
+    return res.status(201).json({
         token,
         user: { id: user.id, email: user.email, createdAt: user.createdAt },
     });

@@ -1,5 +1,6 @@
 // avoid importing generated enum types directly; use strings for type-safety compatibility
 import { prisma } from "../lib/prisma";
+import { env } from "../config/env";
 
 // using shared singleton `prisma` from src/lib/prisma
 
@@ -180,7 +181,10 @@ export class SubscriptionService {
 
     // In a real app, you'd integrate with Stripe here
     if (plan.price > 0 && !paymentToken) {
-      throw new Error("Payment token required for paid plans");
+      // Allow bypassing real payments in dev environments when explicitly configured
+      if (!env.disablePayments) {
+        throw new Error("Payment token required for paid plans");
+      }
     }
 
     // Calculate end date

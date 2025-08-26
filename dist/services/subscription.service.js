@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SubscriptionService = exports.SUBSCRIPTION_PLANS = void 0;
 // avoid importing generated enum types directly; use strings for type-safety compatibility
 const prisma_1 = require("../lib/prisma");
+const env_1 = require("../config/env");
 // Subscription plans configuration
 exports.SUBSCRIPTION_PLANS = [
     {
@@ -148,7 +149,10 @@ class SubscriptionService {
         }
         // In a real app, you'd integrate with Stripe here
         if (plan.price > 0 && !paymentToken) {
-            throw new Error("Payment token required for paid plans");
+            // Allow bypassing real payments in dev environments when explicitly configured
+            if (!env_1.env.disablePayments) {
+                throw new Error("Payment token required for paid plans");
+            }
         }
         // Calculate end date
         const endDate = new Date();

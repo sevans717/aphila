@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 export declare const updateProfileSchema: z.ZodObject<{
     displayName: z.ZodOptional<z.ZodString>;
     bio: z.ZodOptional<z.ZodString>;

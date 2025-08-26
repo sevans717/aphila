@@ -21,6 +21,18 @@ async function updateUserProfile(userId, data) {
     if (existing) {
         return prisma_1.prisma.profile.update({ where: { userId }, data });
     }
-    return prisma_1.prisma.profile.create({ data: { userId, displayName: data.displayName || 'User', bio: data.bio || '', location: data.location || null, latitude: data.latitude ?? null, longitude: data.longitude ?? null, birthdate: new Date('1990-01-01'), gender: 'OTHER', orientation: 'OTHER' } });
+    return prisma_1.prisma.profile.create({
+        data: {
+            userId,
+            displayName: data.displayName || "User",
+            bio: data.bio || "",
+            location: data.location || null,
+            latitude: data.latitude ?? null,
+            longitude: data.longitude ?? null,
+            birthdate: new Date("1990-01-01"),
+            gender: "OTHER",
+            orientation: "OTHER",
+        },
+    });
 }
 //# sourceMappingURL=user.service.js.map

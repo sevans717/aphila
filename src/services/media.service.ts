@@ -325,17 +325,22 @@ export class MediaService {
     key: string,
     expiresIn: number = 3600
   ): Promise<string> {
-    if (!this.s3 || !env.s3BucketName) {
-      throw new Error("S3 not configured");
+    // If S3 is configured, return a real signed URL
+    if (this.s3 && env.s3BucketName) {
+      const params = {
+        Bucket: env.s3BucketName,
+        Key: key,
+        Expires: expiresIn,
+      };
+
+      return this.s3.getSignedUrl("getObject", params);
     }
 
-    const params = {
-      Bucket: env.s3BucketName,
-      Key: key,
-      Expires: expiresIn,
-    };
-
-    return this.s3.getSignedUrl("getObject", params);
+    // Dev-mode: return a simulated local URL so clients can still request media
+    // Format: /uploads/<key> with a query param to mimic expiry
+    const expiresAt = Math.floor(Date.now() / 1000) + expiresIn;
+    const safeKey = encodeURIComponent(key);
+    return `${env.appUrl.replace(/\/$/, '')}/uploads/${safeKey}?expires=${expiresAt}`;
   }
 
   // Get media asset by ID
