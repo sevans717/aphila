@@ -61,7 +61,9 @@ services:
     environment:
       # In production, point DATABASE_URL at PgBouncer (service name `pgbouncer`, port 6432).
       # Example override in environment or .env: DATABASE_URL="postgresql://postgres:postgres@pgbouncer:6432/sav3"
-      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@db:5432/sav3}
+  # Default runtime to PgBouncer so deployed containers use pooling by default.
+  # Override with DATABASE_URL in your environment if necessary.
+  DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@pgbouncer:6432/sav3}
       JWT_SECRET: ${JWT_SECRET}
       NODE_ENV: production
       PORT: ${PORT:-4000}
