@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { auth, requireAuth } from '../middleware/auth';
+import { validateRequest } from '../middleware/validate';
 import { PostService } from '../services/post.service';
 
 const router = Router();
@@ -37,7 +38,7 @@ router.get('/feed', requireAuth, async (req, res) => {
 });
 
 // Create a post
-router.post('/', auth, async (req, res) => {
+router.post('/', auth, validateRequest(createPostSchema), async (req, res) => {
   try {
     const userId = (req.user as any).userId;
     const post = await PostService.createPost({ authorId: userId, content: req.body.content, communityId: req.body.communityId, type: req.body.type, visibility: req.body.visibility });
@@ -48,7 +49,7 @@ router.post('/', auth, async (req, res) => {
 });
 
 // Update a post
-router.patch('/:postId', auth, async (req, res) => {
+router.patch('/:postId', auth, validateRequest(updatePostSchema), async (req, res) => {
   try {
     const userId = (req.user as any).userId;
     const updated = await PostService.updatePost(req.params.postId, userId, { content: req.body.content, isPinned: req.body.isPinned, isArchived: req.body.isArchived });
