@@ -1,11 +1,20 @@
 import { Router } from 'express';
+import { z } from 'zod';
 import { auth } from '../middleware/auth';
 import { SocialService } from '../services/social.service';
+import { validateRequest, commonValidation } from '../middleware/validate';
 
 const router = Router();
 
 // Comments
-router.post('/posts/:postId/comments', auth, async (req, res) => {
+const createCommentValidation = {
+  body: z.object({
+    content: z.string().min(1).max(1000),
+    parentCommentId: commonValidation.uuid.optional(),
+  }),
+};
+
+router.post('/posts/:postId/comments', auth, validateRequest(createCommentValidation), async (req, res) => {
   try {
     const userId = (req.user as any).userId;
     const comment = await SocialService.createComment(userId, { postId: req.params.postId, content: req.body.content, parentId: req.body.parentCommentId });
@@ -37,7 +46,13 @@ router.get('/comments/:commentId/replies', auth, async (req, res) => {
 });
 
 // Likes
-router.post('/posts/:postId/likes/toggle', auth, async (req, res) => {
+const toggleLikeValidation = {
+  body: z.object({
+    type: z.enum(['post', 'comment']).optional(),
+  }),
+};
+
+router.post('/posts/:postId/likes/toggle', auth, validateRequest(toggleLikeValidation), async (req, res) => {
   try {
     const userId = (req.user as any).userId;
     const result = await SocialService.togglePostLike(req.params.postId, userId, req.body.type);
