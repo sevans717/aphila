@@ -1,9 +1,37 @@
 {
+  "media.routes.ts": { "service": "MediaService", "status": "scanned", "methods": {} },
+  "subscription.routes.ts": { "service": "SubscriptionService", "status": "scanned", "methods": {} },
+  "messaging.routes.ts": { "service": "MessagingService", "status": "scanned", "methods": {} },
+  "discovery.routes.ts": { "service": "GeospatialService", "status": "scanned", "methods": {} },
+  "geospatial.routes.ts": { "service": "GeospatialService", "status": "scanned", "methods": {} },
+  "stories.routes.ts": { "service": "StoryService", "status": "scanned", "methods": {} },
+  "batch.routes.ts": { "service": "BatchService", "status": "scanned", "methods": {} },
+  "analytics.routes.ts": { "service": "AnalyticsService", "status": "not-scanned", "methods": {} },
+  "auth.ts": { "service": "AuthService", "status": "not-scanned", "methods": {} },
+  "bookmarks.routes.ts": { "service": "BookmarksService", "status": "not-scanned", "methods": {} },
+  "categories.routes.ts": { "service": "CategoriesService", "status": "not-scanned", "methods": {} },
+  "communities.routes.ts": { "service": "CommunitiesService", "status": "not-scanned", "methods": {} },
+  "config.routes.ts": { "service": "ConfigService", "status": "not-scanned", "methods": {} },
+  "user.routes.ts": { "service": "UserService", "status": "not-scanned", "methods": {} },
+  "social.routes.ts": { "service": "SocialService", "status": "not-scanned", "methods": {} },
+  "sharing.routes.ts": { "service": "SharingService", "status": "not-scanned", "methods": {} },
+  "search.routes.ts": { "service": "SearchService", "status": "not-scanned", "methods": {} },
+  "realtime.routes.ts": { "service": "RealtimeService", "status": "not-scanned", "methods": {} },
+  "posts.routes.ts": { "service": "PostsService", "status": "not-scanned", "methods": {} },
+  "notifications.routes.ts": { "service": "NotificationsService", "status": "not-scanned", "methods": {} },
+  "moderation.routes.ts": { "service": "ModerationService", "status": "not-scanned", "methods": {} },
+  "mobile.routes.ts": { "service": "MobileService", "status": "not-scanned", "methods": {} },
+  "index.ts": { "service": "IndexRoutes", "status": "not-scanned", "methods": {} }
+}
+{
   "media.routes.ts": {
     "service": "MediaService",
     "methods": {
       "uploadProfilePhoto": { "status": "implemented" },
-      "uploadFile": { "status": "implemented", "notes": "now persists to media_assets" },
+      "uploadFile": {
+        "status": "implemented",
+        "notes": "now persists to media_assets"
+      },
       "getUserMedia": { "status": "implemented" },
       "updateMediaMetadata": { "status": "implemented" },
       "deleteMedia": { "status": "implemented" },
@@ -13,94 +41,189 @@
       "completeChunkedUpload": { "status": "implemented" },
       "getUploadProgress": { "status": "implemented" },
       "cancelUploadSession": { "status": "implemented" },
-      "deleteFile": { "status": "implemented" }
-    }
-  },
-  "subscription.routes.ts": {
-    "service": "SubscriptionService",
-    "methods": {
-      "getPlans": { "status": "implemented" },
-      "getUserSubscription": { "status": "implemented" },
-      "createSubscription": { "status": "implemented", "notes": "dev payment bypass implemented (DISABLE_PAYMENTS=true). Stripe required for production paid plans." },
-      "cancelSubscription": { "status": "implemented" },
-      "getUsage": { "status": "implemented" },
-      "useBoost": { "status": "implemented" }
-    }
-  },
-  "messaging.routes.ts": {
-    "service": "MessagingService",
-    "methods": {
-      "sendMessage": { "status": "implemented" },
-      "getMatchMessages": { "status": "implemented" },
-      "markMessagesAsRead": { "status": "implemented" },
-      "getUnreadCount": { "status": "implemented" },
-      "deleteMessage": { "status": "implemented" },
-      "getMatchDetails": { "status": "implemented" },
-      "reportMessage": { "status": "implemented" }
-    }
-  },
-  "geospatial.service.ts (discovery.routes.ts)": {
-    "service": "GeospatialService",
-    "methods": {
-      "updateUserLocation": { "status": "implemented" },
-      "findNearby": { "status": "implemented" },
-      "getUsersNearUser": { "status": "implemented" },
-      "getDiscoveryFeed": { "status": "implemented", "notes": "age filtering implemented (verified Aug 26 2025)" },
-      "updateLocationAndGetNearby": { "status": "implemented" }
-    }
-  },
-  "stories.routes.ts": {
-    "service": "StoryService",
-    "methods": {
-      "createStory": { "status": "implemented" },
-      "getStoryById": { "status": "implemented" },
-      "updateStorySettings": { "status": "implemented" },
-      "deleteStory": { "status": "implemented" },
-      "getStoriesFeed": { "status": "implemented" },
-      "getUserStories": { "status": "implemented" },
-      "trackView": { "status": "implemented" },
-      "getStoryViewers": { "status": "implemented" },
-      "getStoryStats": { "status": "implemented" },
-      "getAnalyticsOverview": { "status": "implemented" },
-      "addToHighlights": { "status": "implemented" },
-      "getNearbyStories": { "status": "implemented" },
-      "cleanupExpiredStories": { "status": "implemented" }
-    }
-  },
-  "batch.service.ts": {
-    "service": "BatchService",
-    "methods": {
-      "runScheduledJobs": { "status": "implemented" },
-      "syncExternalData": { "status": "implemented" },
-      "populateCache": { "status": "implemented" }
-    },
-    "notes": "Replaced thrown errors with centralized handler"
-  },
-  "analytics.service.ts": {
-    "service": "AnalyticsService",
-    "methods": {
-      "trackEvent": { "status": "implemented" },
-      "getUserMetrics": { "status": "implemented" },
-      "getEngagementMetrics": { "status": "implemented" }
-    },
-    "notes": "Centralized error handler applied; platform distribution corrected"
-  },
-  "websocket.service.ts": {
-    "service": "WebSocketService",
-    "methods": {
-      "handleSendMessage": { "status": "implemented" },
-      "handleJoinMatch": { "status": "implemented" },
-      "updateUserOnlineStatus": { "status": "implemented" }
-    },
-    "notes": "Error handler calls added; socket behavior preserved"
-  },
-  "push-notification.service.ts": {
-    "service": "PushNotificationService",
-    "methods": {
-      "registerDevice": { "status": "implemented" },
-      "sendToUser": { "status": "implemented" },
-      "sendToTopic": { "status": "implemented" }
-    },
-    "notes": "Centralized error handling added; boolean fallbacks preserved"
-  }
-}
+      {
+        "media.routes.ts": {
+          "service": "MediaService",
+          "methods": {
+            "uploadProfilePhoto": { "status": "implemented" },
+            "uploadFile": { "status": "implemented", "notes": "persists to media_assets" },
+            "getUserMedia": { "status": "implemented" },
+            "updateMediaMetadata": { "status": "implemented" },
+            "deleteMedia": { "status": "implemented" },
+            "getMediaById": { "status": "implemented" },
+            "startChunkedUpload": { "status": "implemented" },
+            "uploadChunk": { "status": "implemented" },
+            "completeChunkedUpload": { "status": "implemented" },
+            "getUploadProgress": { "status": "implemented" },
+            "cancelUploadSession": { "status": "implemented" },
+            "deleteFile": { "status": "implemented" }
+          }
+        },
+        "subscription.routes.ts": {
+          "service": "SubscriptionService",
+          "methods": {
+            "getPlans": { "status": "implemented" },
+            "getUserSubscription": { "status": "implemented" },
+            "createSubscription": { "status": "implemented", "notes": "dev payment bypass (DISABLE_PAYMENTS=true) — Stripe required in prod" },
+            "cancelSubscription": { "status": "implemented" },
+            "getUsage": { "status": "implemented" },
+            "useBoost": { "status": "implemented" }
+          }
+        },
+        "messaging.routes.ts": {
+          "service": "MessagingService",
+          "methods": {
+            "sendMessage": { "status": "implemented" },
+            "getMatchMessages": { "status": "implemented" },
+            "markMessagesAsRead": { "status": "implemented" },
+            "getUnreadCount": { "status": "implemented" },
+            "deleteMessage": { "status": "implemented" },
+            "getMatchDetails": { "status": "implemented" },
+            "reportMessage": { "status": "implemented" }
+          }
+        },
+        "discovery.routes.ts": {
+          "service": "GeospatialService",
+          "methods": {},
+          "notes": "Mapped to geospatial.service.ts — feed and nearby endpoints to be validated"
+        },
+        "geospatial.routes.ts": {
+          "service": "GeospatialService",
+          "methods": {},
+          "notes": "Discovery and location endpoints; age filtering implemented"
+        },
+        "stories.routes.ts": {
+          "service": "StoryService",
+          "methods": {
+            "createStory": { "status": "implemented" },
+            "getStoryById": { "status": "implemented" },
+            "updateStorySettings": { "status": "implemented" },
+            "deleteStory": { "status": "implemented" },
+            "getStoriesFeed": { "status": "implemented" },
+            "getUserStories": { "status": "implemented" },
+            "trackView": { "status": "implemented" },
+            "getStoryViewers": { "status": "implemented" },
+            "getStoryStats": { "status": "implemented" },
+            "getAnalyticsOverview": { "status": "implemented" },
+            "addToHighlights": { "status": "implemented" },
+            "getNearbyStories": { "status": "implemented" },
+            "cleanupExpiredStories": { "status": "implemented" }
+          }
+        },
+        "batch.service.ts": {
+          "service": "BatchService",
+          "methods": {
+            "runScheduledJobs": { "status": "implemented" },
+            "syncExternalData": { "status": "implemented" },
+            "populateCache": { "status": "implemented" }
+          },
+          "notes": "Replaced thrown errors with centralized handler"
+        },
+        "analytics.service.ts": {
+          "service": "AnalyticsService",
+          "methods": {
+            "trackEvent": { "status": "implemented" },
+            "getUserMetrics": { "status": "implemented" },
+            "getEngagementMetrics": { "status": "implemented" }
+          },
+          "notes": "Centralized error handler applied"
+        },
+        "websocket.service.ts": {
+          "service": "WebSocketService",
+          "methods": {
+            "handleSendMessage": { "status": "implemented" },
+            "handleJoinMatch": { "status": "implemented" },
+            "updateUserOnlineStatus": { "status": "implemented" }
+          },
+          "notes": "Error handler calls added"
+        },
+        "push-notification.service.ts": {
+          "service": "PushNotificationService",
+          "methods": {
+            "registerDevice": { "status": "implemented" },
+            "sendToUser": { "status": "implemented" },
+            "sendToTopic": { "status": "implemented" }
+          },
+          "notes": "Centralized error handling added"
+        },
+        "analytics.routes.ts": {
+          "service": "AnalyticsService",
+          "methods": {},
+          "status": "not-scanned"
+        },
+        "auth.ts": {
+          "service": "AuthService",
+          "methods": {},
+          "status": "not-scanned"
+        },
+        "bookmarks.routes.ts": {
+          "service": "BookmarksService",
+          "methods": {},
+          "status": "not-scanned"
+        },
+        "categories.routes.ts": {
+          "service": "CategoriesService",
+          "methods": {},
+          "status": "not-scanned"
+        },
+        "communities.routes.ts": {
+          "service": "CommunitiesService",
+          "methods": {},
+          "status": "not-scanned"
+        },
+        "config.routes.ts": {
+          "service": "ConfigService",
+          "methods": {},
+          "status": "not-scanned"
+        },
+        "user.routes.ts": {
+          "service": "UserService",
+          "methods": {},
+          "status": "not-scanned"
+        },
+        "social.routes.ts": {
+          "service": "SocialService",
+          "methods": {},
+          "status": "not-scanned"
+        },
+        "sharing.routes.ts": {
+          "service": "SharingService",
+          "methods": {},
+          "status": "not-scanned"
+        },
+        "search.routes.ts": {
+          "service": "SearchService",
+          "methods": {},
+          "status": "not-scanned"
+        },
+        "realtime.routes.ts": {
+          "service": "RealtimeService",
+          "methods": {},
+          "status": "not-scanned"
+        },
+        "posts.routes.ts": {
+          "service": "PostsService",
+          "methods": {},
+          "status": "not-scanned"
+        },
+        "notifications.routes.ts": {
+          "service": "NotificationsService",
+          "methods": {},
+          "status": "not-scanned"
+        },
+        "moderation.routes.ts": {
+          "service": "ModerationService",
+          "methods": {},
+          "status": "not-scanned"
+        },
+        "mobile.routes.ts": {
+          "service": "MobileService",
+          "methods": {},
+          "status": "not-scanned"
+        },
+        "index.ts": {
+          "service": "IndexRoutes",
+          "methods": {},
+          "status": "not-scanned"
+        }
+      }
