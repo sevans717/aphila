@@ -9,13 +9,13 @@ const geospatial_service_1 = require("../services/geospatial.service");
 const logger_1 = require("../utils/logger");
 const router = (0, express_1.Router)();
 // Validation schemas
-const updateLocationSchema = zod_1.z.object({
+const updateLocationSchema = {
     body: zod_1.z.object({
         latitude: zod_1.z.number().min(-90).max(90),
         longitude: zod_1.z.number().min(-180).max(180),
     }),
-});
-const nearbyQuerySchema = zod_1.z.object({
+};
+const nearbyQuerySchema = {
     query: zod_1.z.object({
         latitude: zod_1.z.string().transform(val => parseFloat(val)),
         longitude: zod_1.z.string().transform(val => parseFloat(val)),
@@ -23,17 +23,17 @@ const nearbyQuerySchema = zod_1.z.object({
         type: zod_1.z.enum(['users', 'communities', 'all']).optional().default('all'),
         limit: zod_1.z.string().optional().transform(val => val ? parseInt(val) : 50),
     }),
-});
-const discoveryQuerySchema = zod_1.z.object({
+};
+const discoveryQuerySchema = {
     query: zod_1.z.object({
         limit: zod_1.z.string().optional().transform(val => val ? parseInt(val) : 20),
     }),
-});
+};
 /**
  * Update user's current location
  * POST /api/v1/geospatial/location
  */
-router.post('/location', auth_1.auth, (0, validate_1.validate)(updateLocationSchema), async (req, res) => {
+router.post('/location', auth_1.auth, (0, validate_1.validateRequest)(updateLocationSchema), async (req, res) => {
     try {
         const { latitude, longitude } = req.body;
         const userId = req.user.userId;
@@ -93,7 +93,7 @@ router.get('/location', auth_1.auth, async (req, res) => {
  * Find nearby users and communities
  * GET /api/v1/geospatial/nearby
  */
-router.get('/nearby', auth_1.auth, (0, validate_1.validate)(nearbyQuerySchema), async (req, res) => {
+router.get('/nearby', auth_1.auth, (0, validate_1.validateRequest)(nearbyQuerySchema), async (req, res) => {
     try {
         const { latitude, longitude, radius, type, limit } = req.query;
         const userId = req.user.userId;
@@ -130,7 +130,7 @@ router.get('/nearby', auth_1.auth, (0, validate_1.validate)(nearbyQuerySchema), 
  * Get discovery feed based on location and preferences
  * GET /api/v1/geospatial/discovery
  */
-router.get('/discovery', auth_1.auth, (0, validate_1.validate)(discoveryQuerySchema), async (req, res) => {
+router.get('/discovery', auth_1.auth, (0, validate_1.validateRequest)(discoveryQuerySchema), async (req, res) => {
     try {
         const { limit } = req.query;
         const userId = req.user.userId;
@@ -161,13 +161,13 @@ router.get('/discovery', auth_1.auth, (0, validate_1.validate)(discoveryQuerySch
  * Update location and get nearby users in one call (optimized for mobile)
  * POST /api/v1/geospatial/update-and-discover
  */
-router.post('/update-and-discover', auth_1.auth, (0, validate_1.validate)(zod_1.z.object({
+router.post('/update-and-discover', auth_1.auth, (0, validate_1.validateRequest)({
     body: zod_1.z.object({
         latitude: zod_1.z.number().min(-90).max(90),
         longitude: zod_1.z.number().min(-180).max(180),
         radius: zod_1.z.number().optional().default(50),
     }),
-})), async (req, res) => {
+}), async (req, res) => {
     try {
         const { latitude, longitude, radius } = req.body;
         const userId = req.user.userId;

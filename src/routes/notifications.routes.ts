@@ -268,55 +268,56 @@ router.post(
   auth,
   validateRequest(topicParamSchema),
   async (req, res) => {
-  try {
-    const { topic } = req.params;
-    const userId = req.user!.userId;
+    try {
+      const { topic } = req.params;
+      const userId = req.user!.userId;
 
-    // Get user's active FCM tokens
-    const devices = await prisma.device.findMany({
-      where: {
+      // Get user's active FCM tokens
+      const devices = await prisma.device.findMany({
+        where: {
+          userId,
+          isActive: true,
+          fcmToken: { not: null },
+        },
+        select: { fcmToken: true },
+      });
+
+      const pushService = (global as any)
+        .pushNotificationService as PushNotificationService;
+
+      // Subscribe all user's devices to the topic
+      await Promise.all(
+        devices.map((device: any) =>
+          pushService.subscribeToTopic(device.fcmToken!, topic)
+        )
+      );
+
+      // Track analytics
+      await AnalyticsService.trackEvent({
         userId,
-        isActive: true,
-        fcmToken: { not: null },
-      },
-      select: { fcmToken: true },
-    });
+        event: "topic_subscribed",
+        platform: req.headers["user-agent"]?.includes("Mobile")
+          ? "mobile"
+          : "web",
+        properties: {
+          topic,
+          deviceCount: devices.length,
+        },
+      });
 
-    const pushService = (global as any)
-      .pushNotificationService as PushNotificationService;
-
-    // Subscribe all user's devices to the topic
-    await Promise.all(
-      devices.map((device: any) =>
-        pushService.subscribeToTopic(device.fcmToken!, topic)
-      )
-    );
-
-    // Track analytics
-    await AnalyticsService.trackEvent({
-      userId,
-      event: "topic_subscribed",
-      platform: req.headers["user-agent"]?.includes("Mobile")
-        ? "mobile"
-        : "web",
-      properties: {
-        topic,
-        deviceCount: devices.length,
-      },
-    });
-
-    res.json({
-      success: true,
-      message: `Subscribed to topic: ${topic}`,
-    });
-  } catch (error: any) {
-    logger.error("Failed to subscribe to topic:", error);
-    res.status(500).json({
-      error: "InternalServerError",
-      message: "Failed to subscribe to topic",
-    });
+      res.json({
+        success: true,
+        message: `Subscribed to topic: ${topic}`,
+      });
+    } catch (error: any) {
+      logger.error("Failed to subscribe to topic:", error);
+      res.status(500).json({
+        error: "InternalServerError",
+        message: "Failed to subscribe to topic",
+      });
+    }
   }
-});
+);
 
 /**
  * Unsubscribe from topic
@@ -327,55 +328,56 @@ router.post(
   auth,
   validateRequest(topicParamSchema),
   async (req, res) => {
-  try {
-    const { topic } = req.params;
-    const userId = req.user!.userId;
+    try {
+      const { topic } = req.params;
+      const userId = req.user!.userId;
 
-    // Get user's active FCM tokens
-    const devices = await prisma.device.findMany({
-      where: {
+      // Get user's active FCM tokens
+      const devices = await prisma.device.findMany({
+        where: {
+          userId,
+          isActive: true,
+          fcmToken: { not: null },
+        },
+        select: { fcmToken: true },
+      });
+
+      const pushService = (global as any)
+        .pushNotificationService as PushNotificationService;
+
+      // Unsubscribe all user's devices from the topic
+      await Promise.all(
+        devices.map((device: any) =>
+          pushService.unsubscribeFromTopic(device.fcmToken!, topic)
+        )
+      );
+
+      // Track analytics
+      await AnalyticsService.trackEvent({
         userId,
-        isActive: true,
-        fcmToken: { not: null },
-      },
-      select: { fcmToken: true },
-    });
+        event: "topic_unsubscribed",
+        platform: req.headers["user-agent"]?.includes("Mobile")
+          ? "mobile"
+          : "web",
+        properties: {
+          topic,
+          deviceCount: devices.length,
+        },
+      });
 
-    const pushService = (global as any)
-      .pushNotificationService as PushNotificationService;
-
-    // Unsubscribe all user's devices from the topic
-    await Promise.all(
-      devices.map((device: any) =>
-        pushService.unsubscribeFromTopic(device.fcmToken!, topic)
-      )
-    );
-
-    // Track analytics
-    await AnalyticsService.trackEvent({
-      userId,
-      event: "topic_unsubscribed",
-      platform: req.headers["user-agent"]?.includes("Mobile")
-        ? "mobile"
-        : "web",
-      properties: {
-        topic,
-        deviceCount: devices.length,
-      },
-    });
-
-    res.json({
-      success: true,
-      message: `Unsubscribed from topic: ${topic}`,
-    });
-  } catch (error: any) {
-    logger.error("Failed to unsubscribe from topic:", error);
-    res.status(500).json({
-      error: "InternalServerError",
-      message: "Failed to unsubscribe from topic",
-    });
+      res.json({
+        success: true,
+        message: `Unsubscribed from topic: ${topic}`,
+      });
+    } catch (error: any) {
+      logger.error("Failed to unsubscribe from topic:", error);
+      res.status(500).json({
+        error: "InternalServerError",
+        message: "Failed to unsubscribe from topic",
+      });
+    }
   }
-});
+);
 
 /**
  * List notifications
@@ -410,15 +412,16 @@ router.post(
   auth,
   validateRequest(markReadSchema),
   async (req, res) => {
-  try {
+    try {
       const userId = (req.user as any).userId;
       const ids: string[] = req.body.ids || [];
-    const result = await NotificationService.markRead(userId, ids);
-    res.json({ success: true, data: result });
-  } catch (err) {
-    res.status(500).json({ success: false, message: "Failed to mark read" });
+      const result = await NotificationService.markRead(userId, ids);
+      res.json({ success: true, data: result });
+    } catch (err) {
+      res.status(500).json({ success: false, message: "Failed to mark read" });
+    }
   }
-});
+);
 
 /**
  * Mark all notifications as read

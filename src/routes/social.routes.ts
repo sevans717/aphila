@@ -107,16 +107,19 @@ router.post(
   auth,
   validateRequest(toggleLikeValidation),
   async (req, res) => {
-  try {
-    const userId = (req.user as any).userId;
-    const result = await SocialService.toggleCommentLike(
-      req.params.commentId,
-      userId
-    );
-    res.json({ success: true, data: result });
-  } catch (err) {
-    res.status(500).json({ success: false, message: "Failed to toggle like" });
+    try {
+      const userId = (req.user as any).userId;
+      const result = await SocialService.toggleCommentLike(
+        req.params.commentId,
+        userId
+      );
+      res.json({ success: true, data: result });
+    } catch (err) {
+      res
+        .status(500)
+        .json({ success: false, message: "Failed to toggle like" });
+    }
   }
-});
+);
 
 export default router;

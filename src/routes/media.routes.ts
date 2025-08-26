@@ -1,14 +1,14 @@
-import { Router } from 'express';
-import multer from 'multer';
-import { z } from 'zod';
-import { env } from '../config/env';
-import { prisma } from '../lib/prisma';
-import { requireAuth } from '../middleware/auth';
-import { validateRequest } from '../middleware/validate';
-import { AnalyticsService } from '../services/analytics.service';
-import { MediaService } from '../services/media.service';
-import { logger } from '../utils/logger';
-import { ResponseHelper } from '../utils/response';
+import { Router } from "express";
+import multer from "multer";
+import { z } from "zod";
+import { env } from "../config/env";
+import { prisma } from "../lib/prisma";
+import { requireAuth } from "../middleware/auth";
+import { validateRequest } from "../middleware/validate";
+import { AnalyticsService } from "../services/analytics.service";
+import { MediaService } from "../services/media.service";
+import { logger } from "../utils/logger";
+import { ResponseHelper } from "../utils/response";
 
 const router = Router();
 
@@ -23,7 +23,7 @@ const upload = multer({
     if (env.allowedFileTypes.includes(file.mimetype)) {
       cb(null, true);
     } else {
-      cb(new Error('Invalid file type'));
+      cb(new Error("Invalid file type"));
     }
   },
 });
@@ -31,7 +31,10 @@ const upload = multer({
 // Validation schemas
 const uploadMetadataSchema = z.object({
   body: z.object({
-    type: z.enum(['profile', 'community', 'message']).optional().default('profile'),
+    type: z
+      .enum(["profile", "community", "message"])
+      .optional()
+      .default("profile"),
     description: z.string().optional(),
   }),
 });
@@ -45,9 +48,15 @@ const deleteMediaSchema = z.object({
 // Chunked upload schemas
 const startChunkedUploadSchema = z.object({
   filename: z.string().min(1),
-  totalSize: z.number().min(1).max(100 * 1024 * 1024), // Max 100MB
+  totalSize: z
+    .number()
+    .min(1)
+    .max(100 * 1024 * 1024), // Max 100MB
   chunkSize: z.number().optional(),
-  uploadType: z.enum(['image', 'video', 'audio', 'document']).optional().default('image'),
+  uploadType: z
+    .enum(["image", "video", "audio", "document"])
+    .optional()
+    .default("image"),
 });
 
 const uploadChunkSchema = z.object({
@@ -57,14 +66,18 @@ const uploadChunkSchema = z.object({
 
 const completeUploadSchema = z.object({
   sessionId: z.string().uuid(),
-  uploadType: z.enum(['image', 'video', 'audio', 'document']).optional().default('image'),
+  uploadType: z
+    .enum(["image", "video", "audio", "document"])
+    .optional()
+    .default("image"),
 });
 
 /**
  * Start chunked upload session for large files
  * POST /api/v1/media/chunked/start
  */
-router.post('/chunked/start',
+router.post(
+  "/chunked/start",
   requireAuth,
   validateRequest({
     body: startChunkedUploadSchema,
@@ -81,7 +94,7 @@ router.post('/chunked/start',
         chunkSize
       );
 
-      logger.info('Chunked upload session started:', {
+      logger.info("Chunked upload session started:", {
         sessionId,
         userId,
         filename,
@@ -89,16 +102,20 @@ router.post('/chunked/start',
         requestId: res.locals.requestId,
       });
 
-      return ResponseHelper.success(res, {
-        sessionId,
-        filename,
-        totalSize,
-        chunkSize: chunkSize || 1024 * 1024,
-        uploadType,
-      }, 201);
+      return ResponseHelper.success(
+        res,
+        {
+          sessionId,
+          filename,
+          totalSize,
+          chunkSize: chunkSize || 1024 * 1024,
+          uploadType,
+        },
+        201
+      );
     } catch (error: any) {
-      logger.error('Failed to start chunked upload:', error);
-      return ResponseHelper.serverError(res, 'Failed to start upload session');
+      logger.error("Failed to start chunked upload:", error);
+      return ResponseHelper.serverError(res, "Failed to start upload session");
     }
   }
 );
@@ -107,9 +124,10 @@ router.post('/chunked/start',
  * Upload a chunk
  * POST /api/v1/media/chunked/upload
  */
-router.post('/chunked/upload',
+router.post(
+  "/chunked/upload",
   requireAuth,
-  upload.single('chunk'),
+  upload.single("chunk"),
   validateRequest({
     body: uploadChunkSchema,
   }),
@@ -120,8 +138,8 @@ router.post('/chunked/upload',
       if (!req.file) {
         return ResponseHelper.error(
           res,
-          'BAD_REQUEST',
-          'No chunk data provided',
+          "BAD_REQUEST",
+          "No chunk data provided",
           400
         );
       }
@@ -132,7 +150,7 @@ router.post('/chunked/upload',
         req.file.buffer
       );
 
-      logger.debug('Chunk uploaded:', {
+      logger.debug("Chunk uploaded:", {
         sessionId,
         chunkIndex,
         progress: progress.progress,
@@ -141,7 +159,7 @@ router.post('/chunked/upload',
 
       return ResponseHelper.success(res, progress);
     } catch (error: any) {
-      logger.error('Failed to upload chunk:', error);
+      logger.error("Failed to upload chunk:", error);
       return ResponseHelper.serverError(res, error.message);
     }
   }
@@ -151,7 +169,8 @@ router.post('/chunked/upload',
  * Complete chunked upload
  * POST /api/v1/media/chunked/complete
  */
-router.post('/chunked/complete',
+router.post(
+  "/chunked/complete",
   requireAuth,
   validateRequest({
     body: completeUploadSchema,
@@ -161,23 +180,26 @@ router.post('/chunked/complete',
       const { sessionId, uploadType } = req.body;
       const userId = (req as any).user.id;
 
-      const result = await MediaService.completeChunkedUpload(sessionId, uploadType);
+      const result = await MediaService.completeChunkedUpload(
+        sessionId,
+        uploadType
+      );
 
       // Track analytics
       await AnalyticsService.trackEvent({
         userId,
-        event: 'media_upload_completed',
+        event: "media_upload_completed",
         properties: {
           mediaId: result.id,
           type: result.type,
           size: result.size,
-          uploadMethod: 'chunked',
-        }
-      }).catch(err => {
-        logger.warn('Failed to track analytics:', err);
+          uploadMethod: "chunked",
+        },
+      }).catch((err) => {
+        logger.warn("Failed to track analytics:", err);
       });
 
-      logger.info('Chunked upload completed:', {
+      logger.info("Chunked upload completed:", {
         sessionId,
         userId,
         mediaId: result.id,
@@ -186,7 +208,7 @@ router.post('/chunked/complete',
 
       return ResponseHelper.success(res, result, 201);
     } catch (error: any) {
-      logger.error('Failed to complete chunked upload:', error);
+      logger.error("Failed to complete chunked upload:", error);
       return ResponseHelper.serverError(res, error.message);
     }
   }
@@ -196,7 +218,8 @@ router.post('/chunked/complete',
  * Get upload progress
  * GET /api/v1/media/chunked/progress/:sessionId
  */
-router.get('/chunked/progress/:sessionId',
+router.get(
+  "/chunked/progress/:sessionId",
   requireAuth,
   validateRequest({
     params: z.object({
@@ -210,13 +233,13 @@ router.get('/chunked/progress/:sessionId',
       const progress = MediaService.getUploadProgress(sessionId);
 
       if (!progress) {
-        return ResponseHelper.notFound(res, 'Upload session');
+        return ResponseHelper.notFound(res, "Upload session");
       }
 
       return ResponseHelper.success(res, progress);
     } catch (error: any) {
-      logger.error('Failed to get upload progress:', error);
-      return ResponseHelper.serverError(res, 'Failed to get progress');
+      logger.error("Failed to get upload progress:", error);
+      return ResponseHelper.serverError(res, "Failed to get progress");
     }
   }
 );
@@ -225,7 +248,8 @@ router.get('/chunked/progress/:sessionId',
  * Cancel upload session
  * DELETE /api/v1/media/chunked/:sessionId
  */
-router.delete('/chunked/:sessionId',
+router.delete(
+  "/chunked/:sessionId",
   requireAuth,
   validateRequest({
     params: z.object({
@@ -239,10 +263,10 @@ router.delete('/chunked/:sessionId',
       const cancelled = MediaService.cancelUploadSession(sessionId);
 
       if (!cancelled) {
-        return ResponseHelper.notFound(res, 'Upload session');
+        return ResponseHelper.notFound(res, "Upload session");
       }
 
-      logger.info('Upload session cancelled:', {
+      logger.info("Upload session cancelled:", {
         sessionId,
         userId: (req as any).user.id,
         requestId: res.locals.requestId,
@@ -253,8 +277,8 @@ router.delete('/chunked/:sessionId',
         sessionId,
       });
     } catch (error: any) {
-      logger.error('Failed to cancel upload session:', error);
-      return ResponseHelper.serverError(res, 'Failed to cancel session');
+      logger.error("Failed to cancel upload session:", error);
+      return ResponseHelper.serverError(res, "Failed to cancel session");
     }
   }
 );
@@ -263,9 +287,10 @@ router.delete('/chunked/:sessionId',
  * Upload media file
  * POST /api/v1/media/upload
  */
-router.post('/upload',
+router.post(
+  "/upload",
   requireAuth,
-  upload.single('file'),
+  upload.single("file"),
   validateRequest({
     body: uploadMetadataSchema.shape.body,
   }),
@@ -273,8 +298,8 @@ router.post('/upload',
     try {
       if (!req.file) {
         return res.status(400).json({
-          error: 'BadRequest',
-          message: 'No file provided',
+          error: "BadRequest",
+          message: "No file provided",
         });
       }
 
@@ -289,8 +314,11 @@ router.post('/upload',
         data: {
           userId,
           url: uploadResult.url,
-          type: req.file.mimetype.startsWith('image/') ? 'IMAGE' : 
-                req.file.mimetype.startsWith('video/') ? 'VIDEO' : 'OTHER',
+          type: req.file.mimetype.startsWith("image/")
+            ? "IMAGE"
+            : req.file.mimetype.startsWith("video/")
+            ? "VIDEO"
+            : "OTHER",
           width: uploadResult.width,
           height: uploadResult.height,
           duration: uploadResult.duration,
@@ -300,8 +328,10 @@ router.post('/upload',
       // Track analytics
       await AnalyticsService.trackEvent({
         userId,
-        event: 'media_uploaded',
-        platform: req.headers['user-agent']?.includes('Mobile') ? 'mobile' : 'web',
+        event: "media_uploaded",
+        platform: req.headers["user-agent"]?.includes("Mobile")
+          ? "mobile"
+          : "web",
         properties: {
           mediaType: mediaAsset.type,
           fileSize: req.file.size,
@@ -320,18 +350,20 @@ router.post('/upload',
         createdAt: mediaAsset.createdAt,
       });
     } catch (error: any) {
-      logger.error('Failed to upload media:', error);
-      
-      if (error.message === 'Invalid file type') {
+      logger.error("Failed to upload media:", error);
+
+      if (error.message === "Invalid file type") {
         return res.status(400).json({
-          error: 'BadRequest',
-          message: 'Invalid file type. Allowed types: ' + env.allowedFileTypes.join(', '),
+          error: "BadRequest",
+          message:
+            "Invalid file type. Allowed types: " +
+            env.allowedFileTypes.join(", "),
         });
       }
 
       res.status(500).json({
-        error: 'InternalServerError',
-        message: 'Failed to upload media',
+        error: "InternalServerError",
+        message: "Failed to upload media",
       });
     }
   }
@@ -341,20 +373,21 @@ router.post('/upload',
  * Upload multiple files
  * POST /api/v1/media/upload-multiple
  */
-router.post('/upload-multiple',
+router.post(
+  "/upload-multiple",
   requireAuth,
-  upload.array('files', 10), // Max 10 files
+  upload.array("files", 10), // Max 10 files
   validateRequest({
     body: uploadMetadataSchema.shape.body,
   }),
   async (req, res) => {
     try {
       const files = req.files as Express.Multer.File[];
-      
+
       if (!files || files.length === 0) {
         return res.status(400).json({
-          error: 'BadRequest',
-          message: 'No files provided',
+          error: "BadRequest",
+          message: "No files provided",
         });
       }
 
@@ -364,13 +397,16 @@ router.post('/upload-multiple',
       // Upload all files
       const uploadPromises = files.map(async (file) => {
         const uploadResult = await MediaService.uploadFile(file, userId);
-        
+
         return prisma.mediaAsset.create({
           data: {
             userId,
             url: uploadResult.url,
-            type: file.mimetype.startsWith('image/') ? 'IMAGE' : 
-                  file.mimetype.startsWith('video/') ? 'VIDEO' : 'OTHER',
+            type: file.mimetype.startsWith("image/")
+              ? "IMAGE"
+              : file.mimetype.startsWith("video/")
+              ? "VIDEO"
+              : "OTHER",
             width: uploadResult.width,
             height: uploadResult.height,
             duration: uploadResult.duration,
@@ -383,8 +419,10 @@ router.post('/upload-multiple',
       // Track analytics
       await AnalyticsService.trackEvent({
         userId,
-        event: 'multiple_media_uploaded',
-        platform: req.headers['user-agent']?.includes('Mobile') ? 'mobile' : 'web',
+        event: "multiple_media_uploaded",
+        platform: req.headers["user-agent"]?.includes("Mobile")
+          ? "mobile"
+          : "web",
         properties: {
           fileCount: files.length,
           totalSize: files.reduce((sum, file) => sum + file.size, 0),
@@ -393,7 +431,7 @@ router.post('/upload-multiple',
       });
 
       res.status(201).json({
-        files: mediaAssets.map(asset => ({
+        files: mediaAssets.map((asset) => ({
           id: asset.id,
           url: asset.url,
           type: asset.type,
@@ -404,10 +442,10 @@ router.post('/upload-multiple',
         })),
       });
     } catch (error: any) {
-      logger.error('Failed to upload multiple media:', error);
+      logger.error("Failed to upload multiple media:", error);
       res.status(500).json({
-        error: 'InternalServerError',
-        message: 'Failed to upload media files',
+        error: "InternalServerError",
+        message: "Failed to upload media files",
       });
     }
   }
@@ -417,148 +455,142 @@ router.post('/upload-multiple',
  * Get user's media assets
  * GET /api/v1/media
  */
-router.get('/',
-  requireAuth,
-  async (req, res) => {
-    try {
-      const userId = req.user!.userId;
-      const { type, limit = '20', offset = '0' } = req.query;
+router.get("/", requireAuth, async (req, res) => {
+  try {
+    const userId = req.user!.userId;
+    const { type, limit = "20", offset = "0" } = req.query;
 
-      const whereClause: any = { userId };
-      if (type) {
-        whereClause.type = (type as string).toUpperCase();
-      }
-
-      const mediaAssets = await prisma.mediaAsset.findMany({
-        where: whereClause,
-        orderBy: { createdAt: 'desc' },
-        take: parseInt(limit as string),
-        skip: parseInt(offset as string),
-      });
-
-      const total = await prisma.mediaAsset.count({
-        where: whereClause,
-      });
-
-      res.json({
-        media: mediaAssets,
-        pagination: {
-          total,
-          limit: parseInt(limit as string),
-          offset: parseInt(offset as string),
-          hasMore: parseInt(offset as string) + parseInt(limit as string) < total,
-        },
-      });
-    } catch (error: any) {
-      logger.error('Failed to get media assets:', error);
-      res.status(500).json({
-        error: 'InternalServerError',
-        message: 'Failed to get media assets',
-      });
+    const whereClause: any = { userId };
+    if (type) {
+      whereClause.type = (type as string).toUpperCase();
     }
+
+    const mediaAssets = await prisma.mediaAsset.findMany({
+      where: whereClause,
+      orderBy: { createdAt: "desc" },
+      take: parseInt(limit as string),
+      skip: parseInt(offset as string),
+    });
+
+    const total = await prisma.mediaAsset.count({
+      where: whereClause,
+    });
+
+    res.json({
+      media: mediaAssets,
+      pagination: {
+        total,
+        limit: parseInt(limit as string),
+        offset: parseInt(offset as string),
+        hasMore: parseInt(offset as string) + parseInt(limit as string) < total,
+      },
+    });
+  } catch (error: any) {
+    logger.error("Failed to get media assets:", error);
+    res.status(500).json({
+      error: "InternalServerError",
+      message: "Failed to get media assets",
+    });
   }
-);
+});
 
 /**
  * Get specific media asset
  * GET /api/v1/media/:mediaId
  */
-router.get('/:mediaId',
-  requireAuth,
-  async (req, res) => {
-    try {
-      const { mediaId } = req.params;
-      const userId = req.user!.userId;
+router.get("/:mediaId", requireAuth, async (req, res) => {
+  try {
+    const { mediaId } = req.params;
+    const userId = req.user!.userId;
 
-      const mediaAsset = await prisma.mediaAsset.findFirst({
-        where: {
-          id: mediaId,
-          userId, // Ensure user owns the media
-        },
-      });
+    const mediaAsset = await prisma.mediaAsset.findFirst({
+      where: {
+        id: mediaId,
+        userId, // Ensure user owns the media
+      },
+    });
 
-      if (!mediaAsset) {
-        return res.status(404).json({
-          error: 'NotFound',
-          message: 'Media asset not found',
-        });
-      }
-
-      res.json(mediaAsset);
-    } catch (error: any) {
-      logger.error('Failed to get media asset:', error);
-      res.status(500).json({
-        error: 'InternalServerError',
-        message: 'Failed to get media asset',
+    if (!mediaAsset) {
+      return res.status(404).json({
+        error: "NotFound",
+        message: "Media asset not found",
       });
     }
+
+    res.json(mediaAsset);
+  } catch (error: any) {
+    logger.error("Failed to get media asset:", error);
+    res.status(500).json({
+      error: "InternalServerError",
+      message: "Failed to get media asset",
+    });
   }
-);
+});
 
 /**
  * Delete media asset
  * DELETE /api/v1/media/:mediaId
  */
-router.delete('/:mediaId',
-  requireAuth,
-  async (req, res) => {
-    try {
-      const { mediaId } = req.params;
-      const userId = req.user!.userId;
+router.delete("/:mediaId", requireAuth, async (req, res) => {
+  try {
+    const { mediaId } = req.params;
+    const userId = req.user!.userId;
 
-      // Check if media exists and user owns it
-      const mediaAsset = await prisma.mediaAsset.findFirst({
-        where: {
-          id: mediaId,
-          userId,
-        },
-      });
-
-      if (!mediaAsset) {
-        return res.status(404).json({
-          error: 'NotFound',
-          message: 'Media asset not found',
-        });
-      }
-
-      // Delete from storage
-      await MediaService.deleteFile(mediaAsset.url);
-
-      // Delete from database
-      await prisma.mediaAsset.delete({
-        where: { id: mediaId },
-      });
-
-      // Track analytics
-      await AnalyticsService.trackEvent({
+    // Check if media exists and user owns it
+    const mediaAsset = await prisma.mediaAsset.findFirst({
+      where: {
+        id: mediaId,
         userId,
-        event: 'media_deleted',
-        platform: req.headers['user-agent']?.includes('Mobile') ? 'mobile' : 'web',
-        properties: {
-          mediaType: mediaAsset.type,
-          mediaId,
-        },
-      });
+      },
+    });
 
-      res.json({
-        success: true,
-        message: 'Media asset deleted successfully',
-      });
-    } catch (error: any) {
-      logger.error('Failed to delete media asset:', error);
-      res.status(500).json({
-        error: 'InternalServerError',
-        message: 'Failed to delete media asset',
+    if (!mediaAsset) {
+      return res.status(404).json({
+        error: "NotFound",
+        message: "Media asset not found",
       });
     }
+
+    // Delete from storage
+    await MediaService.deleteFile(mediaAsset.url);
+
+    // Delete from database
+    await prisma.mediaAsset.delete({
+      where: { id: mediaId },
+    });
+
+    // Track analytics
+    await AnalyticsService.trackEvent({
+      userId,
+      event: "media_deleted",
+      platform: req.headers["user-agent"]?.includes("Mobile")
+        ? "mobile"
+        : "web",
+      properties: {
+        mediaType: mediaAsset.type,
+        mediaId,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Media asset deleted successfully",
+    });
+  } catch (error: any) {
+    logger.error("Failed to delete media asset:", error);
+    res.status(500).json({
+      error: "InternalServerError",
+      message: "Failed to delete media asset",
+    });
   }
-);
+});
 
 /**
  * Mark media as favorite
  * PUT /api/v1/media/:mediaId/favorite
  */
-router.put('/:mediaId/favorite',
+router.put(
+  "/:mediaId/favorite",
   requireAuth,
   validateRequest({ body: z.object({ isFavorite: z.boolean().optional() }) }),
   async (req, res) => {
@@ -579,16 +611,18 @@ router.put('/:mediaId/favorite',
 
       if (mediaAsset.count === 0) {
         return res.status(404).json({
-          error: 'NotFound',
-          message: 'Media asset not found',
+          error: "NotFound",
+          message: "Media asset not found",
         });
       }
 
       // Track analytics
       await AnalyticsService.trackEvent({
         userId,
-        event: 'media_favorited',
-        platform: req.headers['user-agent']?.includes('Mobile') ? 'mobile' : 'web',
+        event: "media_favorited",
+        platform: req.headers["user-agent"]?.includes("Mobile")
+          ? "mobile"
+          : "web",
         properties: {
           mediaId,
           isFavorite,
@@ -597,13 +631,13 @@ router.put('/:mediaId/favorite',
 
       res.json({
         success: true,
-        message: `Media ${isFavorite ? 'added to' : 'removed from'} favorites`,
+        message: `Media ${isFavorite ? "added to" : "removed from"} favorites`,
       });
     } catch (error: any) {
-      logger.error('Failed to update media favorite status:', error);
+      logger.error("Failed to update media favorite status:", error);
       res.status(500).json({
-        error: 'InternalServerError',
-        message: 'Failed to update media favorite status',
+        error: "InternalServerError",
+        message: "Failed to update media favorite status",
       });
     }
   }

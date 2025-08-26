@@ -85,7 +85,9 @@ router.post("/comments/:commentId/likes/toggle", auth_1.auth, (0, validate_1.val
         res.json({ success: true, data: result });
     }
     catch (err) {
-        res.status(500).json({ success: false, message: "Failed to toggle like" });
+        res
+            .status(500)
+            .json({ success: false, message: "Failed to toggle like" });
     }
 });
 exports.default = router;

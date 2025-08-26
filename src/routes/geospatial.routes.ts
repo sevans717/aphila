@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { auth } from '../middleware/auth';
-import { validate } from '../middleware/validate';
+import { validateRequest, commonValidation } from '../middleware/validate';
 import { AnalyticsService } from '../services/analytics.service';
 import { GeospatialService } from '../services/geospatial.service';
 import { logger } from '../utils/logger';
@@ -9,14 +9,14 @@ import { logger } from '../utils/logger';
 const router = Router();
 
 // Validation schemas
-const updateLocationSchema = z.object({
+const updateLocationSchema = {
   body: z.object({
     latitude: z.number().min(-90).max(90),
     longitude: z.number().min(-180).max(180),
   }),
-});
+};
 
-const nearbyQuerySchema = z.object({
+const nearbyQuerySchema = {
   query: z.object({
     latitude: z.string().transform(val => parseFloat(val)),
     longitude: z.string().transform(val => parseFloat(val)),
@@ -24,21 +24,21 @@ const nearbyQuerySchema = z.object({
     type: z.enum(['users', 'communities', 'all']).optional().default('all'),
     limit: z.string().optional().transform(val => val ? parseInt(val) : 50),
   }),
-});
+};
 
-const discoveryQuerySchema = z.object({
+const discoveryQuerySchema = {
   query: z.object({
     limit: z.string().optional().transform(val => val ? parseInt(val) : 20),
   }),
-});
+};
 
 /**
  * Update user's current location
  * POST /api/v1/geospatial/location
  */
-router.post('/location', 
-  auth, 
-  validate(updateLocationSchema),
+router.post('/location',
+  auth,
+  validateRequest(updateLocationSchema),
   async (req, res) => {
     try {
       const { latitude, longitude } = req.body;
@@ -110,7 +110,7 @@ router.get('/location',
  */
 router.get('/nearby',
   auth,
-  validate(nearbyQuerySchema),
+  validateRequest(nearbyQuerySchema),
   async (req, res) => {
     try {
       const { latitude, longitude, radius, type, limit } = req.query;
@@ -154,7 +154,7 @@ router.get('/nearby',
  */
 router.get('/discovery',
   auth,
-  validate(discoveryQuerySchema),
+  validateRequest(discoveryQuerySchema),
   async (req, res) => {
     try {
       const { limit } = req.query;
@@ -195,13 +195,13 @@ router.get('/discovery',
  */
 router.post('/update-and-discover',
   auth,
-  validate(z.object({
+  validateRequest({
     body: z.object({
       latitude: z.number().min(-90).max(90),
       longitude: z.number().min(-180).max(180),
       radius: z.number().optional().default(50),
     }),
-  })),
+  }),
   async (req, res) => {
     try {
       const { latitude, longitude, radius } = req.body;

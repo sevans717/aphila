@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const zod_1 = require("zod");
 const auth_1 = require("../middleware/auth");
+const validate_1 = require("../middleware/validate");
 const community_service_1 = require("../services/community.service");
 const router = (0, express_1.Router)();
 const createCommunitySchema = zod_1.z.object({
@@ -41,9 +42,9 @@ router.get('/:id', async (req, res) => {
     }
 });
 // Create community
-router.post('/', auth_1.requireAuth, async (req, res) => {
+router.post('/', auth_1.requireAuth, (0, validate_1.validateRequest)({ body: createCommunitySchema }), async (req, res) => {
     try {
-        const data = createCommunitySchema.parse(req.body);
+        const data = req.body;
         const ownerId = req.user.userId;
         const community = await community_service_1.CommunityService.createCommunity({
             ...data,
@@ -52,14 +53,11 @@ router.post('/', auth_1.requireAuth, async (req, res) => {
         res.status(201).json(community);
     }
     catch (error) {
-        if (error instanceof zod_1.z.ZodError) {
-            return res.status(400).json({ error: 'Invalid input', details: error.issues });
-        }
         res.status(500).json({ error: 'Failed to create community' });
     }
 });
 // Join community
-router.post('/:id/join', auth_1.requireAuth, async (req, res) => {
+router.post('/:id/join', auth_1.requireAuth, (0, validate_1.validateRequest)({ params: zod_1.z.object({ id: zod_1.z.string() }) }), async (req, res) => {
     try {
         const { id } = req.params;
         const userId = req.user.userId;
@@ -83,10 +81,10 @@ router.delete('/:id/leave', auth_1.requireAuth, async (req, res) => {
     }
 });
 // Send message to community
-router.post('/:id/messages', auth_1.requireAuth, async (req, res) => {
+router.post('/:id/messages', auth_1.requireAuth, (0, validate_1.validateRequest)({ params: zod_1.z.object({ id: zod_1.z.string() }), body: sendMessageSchema }), async (req, res) => {
     try {
         const { id } = req.params;
-        const data = sendMessageSchema.parse(req.body);
+        const data = req.body;
         const senderId = req.user.userId;
         const message = await community_service_1.CommunityService.sendMessage({
             ...data,
@@ -96,9 +94,6 @@ router.post('/:id/messages', auth_1.requireAuth, async (req, res) => {
         res.status(201).json(message);
     }
     catch (error) {
-        if (error instanceof zod_1.z.ZodError) {
-            return res.status(400).json({ error: 'Invalid input', details: error.issues });
-        }
         res.status(500).json({ error: 'Failed to send message' });
     }
 });
