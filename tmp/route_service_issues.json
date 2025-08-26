@@ -1,0 +1,70 @@
+{
+  "media.routes.ts": {
+    "service": "MediaService",
+    "methods": {
+      "uploadProfilePhoto": { "status": "implemented" },
+      "uploadFile": { "status": "implemented", "notes": "now persists to media_assets" },
+      "getUserMedia": { "status": "implemented" },
+      "updateMediaMetadata": { "status": "implemented" },
+      "deleteMedia": { "status": "implemented" },
+      "getMediaById": { "status": "implemented" },
+      "startChunkedUpload": { "status": "implemented" },
+      "uploadChunk": { "status": "implemented" },
+      "completeChunkedUpload": { "status": "implemented" },
+      "getUploadProgress": { "status": "implemented" },
+      "cancelUploadSession": { "status": "implemented" },
+      "deleteFile": { "status": "implemented" }
+    }
+  },
+  "subscription.routes.ts": {
+    "service": "SubscriptionService",
+    "methods": {
+      "getPlans": { "status": "implemented" },
+      "getUserSubscription": { "status": "implemented" },
+      "createSubscription": { "status": "implemented", "notes": "placeholder payment flow — requires Stripe integration for paid plans" },
+      "cancelSubscription": { "status": "implemented" },
+      "getUsage": { "status": "implemented" },
+      "useBoost": { "status": "implemented" }
+    }
+  },
+  "messaging.routes.ts": {
+    "service": "MessagingService",
+    "methods": {
+      "sendMessage": { "status": "implemented" },
+      "getMatchMessages": { "status": "implemented" },
+      "markMessagesAsRead": { "status": "implemented" },
+      "getUnreadCount": { "status": "implemented" },
+      "deleteMessage": { "status": "implemented" },
+      "getMatchDetails": { "status": "implemented" },
+      "reportMessage": { "status": "implemented" }
+    }
+  },
+  "geospatial.service.ts (discovery.routes.ts)": {
+    "service": "GeospatialService",
+    "methods": {
+      "updateUserLocation": { "status": "implemented" },
+      "findNearby": { "status": "implemented" },
+      "getUsersNearUser": { "status": "implemented" },
+      "getDiscoveryFeed": { "status": "implemented", "notes": "age filtering TODO" },
+      "updateLocationAndGetNearby": { "status": "implemented" }
+    }
+  },
+  "stories.routes.ts": {
+    "service": "StoryService",
+    "methods": {
+      "createStory": { "status": "implemented" },
+      "getStoryById": { "status": "implemented" },
+      "updateStorySettings": { "status": "implemented" },
+      "deleteStory": { "status": "implemented" },
+      "getStoriesFeed": { "status": "implemented" },
+      "getUserStories": { "status": "implemented" },
+      "trackView": { "status": "implemented" },
+      "getStoryViewers": { "status": "implemented" },
+      "getStoryStats": { "status": "implemented" },
+      "getAnalyticsOverview": { "status": "implemented" },
+      "addToHighlights": { "status": "implemented" },
+      "getNearbyStories": { "status": "implemented" },
+      "cleanupExpiredStories": { "status": "implemented" }
+    }
+  }
+}
