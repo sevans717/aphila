@@ -560,6 +560,7 @@ router.delete('/:mediaId',
  */
 router.put('/:mediaId/favorite',
   requireAuth,
+  validateRequest({ body: z.object({ isFavorite: z.boolean().optional() }) }),
   async (req, res) => {
     try {
       const { mediaId } = req.params;

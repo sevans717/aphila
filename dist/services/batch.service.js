@@ -33,8 +33,7 @@ class BatchService {
                                 logger_1.logger.warn("Unsupported batch resource", {
                                     resource: op.resource,
                                 });
-                                return (0, error_1.handleServiceError)(err);
-                                // In dev, push an error result and continue
+                                // Record the failure and continue processing other operations
                                 results.push({ id: op.id, success: false, error: err.message });
                                 continue;
                             }
@@ -255,7 +254,6 @@ class BatchService {
                 const err = new Error(`Unsupported operation: ${op.operation}`);
                 logger_1.logger.warn("Unsupported batch operation", { operation: op.operation });
                 return (0, error_1.handleServiceError)(err);
-                return Promise.reject(err);
             }
         }
     }
@@ -280,7 +278,6 @@ class BatchService {
                     operation: op.operation,
                 });
                 return (0, error_1.handleServiceError)(err);
-                return Promise.reject(err);
             }
         }
     }
@@ -295,7 +292,6 @@ class BatchService {
                 const err = new Error(`Unsupported operation: ${op.operation}`);
                 logger_1.logger.warn("Unsupported user operation", { operation: op.operation });
                 return (0, error_1.handleServiceError)(err);
-                return Promise.reject(err);
             }
         }
     }
@@ -320,7 +316,6 @@ class BatchService {
                     operation: op.operation,
                 });
                 return (0, error_1.handleServiceError)(err);
-                return Promise.reject(err);
             }
         }
     }

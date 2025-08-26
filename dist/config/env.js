@@ -36,6 +36,7 @@ exports.env = {
     s3BucketName: process.env.S3_BUCKET_NAME,
     // Redis Config
     redisUrl: process.env.REDIS_URL || "redis://localhost:6379",
+    rateLimitRedisUrl: process.env.RATE_LIMIT_REDIS_URL || undefined,
     // Email Config
     smtpHost: process.env.SMTP_HOST,
     smtpPort: parseInt(process.env.SMTP_PORT || "587", 10),

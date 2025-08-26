@@ -297,9 +297,8 @@ class MediaService {
                 mediaId,
                 userId,
             });
-            if (env_1.env.nodeEnv === "production")
-                throw err;
-            return null;
+            // Use centralized handler to control throwing vs. rejection
+            return (0, error_1.handleServiceError)(err);
         }
         return await prisma_1.prisma.mediaAsset.update({
             where: { id: mediaId },
@@ -344,8 +343,10 @@ class MediaService {
         if (!session) {
             const err = new Error("Upload session not found or expired");
             logger_1.logger.warn("Upload chunk called for missing session", { sessionId });
+            // In production, handleServiceError will re-throw; in dev it rejects.
+            // Use centralized handler to keep behavior consistent across envs.
             if (env_1.env.nodeEnv === "production")
-                throw err;
+                return (0, error_1.handleServiceError)(err);
             // Dev-fallback: return empty progress so callers can handle gracefully
             return {
                 sessionId,
@@ -495,9 +496,7 @@ class MediaService {
             if (!media) {
                 const err = new Error("Media not found");
                 logger_1.logger.warn("generateThumbnail called for missing media", { mediaId });
-                if (env_1.env.nodeEnv === "production")
-                    throw err;
-                return null;
+                return (0, error_1.handleServiceError)(err);
             }
             // For now, return a placeholder thumbnail URL
             // In production, you'd use libraries like sharp, ffmpeg, etc.

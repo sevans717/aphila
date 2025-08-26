@@ -12,3 +12,9 @@ when working on phase plans, follow these guidelines:
 4. ensure backward compatibility
 5. document all changes thoroughly at the end of the last phase
 6. proceed, don’t stop for picks or any other type of user confirmation actions
+   Proceed / Continue is always confirmed, no need for user input
+   100% implementation/integration, so no need to ask user for choices
+   proceed with phase completion unless the user says ‘stop’
+   use ports in the 10000-10999 range for services
+   always separate css into its own file and avoid inline styles
+   always create the missing types, modules, variables, props, etc instead of removing

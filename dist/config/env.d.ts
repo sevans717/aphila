@@ -17,6 +17,7 @@ export declare const env: {
     awsSecretAccessKey: string | undefined;
     s3BucketName: string | undefined;
     redisUrl: string;
+    rateLimitRedisUrl: string | undefined;
     smtpHost: string | undefined;
     smtpPort: number;
     smtpUser: string | undefined;

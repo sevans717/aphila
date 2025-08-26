@@ -85,7 +85,7 @@ export interface CollectionShareSettings {
 export interface BookmarkFilters {
     collectionId?: string;
     tags?: string[];
-    type?: 'post' | 'media';
+    type?: "post" | "media";
     dateFrom?: Date;
     dateTo?: Date;
     hasNotes?: boolean;
@@ -94,8 +94,8 @@ export interface BookmarkSearchParams {
     query?: string;
     userId: string;
     filters?: BookmarkFilters;
-    sortBy?: 'created' | 'updated' | 'relevance';
-    sortOrder?: 'asc' | 'desc';
+    sortBy?: "created" | "updated" | "relevance";
+    sortOrder?: "asc" | "desc";
     limit?: number;
     offset?: number;
 }
@@ -119,7 +119,7 @@ export interface CollectionAnalytics {
 }
 export interface BulkBookmarkOperation {
     bookmarkIds: string[];
-    operation: 'move' | 'delete' | 'tag' | 'untag';
+    operation: "move" | "delete" | "tag" | "untag";
     targetCollectionId?: string;
     tags?: string[];
 }
@@ -128,7 +128,7 @@ export interface BookmarkExportData {
         name: string;
         description?: string;
         bookmarks: Array<{
-            type: 'post' | 'media';
+            type: "post" | "media";
             url: string;
             title?: string;
             notes?: string;
@@ -152,5 +152,11 @@ export declare class BookmarkService {
     static togglePostBookmark(userId: string, postId: string, collectionId?: string | null): Promise<ToggleResult>;
     static toggleMediaBookmark(userId: string, mediaId: string): Promise<ToggleResult>;
     static getBookmarkStats(userId: string): Promise<BookmarkStats>;
+    static listBookmarks(params: BookmarkSearchParams): Promise<{
+        items: BookmarkWithDetails[];
+        total: number;
+    }>;
+    static listCollectionsWithCounts(userId: string): Promise<CollectionWithDetails[]>;
+    static getCollectionAnalytics(collectionId: string): Promise<CollectionAnalytics>;
 }
 //# sourceMappingURL=bookmark.service.d.ts.map

@@ -458,7 +458,7 @@ router.delete('/:mediaId', auth_1.requireAuth, async (req, res) => {
  * Mark media as favorite
  * PUT /api/v1/media/:mediaId/favorite
  */
-router.put('/:mediaId/favorite', auth_1.requireAuth, async (req, res) => {
+router.put('/:mediaId/favorite', auth_1.requireAuth, (0, validate_1.validateRequest)({ body: zod_1.z.object({ isFavorite: zod_1.z.boolean().optional() }) }), async (req, res) => {
     try {
         const { mediaId } = req.params;
         const userId = req.user.userId;

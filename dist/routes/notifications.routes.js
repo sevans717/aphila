@@ -9,41 +9,40 @@ const analytics_service_1 = require("../services/analytics.service");
 const notification_service_1 = require("../services/notification.service");
 const logger_1 = require("../utils/logger");
 const router = (0, express_1.Router)();
-// Validation schemas
-const registerDeviceSchema = zod_1.z.object({
+// Validation schemas (match ValidationOptions shape)
+const registerDeviceSchema = {
     body: zod_1.z.object({
         fcmToken: zod_1.z.string().min(1),
-        platform: zod_1.z.enum(['ios', 'android', 'web']),
+        platform: zod_1.z.enum(["ios", "android", "web"]),
         deviceId: zod_1.z.string().min(1),
     }),
-});
-const unregisterDeviceSchema = zod_1.z.object({
-    body: zod_1.z.object({
-        deviceId: zod_1.z.string().min(1),
-    }),
-});
-const testNotificationSchema = zod_1.z.object({
+};
+const unregisterDeviceSchema = {
+    body: zod_1.z.object({ deviceId: zod_1.z.string().min(1) }),
+};
+const testNotificationSchema = {
     body: zod_1.z.object({
         title: zod_1.z.string().min(1),
         body: zod_1.z.string().min(1),
         data: zod_1.z.record(zod_1.z.string(), zod_1.z.string()).optional(),
         imageUrl: zod_1.z.string().url().optional(),
     }),
-});
+};
 /**
  * Register device for push notifications
  * POST /api/v1/notifications/register-device
  */
-router.post('/register-device', auth_1.auth, (0, validate_1.validate)(registerDeviceSchema), async (req, res) => {
+router.post("/register-device", auth_1.auth, (0, validate_1.validateRequest)(registerDeviceSchema), async (req, res) => {
     try {
         const { fcmToken, platform, deviceId } = req.body;
         const userId = req.user.userId;
-        const pushService = global.pushNotificationService;
+        const pushService = global
+            .pushNotificationService;
         await pushService.registerDevice(userId, fcmToken, platform, deviceId);
         // Track analytics
         await analytics_service_1.AnalyticsService.trackEvent({
             userId,
-            event: 'device_registered',
+            event: "device_registered",
             platform,
             properties: {
                 deviceId,
@@ -52,14 +51,14 @@ router.post('/register-device', auth_1.auth, (0, validate_1.validate)(registerDe
         });
         res.json({
             success: true,
-            message: 'Device registered for push notifications',
+            message: "Device registered for push notifications",
         });
     }
     catch (error) {
-        logger_1.logger.error('Failed to register device:', error);
+        logger_1.logger.error("Failed to register device:", error);
         res.status(500).json({
-            error: 'InternalServerError',
-            message: 'Failed to register device',
+            error: "InternalServerError",
+            message: "Failed to register device",
         });
     }
 });
@@ -67,31 +66,34 @@ router.post('/register-device', auth_1.auth, (0, validate_1.validate)(registerDe
  * Unregister device from push notifications
  * POST /api/v1/notifications/unregister-device
  */
-router.post('/unregister-device', auth_1.auth, (0, validate_1.validate)(unregisterDeviceSchema), async (req, res) => {
+router.post("/unregister-device", auth_1.auth, (0, validate_1.validateRequest)(unregisterDeviceSchema), async (req, res) => {
     try {
         const { deviceId } = req.body;
         const userId = req.user.userId;
-        const pushService = global.pushNotificationService;
+        const pushService = global
+            .pushNotificationService;
         await pushService.unregisterDevice(deviceId);
         // Track analytics
         await analytics_service_1.AnalyticsService.trackEvent({
             userId,
-            event: 'device_unregistered',
-            platform: req.headers['user-agent']?.includes('Mobile') ? 'mobile' : 'web',
+            event: "device_unregistered",
+            platform: req.headers["user-agent"]?.includes("Mobile")
+                ? "mobile"
+                : "web",
             properties: {
                 deviceId,
             },
         });
         res.json({
             success: true,
-            message: 'Device unregistered from push notifications',
+            message: "Device unregistered from push notifications",
         });
     }
     catch (error) {
-        logger_1.logger.error('Failed to unregister device:', error);
+        logger_1.logger.error("Failed to unregister device:", error);
         res.status(500).json({
-            error: 'InternalServerError',
-            message: 'Failed to unregister device',
+            error: "InternalServerError",
+            message: "Failed to unregister device",
         });
     }
 });
@@ -99,11 +101,12 @@ router.post('/unregister-device', auth_1.auth, (0, validate_1.validate)(unregist
  * Send test notification (for testing purposes)
  * POST /api/v1/notifications/test
  */
-router.post('/test', auth_1.auth, (0, validate_1.validate)(testNotificationSchema), async (req, res) => {
+router.post("/test", auth_1.auth, (0, validate_1.validateRequest)(testNotificationSchema), async (req, res) => {
     try {
         const { title, body, data, imageUrl } = req.body;
         const userId = req.user.userId;
-        const pushService = global.pushNotificationService;
+        const pushService = global
+            .pushNotificationService;
         const success = await pushService.sendToUser({
             userId,
             payload: {
@@ -116,8 +119,10 @@ router.post('/test', auth_1.auth, (0, validate_1.validate)(testNotificationSchem
         // Track analytics
         await analytics_service_1.AnalyticsService.trackEvent({
             userId,
-            event: 'test_notification_sent',
-            platform: req.headers['user-agent']?.includes('Mobile') ? 'mobile' : 'web',
+            event: "test_notification_sent",
+            platform: req.headers["user-agent"]?.includes("Mobile")
+                ? "mobile"
+                : "web",
             properties: {
                 title,
                 success,
@@ -125,14 +130,16 @@ router.post('/test', auth_1.auth, (0, validate_1.validate)(testNotificationSchem
         });
         res.json({
             success,
-            message: success ? 'Test notification sent' : 'Failed to send test notification',
+            message: success
+                ? "Test notification sent"
+                : "Failed to send test notification",
         });
     }
     catch (error) {
-        logger_1.logger.error('Failed to send test notification:', error);
+        logger_1.logger.error("Failed to send test notification:", error);
         res.status(500).json({
-            error: 'InternalServerError',
-            message: 'Failed to send test notification',
+            error: "InternalServerError",
+            message: "Failed to send test notification",
         });
     }
 });
@@ -140,7 +147,7 @@ router.post('/test', auth_1.auth, (0, validate_1.validate)(testNotificationSchem
  * Get notification settings
  * GET /api/v1/notifications/settings
  */
-router.get('/settings', auth_1.auth, async (req, res) => {
+router.get("/settings", auth_1.auth, async (req, res) => {
     try {
         const userId = req.user.userId;
         // Get user's notification preferences from settings
@@ -156,10 +163,10 @@ router.get('/settings', auth_1.auth, async (req, res) => {
         });
     }
     catch (error) {
-        logger_1.logger.error('Failed to get notification settings:', error);
+        logger_1.logger.error("Failed to get notification settings:", error);
         res.status(500).json({
-            error: 'InternalServerError',
-            message: 'Failed to get notification settings',
+            error: "InternalServerError",
+            message: "Failed to get notification settings",
         });
     }
 });
@@ -167,14 +174,14 @@ router.get('/settings', auth_1.auth, async (req, res) => {
  * Update notification settings
  * PUT /api/v1/notifications/settings
  */
-router.put('/settings', auth_1.auth, (0, validate_1.validate)(zod_1.z.object({
+router.put("/settings", auth_1.auth, (0, validate_1.validateRequest)({
     body: zod_1.z.object({
         enableSounds: zod_1.z.boolean().optional(),
         enableMatches: zod_1.z.boolean().optional(),
         enableMessages: zod_1.z.boolean().optional(),
         enableLikes: zod_1.z.boolean().optional(),
     }),
-})), async (req, res) => {
+}), async (req, res) => {
     try {
         const userId = req.user.userId;
         const { enableSounds } = req.body;
@@ -191,22 +198,24 @@ router.put('/settings', auth_1.auth, (0, validate_1.validate)(zod_1.z.object({
         // Track analytics
         await analytics_service_1.AnalyticsService.trackEvent({
             userId,
-            event: 'notification_settings_updated',
-            platform: req.headers['user-agent']?.includes('Mobile') ? 'mobile' : 'web',
+            event: "notification_settings_updated",
+            platform: req.headers["user-agent"]?.includes("Mobile")
+                ? "mobile"
+                : "web",
             properties: {
                 enableSounds,
             },
         });
         res.json({
             success: true,
-            message: 'Notification settings updated',
+            message: "Notification settings updated",
         });
     }
     catch (error) {
-        logger_1.logger.error('Failed to update notification settings:', error);
+        logger_1.logger.error("Failed to update notification settings:", error);
         res.status(500).json({
-            error: 'InternalServerError',
-            message: 'Failed to update notification settings',
+            error: "InternalServerError",
+            message: "Failed to update notification settings",
         });
     }
 });
@@ -214,7 +223,10 @@ router.put('/settings', auth_1.auth, (0, validate_1.validate)(zod_1.z.object({
  * Subscribe to topic (for community notifications)
  * POST /api/v1/notifications/subscribe/:topic
  */
-router.post('/subscribe/:topic', auth_1.auth, async (req, res) => {
+const topicParamSchema = {
+    params: zod_1.z.object({ topic: zod_1.z.string().min(1) }),
+};
+router.post("/subscribe/:topic", auth_1.auth, (0, validate_1.validateRequest)(topicParamSchema), async (req, res) => {
     try {
         const { topic } = req.params;
         const userId = req.user.userId;
@@ -227,14 +239,17 @@ router.post('/subscribe/:topic', auth_1.auth, async (req, res) => {
             },
             select: { fcmToken: true },
         });
-        const pushService = global.pushNotificationService;
+        const pushService = global
+            .pushNotificationService;
         // Subscribe all user's devices to the topic
         await Promise.all(devices.map((device) => pushService.subscribeToTopic(device.fcmToken, topic)));
         // Track analytics
         await analytics_service_1.AnalyticsService.trackEvent({
             userId,
-            event: 'topic_subscribed',
-            platform: req.headers['user-agent']?.includes('Mobile') ? 'mobile' : 'web',
+            event: "topic_subscribed",
+            platform: req.headers["user-agent"]?.includes("Mobile")
+                ? "mobile"
+                : "web",
             properties: {
                 topic,
                 deviceCount: devices.length,
@@ -246,10 +261,10 @@ router.post('/subscribe/:topic', auth_1.auth, async (req, res) => {
         });
     }
     catch (error) {
-        logger_1.logger.error('Failed to subscribe to topic:', error);
+        logger_1.logger.error("Failed to subscribe to topic:", error);
         res.status(500).json({
-            error: 'InternalServerError',
-            message: 'Failed to subscribe to topic',
+            error: "InternalServerError",
+            message: "Failed to subscribe to topic",
         });
     }
 });
@@ -257,7 +272,7 @@ router.post('/subscribe/:topic', auth_1.auth, async (req, res) => {
  * Unsubscribe from topic
  * POST /api/v1/notifications/unsubscribe/:topic
  */
-router.post('/unsubscribe/:topic', auth_1.auth, async (req, res) => {
+router.post("/unsubscribe/:topic", auth_1.auth, (0, validate_1.validateRequest)(topicParamSchema), async (req, res) => {
     try {
         const { topic } = req.params;
         const userId = req.user.userId;
@@ -270,14 +285,17 @@ router.post('/unsubscribe/:topic', auth_1.auth, async (req, res) => {
             },
             select: { fcmToken: true },
         });
-        const pushService = global.pushNotificationService;
+        const pushService = global
+            .pushNotificationService;
         // Unsubscribe all user's devices from the topic
         await Promise.all(devices.map((device) => pushService.unsubscribeFromTopic(device.fcmToken, topic)));
         // Track analytics
         await analytics_service_1.AnalyticsService.trackEvent({
             userId,
-            event: 'topic_unsubscribed',
-            platform: req.headers['user-agent']?.includes('Mobile') ? 'mobile' : 'web',
+            event: "topic_unsubscribed",
+            platform: req.headers["user-agent"]?.includes("Mobile")
+                ? "mobile"
+                : "web",
             properties: {
                 topic,
                 deviceCount: devices.length,
@@ -289,10 +307,10 @@ router.post('/unsubscribe/:topic', auth_1.auth, async (req, res) => {
         });
     }
     catch (error) {
-        logger_1.logger.error('Failed to unsubscribe from topic:', error);
+        logger_1.logger.error("Failed to unsubscribe from topic:", error);
         res.status(500).json({
-            error: 'InternalServerError',
-            message: 'Failed to unsubscribe from topic',
+            error: "InternalServerError",
+            message: "Failed to unsubscribe from topic",
         });
     }
 });
@@ -300,22 +318,30 @@ router.post('/unsubscribe/:topic', auth_1.auth, async (req, res) => {
  * List notifications
  * GET /api/v1/notifications
  */
-router.get('/', auth_1.auth, async (req, res) => {
+router.get("/", auth_1.auth, async (req, res) => {
     try {
         const { cursor, limit } = req.query;
         const userId = req.user.userId;
-        const result = await notification_service_1.NotificationService.list(userId, { cursor, limit: limit ? parseInt(limit, 10) : undefined });
+        const result = await notification_service_1.NotificationService.list(userId, {
+            cursor,
+            limit: limit ? parseInt(limit, 10) : undefined,
+        });
         res.json({ success: true, data: result });
     }
     catch (err) {
-        res.status(500).json({ success: false, message: 'Failed to list notifications' });
+        res
+            .status(500)
+            .json({ success: false, message: "Failed to list notifications" });
     }
 });
 /**
  * Mark notifications as read
  * POST /api/v1/notifications/mark-read
  */
-router.post('/mark-read', auth_1.auth, async (req, res) => {
+const markReadSchema = {
+    body: zod_1.z.object({ ids: zod_1.z.array(zod_1.z.string().uuid()).optional() }),
+};
+router.post("/mark-read", auth_1.auth, (0, validate_1.validateRequest)(markReadSchema), async (req, res) => {
     try {
         const userId = req.user.userId;
         const ids = req.body.ids || [];
@@ -323,21 +349,23 @@ router.post('/mark-read', auth_1.auth, async (req, res) => {
         res.json({ success: true, data: result });
     }
     catch (err) {
-        res.status(500).json({ success: false, message: 'Failed to mark read' });
+        res.status(500).json({ success: false, message: "Failed to mark read" });
     }
 });
 /**
  * Mark all notifications as read
  * POST /api/v1/notifications/mark-all-read
  */
-router.post('/mark-all-read', auth_1.auth, async (req, res) => {
+router.post("/mark-all-read", auth_1.auth, async (req, res) => {
     try {
         const userId = req.user.userId;
         const result = await notification_service_1.NotificationService.markAllRead(userId);
         res.json({ success: true, data: result });
     }
     catch (err) {
-        res.status(500).json({ success: false, message: 'Failed to mark all read' });
+        res
+            .status(500)
+            .json({ success: false, message: "Failed to mark all read" });
     }
 });
 exports.default = router;
