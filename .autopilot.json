@@ -1,0 +1,7 @@
+{
+  "autoProceed": true,
+  "autoCommit": false,
+  "autoCreateIssues": true,
+  "runIntervalMinutes": 60,
+  "notes": "Control file for the local/CI autopilot runner. Set autoCommit=true to allow automatic commits (requires safe tokens)."
+}
