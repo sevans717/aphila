@@ -1,0 +1,12 @@
+Category,Service,Free tier,Notes,Pros,Cons
+Auth,Firebase Authentication,Yes (free tier),Email/password and social providers; phone auth has quotas and additional setup,Excellent mobile SDKs and easy setup; free for basic usage,Phone auth can incur costs or limits; vendor lock-in
+Auth,Keycloak (self-hosted),Completely free (OSS),Self-hosted OIDC/OAuth2 provider,Highly customizable and free; good for privacy and SSO,Requires infra and ops knowledge
+Chat,Firebase Firestore (chat),Yes (free quotas in Spark),Use Firestore collections for messages; scale costs with reads/writes,Very easy to implement real-time listeners; free for development,Costs grow with read/write volume; not purpose-built chat features
+Chat,Socket.IO (self-hosted),Completely free (OSS),WebSocket-based self-hosted chat,Full control and free software; works with server scaling,Requires server infra and scaling patterns (Redis adapter)
+Chat,Stream Chat,Limited free tier,Managed chat API with SDKs and moderation,Feature-rich, scalable, and focused on chat; paid beyond free tier,Cost after free quota; vendor cost for scale
+Media,Cloudinary,Yes (free tier),Image/video transforms and CDN,Powerful transformations, moderation, and CDN; quick to integrate,Free tier generous for MVP; costs when scaling
+Media,Firebase Storage,Yes (free quotas),S3-like storage backed by Google Cloud,Easy integration with Firebase SDKs; good mobile UX,Free tier limited; storage/bandwidth costs apply for scale
+Media,MinIO (self-hosted),Completely free (OSS),S3-compatible object storage,Free and self-hostable; S3 API compatible,Requires ops for availability/backups
+SMS,Twilio,Trial credits only (pay-per-message),Industry-standard SMS/Verify; pay per message,Global reach and reliability; programmable,No permanent free tier; SMS costs vary by region
+SMS,Nexmo/Vonage,Trial credits only (pay-per-message),Alternative global SMS provider,Good coverage and developer tools,Costs per message; setup for production
+SMS,Firebase Phone Auth,Limited free usage (quotas),Phone-based verification via Firebase,Integrated with Firebase Auth; simple for mobile,Has quotas and rate limits; abuse protection required

@@ -1,0 +1,44 @@
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-sav3}
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sav3-network
+
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Force the runtime DATABASE_URL to point to the Compose `db` service so
+      # the API inside the container can reach Postgres at hostname `db`.
+      DATABASE_URL: "postgresql://postgres:postgres@db:5432/sav3"
+      JWT_SECRET: ${JWT_SECRET:-change_me}
+      PORT: ${PORT:-4000}
+      NODE_ENV: ${NODE_ENV:-development}
+    ports:
+      - "4000:4000"
+    command: sh -c "npx prisma migrate deploy && node dist/server.js"
+    networks:
+      - sav3-network
+
+volumes:
+  db-data:
+
+networks:
+  sav3-network:
+    driver: bridge

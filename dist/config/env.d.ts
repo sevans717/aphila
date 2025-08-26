@@ -1,0 +1,34 @@
+export declare const env: {
+    nodeEnv: string;
+    port: number;
+    databaseUrl: string;
+    jwtSecret: string;
+    jwtExpiresIn: string;
+    jwtRefreshSecret: string;
+    jwtRefreshExpiresIn: string;
+    rateLimitWindowMs: number;
+    rateLimitMax: number;
+    corsOrigins: string[];
+    firebaseProjectId: string | undefined;
+    firebasePrivateKey: string | undefined;
+    firebaseClientEmail: string | undefined;
+    awsRegion: string;
+    awsAccessKeyId: string | undefined;
+    awsSecretAccessKey: string | undefined;
+    s3BucketName: string | undefined;
+    redisUrl: string;
+    smtpHost: string | undefined;
+    smtpPort: number;
+    smtpUser: string | undefined;
+    smtpPassword: string | undefined;
+    emailFrom: string;
+    appUrl: string;
+    frontendUrl: string;
+    enablePushNotifications: boolean;
+    enableEmailNotifications: boolean;
+    enableGeospatial: boolean;
+    enableAnalytics: boolean;
+    maxFileSize: number;
+    allowedFileTypes: string[];
+};
+//# sourceMappingURL=env.d.ts.map

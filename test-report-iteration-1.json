@@ -1,0 +1,226 @@
+{
+  "iteration": 1,
+  "timestamp": "2025-08-16T07:22:50.644Z",
+  "summary": {
+    "total": 33,
+    "passed": 26,
+    "failed": 2,
+    "errors": 0,
+    "skipped": 5
+  },
+  "results": [
+    {
+      "category": "Infrastructure",
+      "testName": "Server Health Check",
+      "status": "PASS",
+      "duration": 207
+    },
+    {
+      "category": "Infrastructure",
+      "testName": "Database Connection",
+      "status": "PASS",
+      "duration": 468
+    },
+    {
+      "category": "Infrastructure",
+      "testName": "TypeScript Compilation",
+      "status": "FAIL",
+      "error": "Command failed: npx tsc --noEmit",
+      "duration": 55884,
+      "suggestions": [
+        "Fix TypeScript compilation errors",
+        "Check type definitions"
+      ]
+    },
+    {
+      "category": "Authentication",
+      "testName": "User Registration",
+      "status": "FAIL",
+      "error": "read ECONNRESET",
+      "duration": 214,
+      "suggestions": []
+    },
+    {
+      "category": "Authentication",
+      "testName": "Get Current User",
+      "status": "SKIP",
+      "error": "No auth token available",
+      "duration": 1
+    },
+    {
+      "category": "Messaging",
+      "testName": "Send Message",
+      "status": "SKIP",
+      "error": "No auth token available",
+      "duration": 0
+    },
+    {
+      "category": "Messaging",
+      "testName": "Get Unread Count",
+      "status": "SKIP",
+      "error": "No auth token available",
+      "duration": 1
+    },
+    {
+      "category": "Subscription",
+      "testName": "Get Plans",
+      "status": "PASS",
+      "duration": 60
+    },
+    {
+      "category": "Subscription",
+      "testName": "Get Current Subscription",
+      "status": "SKIP",
+      "error": "No auth token available",
+      "duration": 1
+    },
+    {
+      "category": "Discovery",
+      "testName": "Get Communities",
+      "status": "PASS",
+      "duration": 396
+    },
+    {
+      "category": "Discovery",
+      "testName": "Get Categories",
+      "status": "PASS",
+      "duration": 198
+    },
+    {
+      "category": "WebSocket",
+      "testName": "WebSocket Connection",
+      "status": "SKIP",
+      "error": "No auth token available for authenticated WebSocket",
+      "duration": 1,
+      "suggestions": [
+        "Ensure login succeeds before WebSocket test"
+      ]
+    },
+    {
+      "category": "Services",
+      "testName": "analytics Service Structure",
+      "status": "PASS",
+      "duration": 0
+    },
+    {
+      "category": "Services",
+      "testName": "batch Service Structure",
+      "status": "PASS",
+      "duration": 0
+    },
+    {
+      "category": "Services",
+      "testName": "bookmark Service Structure",
+      "status": "PASS",
+      "duration": 0
+    },
+    {
+      "category": "Services",
+      "testName": "category Service Structure",
+      "status": "PASS",
+      "duration": 0
+    },
+    {
+      "category": "Services",
+      "testName": "community Service Structure",
+      "status": "PASS",
+      "duration": 0
+    },
+    {
+      "category": "Services",
+      "testName": "discovery Service Structure",
+      "status": "PASS",
+      "duration": 0
+    },
+    {
+      "category": "Services",
+      "testName": "friendship Service Structure",
+      "status": "PASS",
+      "duration": 0
+    },
+    {
+      "category": "Services",
+      "testName": "geospatial Service Structure",
+      "status": "PASS",
+      "duration": 0
+    },
+    {
+      "category": "Services",
+      "testName": "media Service Structure",
+      "status": "PASS",
+      "duration": 0
+    },
+    {
+      "category": "Services",
+      "testName": "messaging Service Structure",
+      "status": "PASS",
+      "duration": 0
+    },
+    {
+      "category": "Services",
+      "testName": "moderation Service Structure",
+      "status": "PASS",
+      "duration": 0
+    },
+    {
+      "category": "Services",
+      "testName": "notification Service Structure",
+      "status": "PASS",
+      "duration": 0
+    },
+    {
+      "category": "Services",
+      "testName": "post Service Structure",
+      "status": "PASS",
+      "duration": 0
+    },
+    {
+      "category": "Services",
+      "testName": "push-notification Service Structure",
+      "status": "PASS",
+      "duration": 0
+    },
+    {
+      "category": "Services",
+      "testName": "search Service Structure",
+      "status": "PASS",
+      "duration": 0
+    },
+    {
+      "category": "Services",
+      "testName": "sharing Service Structure",
+      "status": "PASS",
+      "duration": 0
+    },
+    {
+      "category": "Services",
+      "testName": "social Service Structure",
+      "status": "PASS",
+      "duration": 0
+    },
+    {
+      "category": "Services",
+      "testName": "story Service Structure",
+      "status": "PASS",
+      "duration": 0
+    },
+    {
+      "category": "Services",
+      "testName": "subscription Service Structure",
+      "status": "PASS",
+      "duration": 0
+    },
+    {
+      "category": "Services",
+      "testName": "user Service Structure",
+      "status": "PASS",
+      "duration": 0
+    },
+    {
+      "category": "Services",
+      "testName": "websocket Service Structure",
+      "status": "PASS",
+      "duration": 0
+    }
+  ]
+}

@@ -1,0 +1,940 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum MatchStatus {
+  ACTIVE
+  UNMATCHED
+  BLOCKED
+}
+
+enum Orientation {
+  STRAIGHT
+  GAY
+  BISEXUAL
+  OTHER
+}
+
+enum SubscriptionType {
+  FREE
+  PREMIUM
+  PLUS
+}
+
+enum VerificationType {
+  EMAIL
+  PHONE
+  SELFIE
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum AdminActionType {
+  BAN
+  UNBAN
+  WARNING
+  DELETE_CONTENT
+}
+
+// New enums for categories, communities, friendships, boosts, media & settings
+enum CategoryType {
+  ART
+  FASHION
+  FOOD
+  SPORTS
+  MUSIC
+  GAMING
+  TECH
+  TRAVEL
+  CASUAL
+  SERIOUS
+  FRIENDS
+  FUN
+  OTHER
+}
+
+enum CommunityVisibility {
+  PUBLIC
+  PRIVATE
+  SECRET
+}
+
+enum MembershipRole {
+  MEMBER
+  MODERATOR
+  ADMIN
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  BLOCKED
+}
+
+enum BoostType {
+  PROFILE
+  COMMUNITY
+}
+
+enum BoostStatus {
+  SCHEDULED
+  ACTIVE
+  EXPIRED
+  CANCELLED
+}
+
+enum MediaType {
+  IMAGE
+  VIDEO
+  GIF
+  OTHER
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  isActive  Boolean  @default(true)
+  isAdmin   Boolean  @default(false)
+  lastLogin DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  profile         Profile?
+  photos          Photo[]
+  interests       Interest[]        @relation("UserInterests")
+  sentLikes       Like[]            @relation("UserSentLikes")
+  receivedLikes   Like[]            @relation("UserReceivedLikes")
+  initiatedMatches Match[]          @relation("MatchInitiator")
+  receivedMatches  Match[]          @relation("MatchReceiver")
+  sentMessages    Message[]         @relation("MessageSender")
+  receivedMessages Message[]        @relation("MessageReceiver")
+  sentReports     Report[]          @relation("ReportSender")
+  receivedReports Report[]          @relation("ReportReceived")
+  blocking        Block[]           @relation("UserBlocking")
+  blockedBy       Block[]           @relation("UserBlocked")
+  subscription    Subscription?
+  verifications   Verification[]
+  adminActions    AdminAction[]     @relation("AdminActions")
+  userActions     AdminAction[]     @relation("UserActions")
+  notifications   Notification[]
+  devices         Device[]
+  // New relations
+  categoryMemberships  CategoryMembership[]
+  communityMemberships CommunityMembership[]
+  communityMessages    CommunityMessage[] @relation("CommunityMessageSender")
+  friendshipsInitiated Friendship[]        @relation("FriendshipRequester")
+  friendshipsReceived  Friendship[]        @relation("FriendshipAddressee")
+  boosts               Boost[]
+  mediaAssets          MediaAsset[]
+  settings             UserSetting?
+  privacySetting       PrivacySetting?
+  filterSettings       FilterSetting[]
+  ownedCommunities     Community[]       @relation("UserOwnedCommunities")
+  
+  // Phase 1-8: Advanced Media Operations Relations
+  posts                Post[]               @relation("UserPosts")
+  postLikes            PostLike[]           @relation("UserPostLikes")
+  postComments         PostComment[]        @relation("UserPostComments")
+  commentLikes         CommentLike[]        @relation("UserCommentLikes")
+  postBookmarks        PostBookmark[]       @relation("UserPostBookmarks")
+  collections          Collection[]         @relation("UserCollections")
+  mediaBookmarks       MediaBookmark[]      @relation("UserMediaBookmarks")
+  postShares           PostShare[]          @relation("UserPostShares")
+  mediaShares          MediaShare[]         @relation("UserMediaShares")
+  stories              Story[]              @relation("UserStories")
+  storyViews           StoryView[]          @relation("UserStoryViews")
+  postReports          PostReport[]         @relation("UserPostReports")
+  contentViews         ContentView[]        @relation("UserContentViews")
+  searchQueries        SearchQuery[]        @relation("UserSearches")
+
+  @@index([email])
+  @@index([isActive])
+  @@index([lastLogin])
+  @@index([createdAt])
+  @@map("users")
+}
+
+model Profile {
+  id           String      @id @default(cuid())
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String      @unique
+  displayName  String
+  bio          String?
+  birthdate    DateTime
+  gender       Gender
+  orientation  Orientation
+  location     String?
+  latitude     Float?
+  longitude    Float?
+  maxDistance  Int         @default(50) // in km
+  ageMin       Int         @default(18)
+  ageMax       Int         @default(65)
+  showMe       Orientation @default(STRAIGHT)
+  isVisible    Boolean     @default(true)
+  isVerified   Boolean     @default(false)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([gender])
+  @@index([orientation])
+  @@index([isVisible])
+  @@index([isVerified])
+  @@index([latitude, longitude])
+  @@index([birthdate])
+  @@map("profiles")
+}
+
+model Photo {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  url       String
+  isPrimary Boolean  @default(false)
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@map("photos")
+}
+
+model Interest {
+  id          String @id @default(cuid())
+  name        String @unique
+  description String?
+  users       User[] @relation("UserInterests")
+
+  @@map("interests")
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  liker     User     @relation("UserSentLikes", fields: [likerId], references: [id], onDelete: Cascade)
+  likerId   String
+  liked     User     @relation("UserReceivedLikes", fields: [likedId], references: [id], onDelete: Cascade)
+  likedId   String
+  isSuper   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@unique([likerId, likedId])
+  @@map("likes")
+}
+
+model Match {
+  id         String      @id @default(cuid())
+  initiator  User        @relation("MatchInitiator", fields: [initiatorId], references: [id], onDelete: Cascade)
+  initiatorId String
+  receiver   User        @relation("MatchReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  receiverId String
+  status     MatchStatus @default(ACTIVE)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  messages   Message[]
+
+  @@unique([initiatorId, receiverId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("matches")
+}
+
+model Message {
+  id         String   @id @default(cuid())
+  match      Match    @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  matchId    String
+  sender     User     @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  senderId   String
+  receiver   User     @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  receiverId String
+  content    String
+  messageType String  @default("text") // text, image, gif, etc.
+  isRead     Boolean  @default(false)
+  readAt     DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([matchId, createdAt])
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([isRead])
+  @@map("messages")
+}
+
+model Report {
+  id         String   @id @default(cuid())
+  reporter   User     @relation("ReportSender", fields: [reporterId], references: [id], onDelete: Cascade)
+  reporterId String
+  reported   User     @relation("ReportReceived", fields: [reportedId], references: [id], onDelete: Cascade)
+  reportedId String
+  reason     String
+  details    String?
+  status     String   @default("pending") // pending, reviewed, resolved
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("reports")
+}
+
+model Block {
+  id        String   @id @default(cuid())
+  blockedBy User     @relation("UserBlocking", fields: [blockerId], references: [id], onDelete: Cascade)
+  blockerId String
+  blocked   User     @relation("UserBlocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  blockedId String
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@unique([blockerId, blockedId])
+  @@map("blocks")
+}
+
+model Subscription {
+  id              String           @id @default(cuid())
+  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId          String           @unique
+  type            SubscriptionType @default(FREE)
+  isActive        Boolean          @default(false)
+  startDate       DateTime?
+  endDate         DateTime?
+  autoRenew       Boolean          @default(false)
+  stripeCustomerId String?
+  stripePriceId   String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@map("subscriptions")
+}
+
+model Verification {
+  id          String             @id @default(cuid())
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  type        VerificationType
+  status      VerificationStatus @default(PENDING)
+  data        String? // phone number, image URL, etc.
+  verifiedAt  DateTime?
+  expiresAt   DateTime?
+  attempts    Int                @default(0)
+  maxAttempts Int                @default(3)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@unique([userId, type])
+  @@map("verifications")
+}
+
+model AdminAction {
+  id          String          @id @default(cuid())
+  admin       User            @relation("AdminActions", fields: [adminId], references: [id])
+  adminId     String
+  targetUser  User            @relation("UserActions", fields: [targetUserId], references: [id])
+  targetUserId String
+  action      AdminActionType
+  reason      String
+  details     String?
+  isActive    Boolean         @default(true)
+  expiresAt   DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@map("admin_actions")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  type      String   // match, message, like, etc.
+  title     String
+  body      String
+  data      Json?    // additional payload
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
+
+model Device {
+  id           String    @id @default(cuid())
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  fcmToken     String?   @unique
+  platform     String    // ios, android, web
+  deviceId     String    @unique
+  isActive     Boolean   @default(true)
+  lastUsedAt   DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@map("devices")
+}
+
+// New models
+model Category {
+  id          String               @id @default(cuid())
+  slug        String               @unique
+  name        String
+  description String?
+  type        CategoryType?
+  isActive    Boolean              @default(true)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  memberships CategoryMembership[]
+  communities Community[]
+  boosts      Boost[]
+
+  @@index([type])
+  @@map("categories")
+}
+
+model CategoryMembership {
+  id         String     @id @default(cuid())
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  category   Category   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  categoryId String
+  role       MembershipRole @default(MEMBER)
+  joinedAt   DateTime   @default(now())
+
+  @@unique([userId, categoryId])
+  @@index([categoryId])
+  @@map("category_memberships")
+}
+
+model Community {
+  id          String               @id @default(cuid())
+  category    Category?            @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  categoryId  String?
+  owner       User                 @relation("UserOwnedCommunities", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId     String
+  name        String
+  description String?
+  visibility  CommunityVisibility  @default(PUBLIC)
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  memberships CommunityMembership[]
+  messages    CommunityMessage[]
+  boosts      Boost[]
+  
+  // Phase 1-8: Advanced Media Operations Relations
+  posts       Post[]
+  postShares  PostShare[]
+
+  @@index([categoryId])
+  @@index([ownerId])
+  @@map("communities")
+}
+
+model CommunityMembership {
+  id          String          @id @default(cuid())
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  community   Community       @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  communityId String
+  role        MembershipRole  @default(MEMBER)
+  joinedAt    DateTime        @default(now())
+
+  @@unique([userId, communityId])
+  @@index([communityId])
+  @@map("community_memberships")
+}
+
+model CommunityMessage {
+  id          String     @id @default(cuid())
+  community   Community  @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  communityId String
+  sender      User       @relation("CommunityMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  senderId    String
+  content     String
+  messageType String     @default("text")
+  createdAt   DateTime   @default(now())
+  editedAt    DateTime?
+
+  @@index([communityId])
+  @@index([senderId])
+  @@map("community_messages")
+}
+
+model Friendship {
+  id           String           @id @default(cuid())
+  requester    User             @relation("FriendshipRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  requesterId  String
+  addressee    User             @relation("FriendshipAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+  addresseeId  String
+  status       FriendshipStatus @default(PENDING)
+  createdAt    DateTime         @default(now())
+  respondedAt  DateTime?
+
+  @@unique([requesterId, addresseeId])
+  @@index([addresseeId])
+  @@map("friendships")
+}
+
+model Boost {
+  id          String      @id @default(cuid())
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  type        BoostType
+  category    Category?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  categoryId  String?
+  community   Community?  @relation(fields: [communityId], references: [id], onDelete: SetNull)
+  communityId String?
+  startAt     DateTime
+  endAt       DateTime
+  status      BoostStatus @default(SCHEDULED)
+  priority    Int         @default(0)
+  createdAt   DateTime    @default(now())
+
+  @@index([userId])
+  @@index([categoryId])
+  @@index([communityId])
+  @@map("boosts")
+}
+
+model MediaAsset {
+  id           String    @id @default(cuid())
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId       String
+  url          String
+  type         MediaType @default(IMAGE)
+  isFavorite   Boolean   @default(false)
+  usedInProfile Boolean  @default(false)
+  width        Int?
+  height       Int?
+  duration     Int?      // seconds for video/gif
+  createdAt    DateTime  @default(now())
+  
+  // Phase 1-8: Advanced Media Operations Relations
+  postMedia      PostMedia[]
+  mediaBookmarks MediaBookmark[]
+  mediaShares    MediaShare[]
+  stories        Story[]
+  mediaTags      MediaTag[]
+
+  @@index([userId])
+  @@index([isFavorite])
+  @@map("media_assets")
+}
+
+model UserSetting {
+  id               String   @id @default(cuid())
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId           String   @unique
+  darkMode         Boolean  @default(false)
+  showOnlineStatus Boolean  @default(true)
+  hudCompact       Boolean  @default(false)
+  enableSounds     Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@map("user_settings")
+}
+
+model PrivacySetting {
+  id                String   @id @default(cuid())
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId            String   @unique
+  showAge           Boolean  @default(true)
+  showDistance      Boolean  @default(true)
+  searchable        Boolean  @default(true)
+  allowMessagesFrom String   @default("matches") // matches, friends, anyone
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("privacy_settings")
+}
+
+model FilterSetting {
+  id          String      @id @default(cuid())
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  name        String
+  minAge      Int?
+  maxAge      Int?
+  maxDistance Int?
+  orientation Orientation?
+  createdAt   DateTime    @default(now())
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("filter_settings")
+}
+
+// Phase 1: Posts & Content System
+model Post {
+  id          String    @id @default(cuid())
+  author      User      @relation("UserPosts", fields: [authorId], references: [id], onDelete: Cascade)
+  authorId    String
+  community   Community? @relation(fields: [communityId], references: [id], onDelete: SetNull)
+  communityId String?
+  
+  content     String?
+  mediaAssets PostMedia[]
+  
+  type        PostType  @default(REGULAR)
+  visibility  PostVisibility @default(PUBLIC)
+  
+  likesCount     Int @default(0)
+  commentsCount  Int @default(0)
+  sharesCount    Int @default(0)
+  viewsCount     Int @default(0)
+  
+  isEdited    Boolean   @default(false)
+  editedAt    DateTime?
+  isPinned    Boolean   @default(false)
+  isArchived  Boolean   @default(false)
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  likes       PostLike[]
+  comments    PostComment[]
+  shares      PostShare[]
+  bookmarks   PostBookmark[]
+  reports     PostReport[]
+  tags        PostTag[]
+  views       ContentView[]
+  
+  @@index([authorId])
+  @@index([communityId])
+  @@index([createdAt])
+  @@index([visibility])
+  @@map("posts")
+}
+
+model PostMedia {
+  id       String     @id @default(cuid())
+  post     Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId   String
+  media    MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  mediaId  String
+  order    Int        @default(0)
+  caption  String?
+  
+  @@unique([postId, mediaId])
+  @@index([postId])
+  @@map("post_media")
+}
+
+enum PostType {
+  REGULAR
+  STORY
+  REEL
+  POLL
+  EVENT
+  ANNOUNCEMENT
+}
+
+enum PostVisibility {
+  PUBLIC
+  FRIENDS
+  COMMUNITY
+  PRIVATE
+}
+
+// Phase 2: Social Interactions System
+model PostLike {
+  id      String   @id @default(cuid())
+  user    User     @relation("UserPostLikes", fields: [userId], references: [id], onDelete: Cascade)
+  userId  String
+  post    Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId  String
+  type    LikeType @default(LIKE)
+  createdAt DateTime @default(now())
+  
+  @@unique([userId, postId])
+  @@index([postId])
+  @@map("post_likes")
+}
+
+model PostComment {
+  id       String    @id @default(cuid())
+  user     User      @relation("UserPostComments", fields: [userId], references: [id], onDelete: Cascade)
+  userId   String
+  post     Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId   String
+  parent   PostComment? @relation("CommentReplies", fields: [parentId], references: [id])
+  parentId String?
+  
+  content  String
+  mediaUrl String?
+  
+  likesCount Int @default(0)
+  repliesCount Int @default(0)
+  
+  isEdited Boolean   @default(false)
+  editedAt DateTime?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  replies  PostComment[] @relation("CommentReplies")
+  likes    CommentLike[]
+  
+  @@index([postId])
+  @@index([userId])
+  @@index([parentId])
+  @@map("post_comments")
+}
+
+model CommentLike {
+  id        String      @id @default(cuid())
+  user      User        @relation("UserCommentLikes", fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  comment   PostComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId String
+  createdAt DateTime    @default(now())
+  
+  @@unique([userId, commentId])
+  @@map("comment_likes")
+}
+
+enum LikeType {
+  LIKE
+  LOVE
+  LAUGH
+  WOW
+  SAD
+  ANGRY
+}
+
+// Phase 3: Bookmarks & Favorites System
+model PostBookmark {
+  id         String     @id @default(cuid())
+  user       User       @relation("UserPostBookmarks", fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  post       Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId     String
+  collection Collection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
+  collectionId String?
+  createdAt  DateTime   @default(now())
+  
+  @@unique([userId, postId])
+  @@index([userId])
+  @@index([collectionId])
+  @@map("post_bookmarks")
+}
+
+model Collection {
+  id          String         @id @default(cuid())
+  user        User           @relation("UserCollections", fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  name        String
+  description String?
+  isPublic    Boolean        @default(false)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  
+  bookmarks   PostBookmark[]
+  
+  @@index([userId])
+  @@map("collections")
+}
+
+model MediaBookmark {
+  id        String     @id @default(cuid())
+  user      User       @relation("UserMediaBookmarks", fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  media     MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  mediaId   String
+  tags      String[]   @default([])
+  createdAt DateTime   @default(now())
+  
+  @@unique([userId, mediaId])
+  @@index([userId])
+  @@map("media_bookmarks")
+}
+
+// Phase 4: Sharing & Reposting System
+model PostShare {
+  id         String    @id @default(cuid())
+  user       User      @relation("UserPostShares", fields: [userId], references: [id], onDelete: Cascade)
+  userId     String
+  post       Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId     String
+  
+  shareType  ShareType @default(REPOST)
+  platform   String?   // external platform if shared outside app
+  comment    String?   // user's comment when sharing
+  
+  community  Community? @relation(fields: [communityId], references: [id], onDelete: SetNull)
+  communityId String?
+  
+  createdAt  DateTime  @default(now())
+  
+  @@index([userId])
+  @@index([postId])
+  @@index([shareType])
+  @@map("post_shares")
+}
+
+model MediaShare {
+  id        String     @id @default(cuid())
+  user      User       @relation("UserMediaShares", fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  media     MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  mediaId   String
+  
+  shareType ShareType  @default(DIRECT)
+  platform  String?
+  comment   String?
+  
+  createdAt DateTime   @default(now())
+  
+  @@index([userId])
+  @@index([mediaId])
+  @@map("media_shares")
+}
+
+enum ShareType {
+  REPOST      // Share as new post
+  DIRECT      // Direct message
+  EXTERNAL    // Share to external platform
+  STORY       // Share to story
+  COPY_LINK   // Copy link
+}
+
+// Phase 5: Stories & Temporary Content
+model Story {
+  id        String     @id @default(cuid())
+  user      User       @relation("UserStories", fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  media     MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  mediaId   String
+  
+  caption   String?
+  duration  Int        @default(24) // hours
+  viewsCount Int       @default(0)
+  
+  isHighlight Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime   @default(now())
+  
+  views     StoryView[]
+  contentViews ContentView[]
+  
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("stories")
+}
+
+model StoryView {
+  id      String   @id @default(cuid())
+  story   Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  storyId String
+  viewer  User     @relation("UserStoryViews", fields: [viewerId], references: [id], onDelete: Cascade)
+  viewerId String
+  viewedAt DateTime @default(now())
+  
+  @@unique([storyId, viewerId])
+  @@map("story_views")
+}
+
+// Phase 6: Content Curation & AI Features
+model ContentTag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  category  String?
+  isSystem  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  posts     PostTag[]
+  media     MediaTag[]
+  
+  @@map("content_tags")
+}
+
+model PostTag {
+  id     String     @id @default(cuid())
+  post   Post       @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId String
+  tag    ContentTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId  String
+  
+  @@unique([postId, tagId])
+  @@map("post_tags")
+}
+
+model MediaTag {
+  id      String     @id @default(cuid())
+  media   MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  mediaId String
+  tag     ContentTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  tagId   String
+  
+  @@unique([mediaId, tagId])
+  @@map("media_tags")
+}
+
+// Phase 7: Content Reports
+model PostReport {
+  id       String    @id @default(cuid())
+  reporter User      @relation("UserPostReports", fields: [reporterId], references: [id], onDelete: Cascade)
+  reporterId String
+  post     Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId   String
+  reason   String
+  details  String?
+  status   String    @default("pending")
+  createdAt DateTime @default(now())
+  
+  @@index([postId])
+  @@index([reporterId])
+  @@map("post_reports")
+}
+
+// Phase 8: Search & Feed Analytics
+model ContentView {
+  id        String     @id @default(cuid())
+  user      User       @relation("UserContentViews", fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  post      Post?      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    String?
+  story     Story?     @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  storyId   String?
+  duration  Int?       // seconds viewed
+  viewedAt  DateTime   @default(now())
+  
+  @@index([userId])
+  @@index([postId])
+  @@index([storyId])
+  @@map("content_views")
+}
+
+model SearchQuery {
+  id        String   @id @default(cuid())
+  user      User     @relation("UserSearches", fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  query     String
+  results   Int      @default(0)
+  clicked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  @@index([userId])
+  @@index([query])
+  @@map("search_queries")
+}

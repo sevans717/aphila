@@ -1,0 +1,14 @@
+[build]
+  publish = "dist"
+  functions = "netlify/functions"
+
+[dev]
+  port = 8888
+  publish = "dist"
+  functions = "netlify/functions"
+
+[[redirects]]
+  from = "/api/*"
+  to = "http://localhost:4000/api/v1/:splat"
+  status = 200
+  force = true
