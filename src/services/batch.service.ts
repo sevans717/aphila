@@ -64,8 +64,7 @@ export class BatchService {
                 logger.warn("Unsupported batch resource", {
                   resource: op.resource,
                 });
-                return handleServiceError(err);
-                // In dev, push an error result and continue
+                // Record the failure and continue processing other operations
                 results.push({ id: op.id, success: false, error: err.message });
                 continue;
               }
@@ -307,7 +306,6 @@ export class BatchService {
         const err = new Error(`Unsupported operation: ${op.operation}`);
         logger.warn("Unsupported batch operation", { operation: op.operation });
         return handleServiceError(err);
-        return Promise.reject(err) as any;
       }
     }
   }
@@ -336,7 +334,6 @@ export class BatchService {
           operation: op.operation,
         });
         return handleServiceError(err);
-        return Promise.reject(err) as any;
       }
     }
   }
@@ -355,7 +352,6 @@ export class BatchService {
         const err = new Error(`Unsupported operation: ${op.operation}`);
         logger.warn("Unsupported user operation", { operation: op.operation });
         return handleServiceError(err);
-        return Promise.reject(err) as any;
       }
     }
   }
@@ -384,7 +380,6 @@ export class BatchService {
           operation: op.operation,
         });
         return handleServiceError(err);
-        return Promise.reject(err) as any;
       }
     }
   }
