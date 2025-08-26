@@ -1,4 +1,4 @@
-import { SubscriptionType } from "@prisma/client";
+// avoid importing generated enum types directly; use strings for type-safety compatibility
 import { prisma } from "../lib/prisma";
 
 // using shared singleton `prisma` from src/lib/prisma
@@ -129,16 +129,16 @@ export class SubscriptionService {
     }
   }
 
-  private static mapPlanIdToSubscriptionEnum(planId: string): SubscriptionType {
+  private static mapPlanIdToSubscriptionEnum(planId: string): string {
     switch (planId) {
       case "premium":
       case "premium_yearly":
-        return SubscriptionType.PREMIUM;
+        return "PREMIUM";
       case "gold":
       case "plus":
-        return SubscriptionType.PLUS;
+        return "PLUS";
       default:
-        return SubscriptionType.FREE;
+        return "FREE";
     }
   }
 

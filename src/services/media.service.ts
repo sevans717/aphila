@@ -1,17 +1,17 @@
-import { MediaType, PrismaClient } from '@prisma/client';
-import AWS from 'aws-sdk';
-import { promises as fs } from 'fs';
-import path from 'path';
-import { v4 as uuidv4 } from 'uuid';
-import { env } from '../config/env';
-import { logger } from '../utils/logger';
+import { PrismaClient } from "@prisma/client";
+import { prisma } from "../lib/prisma";
+import AWS from "aws-sdk";
+import { promises as fs } from "fs";
+import path from "path";
+import { v4 as uuidv4 } from "uuid";
+import { env } from "../config/env";
+import { logger } from "../utils/logger";
 
-const prisma = new PrismaClient();
-
+// using shared singleton `prisma` from src/lib/prisma
 interface UploadResult {
   id: string;
   url: string;
-  type: MediaType;
+  type: string;
   width?: number;
   height?: number;
   duration?: number;
@@ -47,12 +47,15 @@ interface UploadProgress {
 }
 
 export class MediaService {
-  private static readonly UPLOAD_DIR = process.env.UPLOAD_DIR || './uploads';
-  private static readonly THUMBNAIL_DIR = path.join(this.UPLOAD_DIR, 'thumbnails');
+  private static readonly UPLOAD_DIR = process.env.UPLOAD_DIR || "./uploads";
+  private static readonly THUMBNAIL_DIR = path.join(
+    this.UPLOAD_DIR,
+    "thumbnails"
+  );
   private static readonly CHUNK_SIZE = 1024 * 1024; // 1MB chunks
   private static s3: AWS.S3 | null = null;
   private static uploadSessions: Map<string, ChunkedUploadSession> = new Map();
-  
+
   static {
     // Initialize S3 if credentials are available
     if (env.awsAccessKeyId && env.awsSecretAccessKey && env.s3BucketName) {
@@ -78,24 +81,32 @@ export class MediaService {
     } catch {
       await fs.mkdir(this.THUMBNAIL_DIR, { recursive: true });
     }
-    logger.info('Upload directory initialized');
+    logger.info("Upload directory initialized");
   }
 
   // Upload file (supports both local and S3)
-  static async uploadFile(file: FileUpload, userId: string, uploadType?: string): Promise<UploadResult> {
+  static async uploadFile(
+    file: FileUpload,
+    userId: string,
+    uploadType?: string
+  ): Promise<UploadResult> {
     // Validate file size
     if (file.size > env.maxFileSize) {
-      throw new Error(`File size exceeds limit (${env.maxFileSize / 1024 / 1024}MB)`);
+      throw new Error(
+        `File size exceeds limit (${env.maxFileSize / 1024 / 1024}MB)`
+      );
     }
 
     // Validate file type
     if (!env.allowedFileTypes.includes(file.mimetype)) {
-      throw new Error(`Invalid file type. Allowed: ${env.allowedFileTypes.join(', ')}`);
+      throw new Error(
+        `Invalid file type. Allowed: ${env.allowedFileTypes.join(", ")}`
+      );
     }
 
     // Determine media type
     const mediaType = this.getMediaType(file.mimetype);
-    
+
     // Generate unique filename
     const fileExtension = path.extname(file.originalname);
     const filename = `${userId}/${uuidv4()}${fileExtension}`;
@@ -111,7 +122,7 @@ export class MediaService {
           Key: filename,
           Body: file.buffer,
           ContentType: file.mimetype,
-          ACL: 'public-read',
+          ACL: "public-read",
         };
 
         const result = await this.s3.upload(uploadParams).promise();
@@ -125,14 +136,14 @@ export class MediaService {
       }
 
       // Extract metadata if it's an image or video
-      if (file.mimetype.startsWith('image/')) {
+      if (file.mimetype.startsWith("image/")) {
         metadata = await this.extractImageMetadata(file.buffer);
-      } else if (file.mimetype.startsWith('video/')) {
+      } else if (file.mimetype.startsWith("video/")) {
         metadata = await this.extractVideoMetadata(file.buffer);
       }
 
       logger.info(`File uploaded successfully: ${filename}`);
-      
+
       return {
         id: uuidv4(), // Will be replaced with actual DB ID
         url,
@@ -144,72 +155,82 @@ export class MediaService {
         mimeType: file.mimetype,
       };
     } catch (error: any) {
-      logger.error('Failed to upload file:', error);
-      throw new Error('File upload failed');
+      logger.error("Failed to upload file:", error);
+      throw new Error("File upload failed");
     }
   }
 
   // Delete file (supports both local and S3)
   static async deleteFile(url: string): Promise<void> {
     try {
-      if (this.s3 && env.s3BucketName && url.includes('amazonaws.com')) {
+      if (this.s3 && env.s3BucketName && url.includes("amazonaws.com")) {
         // Delete from S3
-        const key = url.split('/').slice(-2).join('/'); // Extract key from URL
-        await this.s3.deleteObject({
-          Bucket: env.s3BucketName,
-          Key: key,
-        }).promise();
+        const key = url.split("/").slice(-2).join("/"); // Extract key from URL
+        await this.s3
+          .deleteObject({
+            Bucket: env.s3BucketName,
+            Key: key,
+          })
+          .promise();
       } else {
         // Delete from local storage
-        const filename = url.replace('/uploads/', '');
+        const filename = url.replace("/uploads/", "");
         const filepath = path.join(this.UPLOAD_DIR, filename);
         await fs.unlink(filepath);
       }
-      
+
       logger.info(`File deleted successfully: ${url}`);
     } catch (error: any) {
-      logger.error('Failed to delete file:', error);
+      logger.error("Failed to delete file:", error);
       // Don't throw error for file deletion failures
     }
   }
 
   // Get media type from MIME type
-  private static getMediaType(mimeType: string): MediaType {
-    if (mimeType.startsWith('image/')) {
-      return mimeType === 'image/gif' ? 'GIF' : 'IMAGE';
-    } else if (mimeType.startsWith('video/')) {
-      return 'VIDEO';
+  private static getMediaType(mimeType: string): string {
+    if (mimeType.startsWith("image/")) {
+      return mimeType === "image/gif" ? "GIF" : "IMAGE";
+    } else if (mimeType.startsWith("video/")) {
+      return "VIDEO";
     } else {
-      return 'OTHER';
+      return "OTHER";
     }
   }
 
   // Extract image metadata (width, height)
-  private static async extractImageMetadata(buffer: Buffer): Promise<{ width?: number; height?: number }> {
+  private static async extractImageMetadata(
+    buffer: Buffer
+  ): Promise<{ width?: number; height?: number }> {
     try {
       // This is a simplified implementation
       // In production, you'd use a library like 'sharp' or 'image-size'
       return { width: 1080, height: 1080 }; // Placeholder
     } catch (error: any) {
-      logger.warn('Failed to extract image metadata:', error);
+      logger.warn("Failed to extract image metadata:", error);
       return {};
     }
   }
 
   // Extract video metadata (width, height, duration)
-  private static async extractVideoMetadata(buffer: Buffer): Promise<{ width?: number; height?: number; duration?: number }> {
+  private static async extractVideoMetadata(
+    buffer: Buffer
+  ): Promise<{ width?: number; height?: number; duration?: number }> {
     try {
       // This is a simplified implementation
       // In production, you'd use ffmpeg or similar
       return { width: 1920, height: 1080, duration: 30 }; // Placeholder
     } catch (error: any) {
-      logger.warn('Failed to extract video metadata:', error);
+      logger.warn("Failed to extract video metadata:", error);
       return {};
     }
   }
 
   // Upload profile photo
-  static async uploadProfilePhoto(file: FileUpload, userId: string, isPrimary: boolean = false) {
+  static async uploadProfilePhoto(
+    file: FileUpload,
+    userId: string,
+    isPrimary: boolean = false
+  ) {
     const uploadResult = await this.uploadFile(file, userId);
 
     // Create photo record
@@ -237,21 +258,21 @@ export class MediaService {
 
   // Get user's media assets
   static async getUserMedia(
-    userId: string, 
+    userId: string,
     options: {
-      type?: MediaType;
+      type?: string;
       limit?: number;
       offset?: number;
     } = {}
   ) {
     const { type, limit = 20, offset = 0 } = options;
-    
+
     const where: any = { userId };
     if (type) where.type = type;
 
     return await prisma.mediaAsset.findMany({
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       take: limit,
       skip: offset,
     });
@@ -264,7 +285,7 @@ export class MediaService {
     });
 
     if (!media) {
-      throw new Error('Media not found');
+      throw new Error("Media not found");
     }
 
     // Delete physical file
@@ -276,9 +297,9 @@ export class MediaService {
     });
 
     // If it was an image, also delete from photos table
-    if (media.type === 'IMAGE' || media.type === 'GIF') {
+    if (media.type === "IMAGE" || media.type === "GIF") {
       await prisma.photo.deleteMany({
-        where: { 
+        where: {
           userId: media.userId,
           url: media.url,
         },
@@ -289,9 +310,12 @@ export class MediaService {
   }
 
   // Generate signed URL for private files (S3 only)
-  static async getSignedUrl(key: string, expiresIn: number = 3600): Promise<string> {
+  static async getSignedUrl(
+    key: string,
+    expiresIn: number = 3600
+  ): Promise<string> {
     if (!this.s3 || !env.s3BucketName) {
-      throw new Error('S3 not configured');
+      throw new Error("S3 not configured");
     }
 
     const params = {
@@ -300,7 +324,7 @@ export class MediaService {
       Expires: expiresIn,
     };
 
-    return this.s3.getSignedUrl('getObject', params);
+    return this.s3.getSignedUrl("getObject", params);
   }
 
   // Get media asset by ID
@@ -334,7 +358,7 @@ export class MediaService {
     });
 
     if (!media) {
-      throw new Error('Media not found');
+      throw new Error("Media not found");
     }
 
     return await prisma.mediaAsset.update({
@@ -355,7 +379,7 @@ export class MediaService {
         await fs.access(filepath);
         return filepath;
       } catch {
-        throw new Error('File not found');
+        throw new Error("File not found");
       }
     }
   }
@@ -391,11 +415,11 @@ export class MediaService {
   // Get upload statistics
   static async getUploadStats(userId?: string) {
     const where = userId ? { userId } : {};
-    
+
     const [total, byType, recentUploads] = await Promise.all([
       prisma.mediaAsset.count({ where }),
       prisma.mediaAsset.groupBy({
-        by: ['type'],
+        by: ["type"],
         where,
         _count: { id: true },
       }),
@@ -450,7 +474,7 @@ export class MediaService {
       this.uploadSessions.delete(sessionId);
     }, 24 * 60 * 60 * 1000);
 
-    logger.info('Chunked upload session started:', {
+    logger.info("Chunked upload session started:", {
       sessionId,
       userId,
       filename,
@@ -471,7 +495,7 @@ export class MediaService {
   ): UploadProgress {
     const session = this.uploadSessions.get(sessionId);
     if (!session) {
-      throw new Error('Upload session not found or expired');
+      throw new Error("Upload session not found or expired");
     }
 
     // Store chunk
@@ -479,10 +503,12 @@ export class MediaService {
     session.uploadedChunks = session.chunks.size;
 
     const progress = (session.uploadedChunks / session.totalChunks) * 100;
-    const uploadedBytes = Array.from(session.chunks.values())
-      .reduce((total, chunk) => total + chunk.length, 0);
+    const uploadedBytes = Array.from(session.chunks.values()).reduce(
+      (total, chunk) => total + chunk.length,
+      0
+    );
 
-    logger.debug('Chunk uploaded:', {
+    logger.debug("Chunk uploaded:", {
       sessionId,
       chunkIndex,
       uploadedChunks: session.uploadedChunks,
@@ -503,15 +529,15 @@ export class MediaService {
    */
   static async completeChunkedUpload(
     sessionId: string,
-    uploadType: 'image' | 'video' | 'audio' | 'document' = 'image'
+    uploadType: "image" | "video" | "audio" | "document" = "image"
   ): Promise<UploadResult> {
     const session = this.uploadSessions.get(sessionId);
     if (!session) {
-      throw new Error('Upload session not found or expired');
+      throw new Error("Upload session not found or expired");
     }
 
     if (session.uploadedChunks !== session.totalChunks) {
-      throw new Error('Not all chunks have been uploaded');
+      throw new Error("Not all chunks have been uploaded");
     }
 
     try {
@@ -536,12 +562,16 @@ export class MediaService {
       };
 
       // Upload using existing upload method
-      const result = await this.uploadFile(fileUpload, session.userId, uploadType);
+      const result = await this.uploadFile(
+        fileUpload,
+        session.userId,
+        uploadType
+      );
 
       // Cleanup session
       this.uploadSessions.delete(sessionId);
 
-      logger.info('Chunked upload completed:', {
+      logger.info("Chunked upload completed:", {
         sessionId,
         userId: session.userId,
         filename: session.filename,
@@ -551,7 +581,7 @@ export class MediaService {
 
       return result;
     } catch (error: any) {
-      logger.error('Failed to complete chunked upload:', error);
+      logger.error("Failed to complete chunked upload:", error);
       // Cleanup session on error
       this.uploadSessions.delete(sessionId);
       throw error;
@@ -568,8 +598,10 @@ export class MediaService {
     }
 
     const progress = (session.uploadedChunks / session.totalChunks) * 100;
-    const uploadedBytes = Array.from(session.chunks.values())
-      .reduce((total, chunk) => total + chunk.length, 0);
+    const uploadedBytes = Array.from(session.chunks.values()).reduce(
+      (total, chunk) => total + chunk.length,
+      0
+    );
 
     return {
       sessionId,
@@ -585,7 +617,7 @@ export class MediaService {
   static cancelUploadSession(sessionId: string): boolean {
     const deleted = this.uploadSessions.delete(sessionId);
     if (deleted) {
-      logger.info('Upload session cancelled:', { sessionId });
+      logger.info("Upload session cancelled:", { sessionId });
     }
     return deleted;
   }
@@ -596,21 +628,22 @@ export class MediaService {
   private static getMimeTypeFromExtension(filename: string): string {
     const ext = path.extname(filename).toLowerCase();
     const mimeTypes: Record<string, string> = {
-      '.jpg': 'image/jpeg',
-      '.jpeg': 'image/jpeg',
-      '.png': 'image/png',
-      '.gif': 'image/gif',
-      '.webp': 'image/webp',
-      '.mp4': 'video/mp4',
-      '.avi': 'video/x-msvideo',
-      '.mov': 'video/quicktime',
-      '.mp3': 'audio/mpeg',
-      '.wav': 'audio/wav',
-      '.pdf': 'application/pdf',
-      '.doc': 'application/msword',
-      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      ".jpg": "image/jpeg",
+      ".jpeg": "image/jpeg",
+      ".png": "image/png",
+      ".gif": "image/gif",
+      ".webp": "image/webp",
+      ".mp4": "video/mp4",
+      ".avi": "video/x-msvideo",
+      ".mov": "video/quicktime",
+      ".mp3": "audio/mpeg",
+      ".wav": "audio/wav",
+      ".pdf": "application/pdf",
+      ".doc": "application/msword",
+      ".docx":
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     };
-    return mimeTypes[ext] || 'application/octet-stream';
+    return mimeTypes[ext] || "application/octet-stream";
   }
 
   /**
@@ -618,7 +651,7 @@ export class MediaService {
    */
   static async generateThumbnail(
     mediaId: string,
-    type: MediaType
+    type: string
   ): Promise<string | null> {
     try {
       const media = await prisma.mediaAsset.findUnique({
@@ -626,14 +659,14 @@ export class MediaService {
       });
 
       if (!media) {
-        throw new Error('Media not found');
+        throw new Error("Media not found");
       }
 
       // For now, return a placeholder thumbnail URL
       // In production, you'd use libraries like sharp, ffmpeg, etc.
       const thumbnailUrl = `/uploads/thumbnails/${mediaId}_thumb.jpg`;
 
-      logger.info('Thumbnail generated:', {
+      logger.info("Thumbnail generated:", {
         mediaId,
         type,
         thumbnailUrl,
@@ -641,7 +674,7 @@ export class MediaService {
 
       return thumbnailUrl;
     } catch (error: any) {
-      logger.error('Failed to generate thumbnail:', error);
+      logger.error("Failed to generate thumbnail:", error);
       return null;
     }
   }
