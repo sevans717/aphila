@@ -39,6 +39,7 @@ export const env = {
 
   // Redis Config
   redisUrl: process.env.REDIS_URL || "redis://localhost:6379",
+  rateLimitRedisUrl: process.env.RATE_LIMIT_REDIS_URL || undefined,
 
   // Email Config
   smtpHost: process.env.SMTP_HOST,

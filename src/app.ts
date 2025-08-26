@@ -67,13 +67,11 @@ app.use(
       stack: err.stack,
       path: req.path,
     });
-    res
-      .status(500)
-      .json({
-        success: false,
-        message:
-          env.nodeEnv === "production" ? "Internal server error" : err.message,
-      });
+    res.status(500).json({
+      success: false,
+      message:
+        env.nodeEnv === "production" ? "Internal server error" : err.message,
+    });
   }
 );
 
