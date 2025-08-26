@@ -351,14 +351,38 @@ export class GeospatialService {
       });
 
       // Filter by age and orientation preferences
+      // Ensure we have birthdate available by re-querying IDs with birthdate if necessary
+      const userIds = nearbyUsers.map(u => u!.id);
+      const profiles = await prisma.profile.findMany({
+        where: { userId: { in: userIds } },
+        select: { userId: true, birthdate: true },
+      });
+
+      const profileByUserId: Record<string, { birthdate: Date | null }> = {};
+      profiles.forEach(p => {
+        profileByUserId[p.userId] = { birthdate: p.birthdate ? new Date(p.birthdate) : null } as any;
+      });
+
+      const calcAge = (birthdate?: Date | null) => {
+        if (!birthdate) return null;
+        const diff = Date.now() - birthdate.getTime();
+        const ageDt = new Date(diff);
+        return Math.abs(ageDt.getUTCFullYear() - 1970);
+      };
+
       const filteredUsers = nearbyUsers.filter(user => {
-        if (!user.profile) return false;
-        
-        // Calculate age from birthdate if available
-        // This would need the birthdate field to be included in the query
-        
-        // For now, just return all nearby users
-        return true;
+        if (!user || !user.profile) return false;
+
+        const p = profileByUserId[user.id];
+        const age = calcAge(p?.birthdate ?? null);
+
+        // If age is not available, include user (fallback)
+        if (age === null) return true;
+
+        const min = userProfile.ageMin ?? 18;
+        const max = userProfile.ageMax ?? 120;
+
+        return age >= min && age <= max;
       });
 
       return filteredUsers.slice(0, limit);
