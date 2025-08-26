@@ -23,3 +23,11 @@ async function loginHandler(req: any, res: any) {
 }
 
 export { loginHandler, registerHandler };
+
+async function meHandler(req: any, res: any) {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+  return res.json({ user: { id: user.userId, email: user.email } });
+}
+
+export { meHandler };
