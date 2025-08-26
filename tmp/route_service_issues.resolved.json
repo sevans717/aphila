@@ -87,10 +87,8 @@
         "handlerToken": "refreshHandler",
         "resolved": "import:../controllers/auth.controller",
         "importFile": "../controllers/auth.controller",
-        "importPath": null,
-        "exports": [
-          "refreshHandler"
-        ]
+        "importPath": "src/controllers/auth.controller.ts",
+        "exports": ["refreshHandler"]
       }
     }
   },
