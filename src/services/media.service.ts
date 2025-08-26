@@ -459,8 +459,9 @@ export class MediaService {
     if (!session) {
       const err = new Error("Upload session not found or expired");
       logger.warn("Upload chunk called for missing session", { sessionId });
-      // In production, handleServiceError will re-throw; in dev it rejects
-      if (env.nodeEnv === "production") throw err;
+      // In production, handleServiceError will re-throw; in dev it rejects.
+      // Use centralized handler to keep behavior consistent across envs.
+      if (env.nodeEnv === "production") return handleServiceError(err) as any;
       // Dev-fallback: return empty progress so callers can handle gracefully
       return {
         sessionId,
