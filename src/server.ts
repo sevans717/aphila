@@ -14,6 +14,31 @@ async function startServer() {
     console.log(`📁 Current working directory: ${process.cwd()}`);
     console.log(`🌐 Environment: ${env.nodeEnv}`);
     
+    // Quick DB connectivity check (helps detect PgBouncer issues early)
+    const maxRetries = 5;
+    const retryDelayMs = 2000;
+    let attempt = 0;
+    async function checkDb() {
+      attempt++;
+      try {
+        // Use a minimal Prisma query to validate connection
+        await prisma.$queryRaw`SELECT 1`;
+        console.log('✅ Database connectivity OK');
+        return true;
+      } catch (dbErr) {
+        logger.warn(`DB connectivity check failed (attempt ${attempt}/${maxRetries})`, { err: dbErr });
+        if (attempt < maxRetries) {
+          await new Promise(r => setTimeout(r, retryDelayMs));
+          return checkDb();
+        }
+        logger.error('DB connectivity check failed after retries; continuing startup but Prisma may fail at runtime', { err: dbErr });
+        return false;
+      }
+    }
+
+    // Run check but don't block startup indefinitely
+    checkDb().catch(err => logger.error('Unexpected error during DB check', { err }));
+    
     appServer = server.listen(env.port, '0.0.0.0', () => {
       console.log(`✅ Server successfully listening on http://0.0.0.0:${env.port}`);
       console.log(`🔗 Health check: http://localhost:${env.port}/health`);
