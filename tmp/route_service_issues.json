@@ -1,229 +1,716 @@
 {
-  "media.routes.ts": { "service": "MediaService", "status": "scanned", "methods": {} },
-  "subscription.routes.ts": { "service": "SubscriptionService", "status": "scanned", "methods": {} },
-  "messaging.routes.ts": { "service": "MessagingService", "status": "scanned", "methods": {} },
-  "discovery.routes.ts": { "service": "GeospatialService", "status": "scanned", "methods": {} },
-  "geospatial.routes.ts": { "service": "GeospatialService", "status": "scanned", "methods": {} },
-  "stories.routes.ts": { "service": "StoryService", "status": "scanned", "methods": {} },
-  "batch.routes.ts": { "service": "BatchService", "status": "scanned", "methods": {} },
-  "analytics.routes.ts": { "service": "AnalyticsService", "status": "not-scanned", "methods": {} },
-  "auth.ts": { "service": "AuthService", "status": "not-scanned", "methods": {} },
-  "bookmarks.routes.ts": { "service": "BookmarksService", "status": "not-scanned", "methods": {} },
-  "categories.routes.ts": { "service": "CategoriesService", "status": "not-scanned", "methods": {} },
-  "communities.routes.ts": { "service": "CommunitiesService", "status": "not-scanned", "methods": {} },
-  "config.routes.ts": { "service": "ConfigService", "status": "not-scanned", "methods": {} },
-  "user.routes.ts": { "service": "UserService", "status": "not-scanned", "methods": {} },
-  "social.routes.ts": { "service": "SocialService", "status": "not-scanned", "methods": {} },
-  "sharing.routes.ts": { "service": "SharingService", "status": "not-scanned", "methods": {} },
-  "search.routes.ts": { "service": "SearchService", "status": "not-scanned", "methods": {} },
-  "realtime.routes.ts": { "service": "RealtimeService", "status": "not-scanned", "methods": {} },
-  "posts.routes.ts": { "service": "PostsService", "status": "not-scanned", "methods": {} },
-  "notifications.routes.ts": { "service": "NotificationsService", "status": "not-scanned", "methods": {} },
-  "moderation.routes.ts": { "service": "ModerationService", "status": "not-scanned", "methods": {} },
-  "mobile.routes.ts": { "service": "MobileService", "status": "not-scanned", "methods": {} },
-  "index.ts": { "service": "IndexRoutes", "status": "not-scanned", "methods": {} }
-}
-{
+  "analytics.routes.ts": {
+    "service": "AnalyticsService",
+    "status": "scanned",
+    "methods": {
+      "POST /event": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "POST /session/start": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "POST /session/end": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "POST /swipe": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "POST /feature": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /metrics/users": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /metrics/engagement": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /metrics/platforms": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /funnel": {
+        "status": "scanned",
+        "handler": "auth"
+      }
+    }
+  },
+  "auth.ts": {
+    "service": "AuthService",
+    "status": "scanned",
+    "methods": {
+      "POST /register": {
+        "status": "scanned",
+        "handler": "validate(registerSchema"
+      },
+      "POST /login": {
+        "status": "scanned",
+        "handler": "validate(loginSchema"
+      },
+      "GET /me": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "POST /refresh": {
+        "status": "scanned",
+        "handler": "refreshHandler"
+      }
+    }
+  },
+  "batch.routes.ts": {
+    "service": "BatchService",
+    "status": "scanned",
+    "methods": {
+      "POST /operations": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "POST /sync": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "POST /fetch": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "GET /health": {
+        "status": "scanned",
+        "handler": "async"
+      }
+    }
+  },
+  "bookmarks.routes.ts": {
+    "service": "BookmarksService",
+    "status": "scanned",
+    "methods": {
+      "POST /collections": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /collections": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "POST /posts/:postId/toggle": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "POST /media/:mediaId/toggle": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /stats": {
+        "status": "scanned",
+        "handler": "auth"
+      }
+    }
+  },
+  "categories.routes.ts": {
+    "service": "CategoriesService",
+    "status": "scanned",
+    "methods": {
+      "GET /": {
+        "status": "scanned",
+        "handler": "async"
+      },
+      "GET /:slug": {
+        "status": "scanned",
+        "handler": "async"
+      },
+      "POST /:categoryId/join": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "DELETE /:categoryId/leave": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "GET /user/me": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      }
+    }
+  },
+  "communities.routes.ts": {
+    "service": "CommunitiesService",
+    "status": "scanned",
+    "methods": {
+      "GET /": {
+        "status": "scanned",
+        "handler": "async"
+      },
+      "GET /:id": {
+        "status": "scanned",
+        "handler": "async"
+      },
+      "POST /": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "POST /:id/join": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "DELETE /:id/leave": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "POST /:id/messages": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      }
+    }
+  },
+  "config.routes.ts": {
+    "service": "ConfigService",
+    "status": "scanned",
+    "methods": {
+      "GET /features": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /version": {
+        "status": "scanned",
+        "handler": "async"
+      },
+      "GET /status": {
+        "status": "scanned",
+        "handler": "async"
+      },
+      "GET /maintenance": {
+        "status": "scanned",
+        "handler": "async"
+      }
+    }
+  },
+  "discovery.routes.ts": {
+    "service": "DiscoveryService",
+    "status": "scanned",
+    "methods": {
+      "GET /discover": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "POST /swipe": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "GET /matches": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "GET /likes": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "GET /communities": {
+        "status": "scanned",
+        "handler": "async"
+      }
+    }
+  },
+  "geospatial.routes.ts": {
+    "service": "GeospatialService",
+    "status": "scanned",
+    "methods": {
+      "POST /location": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /location": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /nearby": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /discovery": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "POST /update-and-discover": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /in-range/:userId": {
+        "status": "scanned",
+        "handler": "auth"
+      }
+    }
+  },
+  "index.ts": {
+    "service": "IndexService",
+    "status": "scanned",
+    "methods": {
+      "GET /health": {
+        "status": "scanned",
+        "handler": "(_req"
+      },
+      "GET /me": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      }
+    }
+  },
   "media.routes.ts": {
     "service": "MediaService",
+    "status": "scanned",
     "methods": {
-      "uploadProfilePhoto": { "status": "implemented" },
-      "uploadFile": {
-        "status": "implemented",
-        "notes": "now persists to media_assets"
+      "POST /chunked/start": {
+        "status": "scanned",
+        "handler": "requireAuth"
       },
-      "getUserMedia": { "status": "implemented" },
-      "updateMediaMetadata": { "status": "implemented" },
-      "deleteMedia": { "status": "implemented" },
-      "getMediaById": { "status": "implemented" },
-      "startChunkedUpload": { "status": "implemented" },
-      "uploadChunk": { "status": "implemented" },
-      "completeChunkedUpload": { "status": "implemented" },
-      "getUploadProgress": { "status": "implemented" },
-      "cancelUploadSession": { "status": "implemented" },
-      {
-        "media.routes.ts": {
-          "service": "MediaService",
-          "methods": {
-            "uploadProfilePhoto": { "status": "implemented" },
-            "uploadFile": { "status": "implemented", "notes": "persists to media_assets" },
-            "getUserMedia": { "status": "implemented" },
-            "updateMediaMetadata": { "status": "implemented" },
-            "deleteMedia": { "status": "implemented" },
-            "getMediaById": { "status": "implemented" },
-            "startChunkedUpload": { "status": "implemented" },
-            "uploadChunk": { "status": "implemented" },
-            "completeChunkedUpload": { "status": "implemented" },
-            "getUploadProgress": { "status": "implemented" },
-            "cancelUploadSession": { "status": "implemented" },
-            "deleteFile": { "status": "implemented" }
-          }
-        },
-        "subscription.routes.ts": {
-          "service": "SubscriptionService",
-          "methods": {
-            "getPlans": { "status": "implemented" },
-            "getUserSubscription": { "status": "implemented" },
-            "createSubscription": { "status": "implemented", "notes": "dev payment bypass (DISABLE_PAYMENTS=true) — Stripe required in prod" },
-            "cancelSubscription": { "status": "implemented" },
-            "getUsage": { "status": "implemented" },
-            "useBoost": { "status": "implemented" }
-          }
-        },
-        "messaging.routes.ts": {
-          "service": "MessagingService",
-          "methods": {
-            "sendMessage": { "status": "implemented" },
-            "getMatchMessages": { "status": "implemented" },
-            "markMessagesAsRead": { "status": "implemented" },
-            "getUnreadCount": { "status": "implemented" },
-            "deleteMessage": { "status": "implemented" },
-            "getMatchDetails": { "status": "implemented" },
-            "reportMessage": { "status": "implemented" }
-          }
-        },
-        "discovery.routes.ts": {
-          "service": "GeospatialService",
-          "methods": {},
-          "notes": "Mapped to geospatial.service.ts — feed and nearby endpoints to be validated"
-        },
-        "geospatial.routes.ts": {
-          "service": "GeospatialService",
-          "methods": {},
-          "notes": "Discovery and location endpoints; age filtering implemented"
-        },
-        "stories.routes.ts": {
-          "service": "StoryService",
-          "methods": {
-            "createStory": { "status": "implemented" },
-            "getStoryById": { "status": "implemented" },
-            "updateStorySettings": { "status": "implemented" },
-            "deleteStory": { "status": "implemented" },
-            "getStoriesFeed": { "status": "implemented" },
-            "getUserStories": { "status": "implemented" },
-            "trackView": { "status": "implemented" },
-            "getStoryViewers": { "status": "implemented" },
-            "getStoryStats": { "status": "implemented" },
-            "getAnalyticsOverview": { "status": "implemented" },
-            "addToHighlights": { "status": "implemented" },
-            "getNearbyStories": { "status": "implemented" },
-            "cleanupExpiredStories": { "status": "implemented" }
-          }
-        },
-        "batch.service.ts": {
-          "service": "BatchService",
-          "methods": {
-            "runScheduledJobs": { "status": "implemented" },
-            "syncExternalData": { "status": "implemented" },
-            "populateCache": { "status": "implemented" }
-          },
-          "notes": "Replaced thrown errors with centralized handler"
-        },
-        "analytics.service.ts": {
-          "service": "AnalyticsService",
-          "methods": {
-            "trackEvent": { "status": "implemented" },
-            "getUserMetrics": { "status": "implemented" },
-            "getEngagementMetrics": { "status": "implemented" }
-          },
-          "notes": "Centralized error handler applied"
-        },
-        "websocket.service.ts": {
-          "service": "WebSocketService",
-          "methods": {
-            "handleSendMessage": { "status": "implemented" },
-            "handleJoinMatch": { "status": "implemented" },
-            "updateUserOnlineStatus": { "status": "implemented" }
-          },
-          "notes": "Error handler calls added"
-        },
-        "push-notification.service.ts": {
-          "service": "PushNotificationService",
-          "methods": {
-            "registerDevice": { "status": "implemented" },
-            "sendToUser": { "status": "implemented" },
-            "sendToTopic": { "status": "implemented" }
-          },
-          "notes": "Centralized error handling added"
-        },
-        "analytics.routes.ts": {
-          "service": "AnalyticsService",
-          "methods": {},
-          "status": "not-scanned"
-        },
-        "auth.ts": {
-          "service": "AuthService",
-          "methods": {},
-          "status": "not-scanned"
-        },
-        "bookmarks.routes.ts": {
-          "service": "BookmarksService",
-          "methods": {},
-          "status": "not-scanned"
-        },
-        "categories.routes.ts": {
-          "service": "CategoriesService",
-          "methods": {},
-          "status": "not-scanned"
-        },
-        "communities.routes.ts": {
-          "service": "CommunitiesService",
-          "methods": {},
-          "status": "not-scanned"
-        },
-        "config.routes.ts": {
-          "service": "ConfigService",
-          "methods": {},
-          "status": "not-scanned"
-        },
-        "user.routes.ts": {
-          "service": "UserService",
-          "methods": {},
-          "status": "not-scanned"
-        },
-        "social.routes.ts": {
-          "service": "SocialService",
-          "methods": {},
-          "status": "not-scanned"
-        },
-        "sharing.routes.ts": {
-          "service": "SharingService",
-          "methods": {},
-          "status": "not-scanned"
-        },
-        "search.routes.ts": {
-          "service": "SearchService",
-          "methods": {},
-          "status": "not-scanned"
-        },
-        "realtime.routes.ts": {
-          "service": "RealtimeService",
-          "methods": {},
-          "status": "not-scanned"
-        },
-        "posts.routes.ts": {
-          "service": "PostsService",
-          "methods": {},
-          "status": "not-scanned"
-        },
-        "notifications.routes.ts": {
-          "service": "NotificationsService",
-          "methods": {},
-          "status": "not-scanned"
-        },
-        "moderation.routes.ts": {
-          "service": "ModerationService",
-          "methods": {},
-          "status": "not-scanned"
-        },
-        "mobile.routes.ts": {
-          "service": "MobileService",
-          "methods": {},
-          "status": "not-scanned"
-        },
-        "index.ts": {
-          "service": "IndexRoutes",
-          "methods": {},
-          "status": "not-scanned"
-        }
+      "POST /chunked/upload": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "POST /chunked/complete": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "GET /chunked/progress/:sessionId": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "DELETE /chunked/:sessionId": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "POST /upload": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "POST /upload-multiple": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "GET /": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "GET /:mediaId": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "DELETE /:mediaId": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "PUT /:mediaId/favorite": {
+        "status": "scanned",
+        "handler": "requireAuth"
       }
+    }
+  },
+  "messaging.routes.ts": {
+    "service": "MessagingService",
+    "status": "scanned",
+    "methods": {
+      "POST /send": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "GET /match/:matchId": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "PUT /match/:matchId/read": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "GET /unread-count": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "DELETE /message/:messageId": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "GET /match/:matchId/details": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "POST /message/:messageId/report": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      }
+    }
+  },
+  "mobile.routes.ts": {
+    "service": "MobileService",
+    "status": "scanned",
+    "methods": {
+      "POST /device/register": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "DELETE /device/unregister": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "GET /notifications/preferences": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "PUT /notifications/preferences": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "POST /media/upload": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "GET /media": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "PUT /media/:mediaId": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "DELETE /media/:mediaId": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "GET /media/:mediaId": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "GET /app/config": {
+        "status": "scanned",
+        "handler": "async"
+      },
+      "POST /app/feedback": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      }
+    }
+  },
+  "moderation.routes.ts": {
+    "service": "ModerationService",
+    "status": "scanned",
+    "methods": {
+      "POST /report": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "GET /reports": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "PUT /reports/:reportId": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "GET /user/:userId/history": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "GET /user/:userId/suspended": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      }
+    }
+  },
+  "notifications.routes.ts": {
+    "service": "NotificationsService",
+    "status": "scanned",
+    "methods": {
+      "POST /register-device": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "POST /unregister-device": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "POST /test": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /settings": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "PUT /settings": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "POST /subscribe/:topic": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "POST /unsubscribe/:topic": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "POST /mark-read": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "POST /mark-all-read": {
+        "status": "scanned",
+        "handler": "auth"
+      }
+    }
+  },
+  "posts.routes.ts": {
+    "service": "PostsService",
+    "status": "scanned",
+    "methods": {
+      "GET /:postId": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "GET /feed": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "POST /": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "PATCH /:postId": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "DELETE /:postId": {
+        "status": "scanned",
+        "handler": "auth"
+      }
+    }
+  },
+  "realtime.routes.ts": {
+    "service": "RealtimeService",
+    "status": "scanned",
+    "methods": {
+      "POST /send-message": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "POST /broadcast": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "POST /presence": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "GET /presence/:userId": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "GET /queued-messages": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "DELETE /queued-messages": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "GET /status": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      }
+    }
+  },
+  "search.routes.ts": {
+    "service": "SearchService",
+    "status": "scanned",
+    "methods": {
+      "GET /": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /posts": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /users": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /history": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "DELETE /history": {
+        "status": "scanned",
+        "handler": "auth"
+      }
+    }
+  },
+  "sharing.routes.ts": {
+    "service": "SharingService",
+    "status": "scanned",
+    "methods": {
+      "POST /post": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "POST /media": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /my-shares": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "DELETE /:shareId": {
+        "status": "scanned",
+        "handler": "auth"
+      }
+    }
+  },
+  "social.routes.ts": {
+    "service": "SocialService",
+    "status": "scanned",
+    "methods": {
+      "POST /posts/:postId/comments": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /posts/:postId/comments": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /comments/:commentId/replies": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "POST /posts/:postId/likes/toggle": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "POST /comments/:commentId/likes/toggle": {
+        "status": "scanned",
+        "handler": "auth"
+      }
+    }
+  },
+  "stories.routes.ts": {
+    "service": "StoriesService",
+    "status": "scanned",
+    "methods": {
+      "POST /": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /:storyId": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "PUT /:storyId": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "DELETE /:storyId": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /feed/latest": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /user/:userId": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /user/:userId/active": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "POST /:storyId/view": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /:storyId/viewers": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "POST /:storyId/reply": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /:storyId/analytics": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /analytics/overview": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "POST /:storyId/highlight": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /discover/trending": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /discover/nearby": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "POST /cleanup/expired": {
+        "status": "scanned",
+        "handler": "auth"
+      },
+      "GET /stats/global": {
+        "status": "scanned",
+        "handler": "auth"
+      }
+    }
+  },
+  "subscription.routes.ts": {
+    "service": "SubscriptionService",
+    "status": "scanned",
+    "methods": {
+      "GET /plans": {
+        "status": "scanned",
+        "handler": "async"
+      },
+      "GET /current": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "POST /subscribe": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "POST /cancel": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "GET /usage": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      },
+      "POST /boost": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      }
+    }
+  },
+  "user.routes.ts": {
+    "service": "UserService",
+    "status": "scanned",
+    "methods": {
+      "PATCH /": {
+        "status": "scanned",
+        "handler": "requireAuth"
+      }
+    }
+  }
+}
