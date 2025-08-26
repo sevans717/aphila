@@ -1,5 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { prisma } from "../lib/prisma";
+import { logger } from "../utils/logger";
+import { handleServiceError } from "../utils/error";
 
 // using shared singleton `prisma` from src/lib/prisma
 
@@ -33,7 +35,9 @@ export class MessagingService {
     });
 
     if (!match) {
-      throw new Error("No active match found between users");
+      const err = new Error("No active match found between users");
+      logger.warn("sendMessage no active match", { senderId, receiverId });
+      return handleServiceError(err);
     }
 
     // Create message
@@ -156,11 +160,15 @@ export class MessagingService {
     });
 
     if (!message) {
-      throw new Error("Message not found");
+      const err = new Error("Message not found");
+      logger.warn("deleteMessage message not found", { messageId });
+      return handleServiceError(err);
     }
 
     if (message.senderId !== userId) {
-      throw new Error("Can only delete your own messages");
+      const err = new Error("Can only delete your own messages");
+      logger.warn("deleteMessage unauthorized", { messageId, userId });
+      return handleServiceError(err);
     }
 
     await prisma.message.update({
@@ -229,7 +237,9 @@ export class MessagingService {
     });
 
     if (!match) {
-      throw new Error("Match not found");
+      const err = new Error("Match not found");
+      logger.warn("getMatchDetails match not found", { matchId, userId });
+      return handleServiceError(err);
     }
 
     const otherUser =
@@ -253,11 +263,15 @@ export class MessagingService {
     });
 
     if (!message) {
-      throw new Error("Message not found");
+      const err = new Error("Message not found");
+      logger.warn("reportMessage message not found", { messageId });
+      return handleServiceError(err);
     }
 
     if (message.senderId === reporterId) {
-      throw new Error("Cannot report your own message");
+      const err = new Error("Cannot report your own message");
+      logger.warn("reportMessage self-report", { messageId, reporterId });
+      return handleServiceError(err);
     }
 
     await prisma.report.create({

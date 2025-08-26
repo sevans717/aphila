@@ -15,7 +15,16 @@ export declare class ModerationService {
     static moderateText(content: string): ModerationResult;
     private static isSpamLike;
     private static hasContactInfo;
-    static createReport(data: ReportData): Promise<any>;
+    static createReport(data: ReportData): Promise<{
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+        status: string;
+        reporterId: string;
+        reportedId: string;
+        reason: string;
+        details: string | null;
+    }>;
     private static checkReportThreshold;
     static getReports(filters: {
         status?: "pending" | "reviewed" | "resolved";
@@ -23,11 +32,20 @@ export declare class ModerationService {
         limit?: number;
         page?: number;
     }): Promise<{
-        reports: any;
+        reports: {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            status: string;
+            reporterId: string;
+            reportedId: string;
+            reason: string;
+            details: string | null;
+        }[];
         pagination: {
             page: number;
             limit: number;
-            total: any;
+            total: number;
             pages: number;
         };
     }>;
@@ -37,9 +55,9 @@ export declare class ModerationService {
     private static takeActionOnUser;
     static isUserSuspended(userId: string): Promise<boolean>;
     static getUserModerationHistory(userId: string): Promise<{
-        reportsSubmitted: any;
-        reportsReceived: any;
-        warnings: any;
+        reportsSubmitted: number;
+        reportsReceived: number;
+        warnings: number;
     }>;
 }
 export {};

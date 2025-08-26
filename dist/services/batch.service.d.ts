@@ -1,6 +1,6 @@
 export interface BatchOperation {
     id: string;
-    operation: 'create' | 'update' | 'delete';
+    operation: "create" | "update" | "delete";
     resource: string;
     data?: any;
     params?: any;

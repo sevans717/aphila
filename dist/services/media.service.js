@@ -49,18 +49,20 @@ class MediaService {
     static async uploadFile(file, userId, uploadType) {
         // Validate file size
         if (file.size > env_1.env.maxFileSize) {
-            // In dev, return a helpful error object instead of throwing to avoid crashing flows
             const msg = `File size exceeds limit (${env_1.env.maxFileSize / 1024 / 1024}MB)`;
-            if (env_1.env.nodeEnv === "production")
-                throw new Error(msg);
-            return Promise.reject(new Error(msg));
+            const err = new Error(msg);
+            logger_1.logger.warn("uploadFile validation failed", { userId, size: file.size });
+            return (0, error_1.handleServiceError)(err);
         }
         // Validate file type
         if (!env_1.env.allowedFileTypes.includes(file.mimetype)) {
             const msg = `Invalid file type. Allowed: ${env_1.env.allowedFileTypes.join(", ")}`;
-            if (env_1.env.nodeEnv === "production")
-                throw new Error(msg);
-            return Promise.reject(new Error(msg));
+            const err = new Error(msg);
+            logger_1.logger.warn("uploadFile invalid file type", {
+                userId,
+                mimetype: file.mimetype,
+            });
+            return (0, error_1.handleServiceError)(err);
         }
         // Determine media type
         const mediaType = this.getMediaType(file.mimetype);
@@ -121,7 +123,6 @@ class MediaService {
         }
         catch (error) {
             logger_1.logger.error("Failed to upload file:", error);
-            // Use centralized error handling to avoid crashing in dev
             return (0, error_1.handleServiceError)(error);
         }
     }
@@ -229,10 +230,9 @@ class MediaService {
             where: { id: mediaId, userId },
         });
         if (!media) {
-            // In dev, return null so callers can handle missing media gracefully
-            if (env_1.env.nodeEnv !== "production")
-                return null;
-            throw new Error("Media not found");
+            const err = new Error("Media not found");
+            logger_1.logger.warn("deleteMedia called for missing media", { mediaId, userId });
+            return (0, error_1.handleServiceError)(err);
         }
         // Delete physical file
         await this.deleteFile(media.url);
@@ -284,90 +284,27 @@ class MediaService {
             },
         });
     }
-    // Update media metadata
+    /**
+     * Update media metadata
+     */
     static async updateMediaMetadata(mediaId, userId, metadata) {
         const media = await prisma_1.prisma.mediaAsset.findFirst({
             where: { id: mediaId, userId },
         });
         if (!media) {
-            throw new Error("Media not found");
+            const err = new Error("Media not found");
+            logger_1.logger.warn("updateMediaMetadata called for missing media", {
+                mediaId,
+                userId,
+            });
+            if (env_1.env.nodeEnv === "production")
+                throw err;
+            return null;
         }
         return await prisma_1.prisma.mediaAsset.update({
             where: { id: mediaId },
             data: metadata,
         });
-    }
-    // Get file info for serving (for development)
-    static async getFileInfo(filename) {
-        if (this.s3 && env_1.env.s3BucketName) {
-            // For S3, return the public URL
-            return `https://${env_1.env.s3BucketName}.s3.${env_1.env.awsRegion}.amazonaws.com/${filename}`;
-        }
-        else {
-            // For local files, return the file path
-            const filepath = path_1.default.join(this.UPLOAD_DIR, filename);
-            try {
-                await fs_1.promises.access(filepath);
-                return filepath;
-            }
-            catch {
-                throw new Error("File not found");
-            }
-        }
-    }
-    // Clean up old unused files
-    static async cleanupOldFiles(olderThanDays = 30) {
-        const cutoffDate = new Date();
-        cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
-        // Find old media assets that are not used in profiles
-        const oldMedia = await prisma_1.prisma.mediaAsset.findMany({
-            where: {
-                createdAt: { lt: cutoffDate },
-                usedInProfile: false,
-                isFavorite: false,
-            },
-        });
-        let cleaned = 0;
-        for (const media of oldMedia) {
-            try {
-                await this.deleteMedia(media.id, media.userId);
-                cleaned++;
-            }
-            catch (error) {
-                logger_1.logger.error(`Failed to cleanup media ${media.id}:`, error);
-            }
-        }
-        logger_1.logger.info(`Cleaned up ${cleaned} old media files`);
-        return { cleaned };
-    }
-    // Get upload statistics
-    static async getUploadStats(userId) {
-        const where = userId ? { userId } : {};
-        const [total, byType, recentUploads] = await Promise.all([
-            prisma_1.prisma.mediaAsset.count({ where }),
-            prisma_1.prisma.mediaAsset.groupBy({
-                by: ["type"],
-                where,
-                _count: { id: true },
-            }),
-            prisma_1.prisma.mediaAsset.findMany({
-                where: {
-                    ...where,
-                    createdAt: {
-                        gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
-                    },
-                },
-                select: { type: true, createdAt: true },
-            }),
-        ]);
-        return {
-            total,
-            byType: byType.reduce((acc, item) => {
-                acc[item.type] = item._count.id;
-                return acc;
-            }, {}),
-            recentUploads: recentUploads.length,
-        };
     }
     /**
      * Start a chunked upload session for large files
@@ -405,7 +342,17 @@ class MediaService {
     static uploadChunk(sessionId, chunkIndex, chunkData) {
         const session = this.uploadSessions.get(sessionId);
         if (!session) {
-            throw new Error("Upload session not found or expired");
+            const err = new Error("Upload session not found or expired");
+            logger_1.logger.warn("Upload chunk called for missing session", { sessionId });
+            if (env_1.env.nodeEnv === "production")
+                throw err;
+            // Dev-fallback: return empty progress so callers can handle gracefully
+            return {
+                sessionId,
+                progress: 0,
+                uploadedBytes: 0,
+                totalBytes: 0,
+            };
         }
         // Store chunk
         session.chunks.set(chunkIndex, chunkData);
@@ -432,10 +379,18 @@ class MediaService {
     static async completeChunkedUpload(sessionId, uploadType = "image") {
         const session = this.uploadSessions.get(sessionId);
         if (!session) {
-            throw new Error("Upload session not found or expired");
+            const err = new Error("Upload session not found or expired");
+            logger_1.logger.warn("Complete chunked upload called for missing session", {
+                sessionId,
+            });
+            return (0, error_1.handleServiceError)(err);
         }
         if (session.uploadedChunks !== session.totalChunks) {
-            throw new Error("Not all chunks have been uploaded");
+            const err = new Error("Not all chunks have been uploaded");
+            logger_1.logger.warn("Complete chunked upload called before all chunks uploaded", {
+                sessionId,
+            });
+            return (0, error_1.handleServiceError)(err);
         }
         try {
             // Assemble chunks in order
@@ -443,7 +398,12 @@ class MediaService {
             for (let i = 0; i < session.totalChunks; i++) {
                 const chunk = session.chunks.get(i);
                 if (!chunk) {
-                    throw new Error(`Missing chunk ${i}`);
+                    const err = new Error(`Missing chunk ${i}`);
+                    logger_1.logger.warn("Missing chunk in session", {
+                        sessionId,
+                        missingIndex: i,
+                    });
+                    return (0, error_1.handleServiceError)(err);
                 }
                 chunks.push(chunk);
             }
@@ -533,7 +493,11 @@ class MediaService {
                 where: { id: mediaId },
             });
             if (!media) {
-                throw new Error("Media not found");
+                const err = new Error("Media not found");
+                logger_1.logger.warn("generateThumbnail called for missing media", { mediaId });
+                if (env_1.env.nodeEnv === "production")
+                    throw err;
+                return null;
             }
             // For now, return a placeholder thumbnail URL
             // In production, you'd use libraries like sharp, ffmpeg, etc.

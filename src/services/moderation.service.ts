@@ -1,5 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { prisma } from "../lib/prisma";
+import { logger } from "../utils/logger";
+import { handleServiceError } from "../utils/error";
 
 // using shared singleton `prisma` from src/lib/prisma
 
@@ -109,7 +111,9 @@ export class ModerationService {
 
     // Prevent self-reporting
     if (reporterId === reportedId) {
-      throw new Error("Cannot report yourself");
+      const err = new Error("Cannot report yourself");
+      logger.warn("createReport called with self-report", { reporterId });
+      return handleServiceError(err);
     }
 
     // Check if user already reported this content/user recently
@@ -124,7 +128,9 @@ export class ModerationService {
     });
 
     if (existingReport) {
-      throw new Error("You have already reported this content recently");
+      const err = new Error("You have already reported this content recently");
+      logger.warn("Duplicate report attempt", { reporterId, reportedId });
+      return handleServiceError(err);
     }
 
     // Create the report
@@ -279,7 +285,9 @@ export class ModerationService {
     });
 
     if (!report) {
-      throw new Error("Report not found");
+      const err = new Error("Report not found");
+      logger.warn("updateReportStatus called for missing report", { reportId });
+      return handleServiceError(err);
     }
 
     // Update report

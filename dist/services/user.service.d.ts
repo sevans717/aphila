@@ -1,10 +1,47 @@
-export declare function createUser(email: string, password: string): Promise<any>;
-export declare function findUserByEmail(email: string): Promise<any>;
+export declare function createUser(email: string, password: string): Promise<{
+    id: string;
+    email: string;
+    password: string;
+    isActive: boolean;
+    isAdmin: boolean;
+    lastLogin: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+}>;
+export declare function findUserByEmail(email: string): Promise<{
+    id: string;
+    email: string;
+    password: string;
+    isActive: boolean;
+    isAdmin: boolean;
+    lastLogin: Date | null;
+    createdAt: Date;
+    updatedAt: Date;
+} | null>;
 export declare function updateUserProfile(userId: string, data: Partial<{
     displayName: string;
     bio: string;
     location: string;
     latitude: number | null;
     longitude: number | null;
-}>): Promise<any>;
+}>): Promise<{
+    id: string;
+    userId: string;
+    createdAt: Date;
+    updatedAt: Date;
+    maxDistance: number;
+    orientation: import(".prisma/client").$Enums.Orientation;
+    displayName: string;
+    bio: string | null;
+    birthdate: Date;
+    gender: import(".prisma/client").$Enums.Gender;
+    location: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    ageMin: number;
+    ageMax: number;
+    showMe: import(".prisma/client").$Enums.Orientation;
+    isVisible: boolean;
+    isVerified: boolean;
+}>;
 //# sourceMappingURL=user.service.d.ts.map

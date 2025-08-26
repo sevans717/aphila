@@ -1,7 +1,7 @@
-import { env } from '../config/env';
-import { prisma } from '../lib/prisma';
-import { logger } from '../utils/logger';
-import { handleServiceError } from '../utils/error';
+import { env } from "../config/env";
+import { prisma } from "../lib/prisma";
+import { logger } from "../utils/logger";
+import { handleServiceError } from "../utils/error";
 
 export interface AnalyticsEvent {
   userId: string;
@@ -31,7 +31,7 @@ export interface EngagementMetrics {
 
 export interface DeviceInfo {
   deviceId: string;
-  deviceType: 'mobile' | 'tablet' | 'desktop';
+  deviceType: "mobile" | "tablet" | "desktop";
   operatingSystem: string;
   osVersion: string;
   appVersion: string;
@@ -54,7 +54,7 @@ export interface SessionData {
 export interface SwipeAnalytics {
   userId: string;
   targetUserId: string;
-  action: 'like' | 'pass' | 'super_like';
+  action: "like" | "pass" | "super_like";
   timestamp: Date;
   platform: string;
   location?: {
@@ -77,7 +77,7 @@ export interface MessageAnalytics {
   messageId: string;
   senderId: string;
   receiverId: string;
-  messageType: 'text' | 'image' | 'gif' | 'sticker' | 'voice';
+  messageType: "text" | "image" | "gif" | "sticker" | "voice";
   timestamp: Date;
   responseTime?: number;
   isFirstMessage: boolean;
@@ -86,7 +86,7 @@ export interface MessageAnalytics {
 
 export interface SubscriptionAnalytics {
   userId: string;
-  action: 'subscribe' | 'cancel' | 'renew' | 'expire';
+  action: "subscribe" | "cancel" | "renew" | "expire";
   subscriptionType: string;
   timestamp: Date;
   platform: string;
@@ -176,19 +176,25 @@ export class AnalyticsService {
         },
       });
 
-      logger.info(`Analytics event tracked: ${event.event} for user ${event.userId}`);
+      logger.info(
+        `Analytics event tracked: ${event.event} for user ${event.userId}`
+      );
     } catch (error) {
-      logger.error('Failed to track analytics event:', error);
+      logger.error("Failed to track analytics event:", error);
     }
   }
 
   /**
    * Track user session start
    */
-  static async trackSessionStart(userId: string, platform: string, appVersion?: string): Promise<void> {
+  static async trackSessionStart(
+    userId: string,
+    platform: string,
+    appVersion?: string
+  ): Promise<void> {
     await this.trackEvent({
       userId,
-      event: 'session_start',
+      event: "session_start",
       platform,
       appVersion,
       properties: {
@@ -207,14 +213,14 @@ export class AnalyticsService {
    * Track user session end
    */
   static async trackSessionEnd(
-    userId: string, 
-    platform: string, 
+    userId: string,
+    platform: string,
     sessionDuration: number,
     appVersion?: string
   ): Promise<void> {
     await this.trackEvent({
       userId,
-      event: 'session_end',
+      event: "session_end",
       platform,
       appVersion,
       properties: {
@@ -228,14 +234,14 @@ export class AnalyticsService {
    * Track swipe action
    */
   static async trackSwipe(
-    userId: string, 
-    targetUserId: string, 
-    action: 'like' | 'pass' | 'super_like',
+    userId: string,
+    targetUserId: string,
+    action: "like" | "pass" | "super_like",
     platform: string
   ): Promise<void> {
     await this.trackEvent({
       userId,
-      event: 'swipe',
+      event: "swipe",
       platform,
       properties: {
         action,
@@ -248,12 +254,16 @@ export class AnalyticsService {
   /**
    * Track match creation
    */
-  static async trackMatch(userId1: string, userId2: string, platform: string): Promise<void> {
+  static async trackMatch(
+    userId1: string,
+    userId2: string,
+    platform: string
+  ): Promise<void> {
     // Track for both users
     await Promise.all([
       this.trackEvent({
         userId: userId1,
-        event: 'match_created',
+        event: "match_created",
         platform,
         properties: {
           matchedUserId: userId2,
@@ -262,7 +272,7 @@ export class AnalyticsService {
       }),
       this.trackEvent({
         userId: userId2,
-        event: 'match_created',
+        event: "match_created",
         platform,
         properties: {
           matchedUserId: userId1,
@@ -276,14 +286,14 @@ export class AnalyticsService {
    * Track message sent
    */
   static async trackMessage(
-    senderId: string, 
-    receiverId: string, 
+    senderId: string,
+    receiverId: string,
     messageType: string,
     platform: string
   ): Promise<void> {
     await this.trackEvent({
       userId: senderId,
-      event: 'message_sent',
+      event: "message_sent",
       platform,
       properties: {
         receiverId,
@@ -296,10 +306,14 @@ export class AnalyticsService {
   /**
    * Track profile completion
    */
-  static async trackProfileCompletion(userId: string, completionPercentage: number, platform: string): Promise<void> {
+  static async trackProfileCompletion(
+    userId: string,
+    completionPercentage: number,
+    platform: string
+  ): Promise<void> {
     await this.trackEvent({
       userId,
-      event: 'profile_completion',
+      event: "profile_completion",
       platform,
       properties: {
         completionPercentage,
@@ -312,14 +326,14 @@ export class AnalyticsService {
    * Track subscription events
    */
   static async trackSubscription(
-    userId: string, 
-    action: 'subscribe' | 'cancel' | 'renew' | 'expire',
+    userId: string,
+    action: "subscribe" | "cancel" | "renew" | "expire",
     subscriptionType: string,
     platform: string
   ): Promise<void> {
     await this.trackEvent({
       userId,
-      event: 'subscription',
+      event: "subscription",
       platform,
       properties: {
         action,
@@ -333,15 +347,15 @@ export class AnalyticsService {
    * Track feature usage
    */
   static async trackFeatureUsage(
-    userId: string, 
-    feature: string, 
+    userId: string,
+    feature: string,
     action: string,
     platform: string,
     metadata?: Record<string, any>
   ): Promise<void> {
     await this.trackEvent({
       userId,
-      event: 'feature_usage',
+      event: "feature_usage",
       platform,
       properties: {
         feature,
@@ -355,57 +369,61 @@ export class AnalyticsService {
   /**
    * Get user metrics for dashboard
    */
-  static async getUserMetrics(startDate: Date, endDate: Date): Promise<UserMetrics> {
+  static async getUserMetrics(
+    startDate: Date,
+    endDate: Date
+  ): Promise<UserMetrics> {
     try {
-      const [dailyActive, weeklyActive, monthlyActive, newUsers, retained] = await Promise.all([
-        // Daily active users
-        prisma.user.count({
-          where: {
-            lastLogin: {
-              gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
+      const [dailyActive, weeklyActive, monthlyActive, newUsers, retained] =
+        await Promise.all([
+          // Daily active users
+          prisma.user.count({
+            where: {
+              lastLogin: {
+                gte: new Date(Date.now() - 24 * 60 * 60 * 1000), // Last 24 hours
+              },
             },
-          },
-        }),
-        
-        // Weekly active users
-        prisma.user.count({
-          where: {
-            lastLogin: {
-              gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
+          }),
+
+          // Weekly active users
+          prisma.user.count({
+            where: {
+              lastLogin: {
+                gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
+              },
             },
-          },
-        }),
-        
-        // Monthly active users
-        prisma.user.count({
-          where: {
-            lastLogin: {
-              gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
+          }),
+
+          // Monthly active users
+          prisma.user.count({
+            where: {
+              lastLogin: {
+                gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // Last 30 days
+              },
             },
-          },
-        }),
-        
-        // New users in date range
-        prisma.user.count({
-          where: {
-            createdAt: {
-              gte: startDate,
-              lte: endDate,
+          }),
+
+          // New users in date range
+          prisma.user.count({
+            where: {
+              createdAt: {
+                gte: startDate,
+                lte: endDate,
+              },
             },
-          },
-        }),
-        
-        // Retained users (users who signed up before start date and were active in range)
-        prisma.user.count({
-          where: {
-            createdAt: { lt: startDate },
-            lastLogin: {
-              gte: startDate,
-              lte: endDate,
+          }),
+
+          // Retained users (users who signed up before start date and were active in range)
+          prisma.user.count({
+            where: {
+              createdAt: { lt: startDate },
+              lastLogin: {
+                gte: startDate,
+                lte: endDate,
+              },
             },
-          },
-        }),
-      ]);
+          }),
+        ]);
 
       return {
         dailyActiveUsers: dailyActive,
@@ -415,7 +433,7 @@ export class AnalyticsService {
         retainedUsers: retained,
       };
     } catch (error) {
-      logger.error('Failed to get user metrics:', error);
+      logger.error("Failed to get user metrics:", error);
       return handleServiceError(error) as any;
     }
   }
@@ -423,7 +441,10 @@ export class AnalyticsService {
   /**
    * Get engagement metrics
    */
-  static async getEngagementMetrics(startDate: Date, endDate: Date): Promise<EngagementMetrics> {
+  static async getEngagementMetrics(
+    startDate: Date,
+    endDate: Date
+  ): Promise<EngagementMetrics> {
     try {
       const [totalMatches, totalMessages, userCount] = await Promise.all([
         prisma.match.count({
@@ -434,7 +455,7 @@ export class AnalyticsService {
             },
           },
         }),
-        
+
         prisma.message.count({
           where: {
             createdAt: {
@@ -443,7 +464,7 @@ export class AnalyticsService {
             },
           },
         }),
-        
+
         prisma.user.count({
           where: {
             isActive: true,
@@ -459,7 +480,7 @@ export class AnalyticsService {
         matchesPerUser: userCount > 0 ? totalMatches / userCount : 0,
       };
     } catch (error) {
-      logger.error('Failed to get engagement metrics:', error);
+      logger.error("Failed to get engagement metrics:", error);
       return handleServiceError(error) as any;
     }
   }
@@ -470,7 +491,7 @@ export class AnalyticsService {
   static async getPlatformDistribution(): Promise<Record<string, number>> {
     try {
       const devices = await prisma.device.groupBy({
-        by: ['platform'],
+        by: ["platform"],
         _count: { id: true },
         where: {
           isActive: true,
@@ -478,13 +499,13 @@ export class AnalyticsService {
       });
 
       const distribution: Record<string, number> = {};
-      devices.forEach(device => {
+      devices.forEach((device) => {
         distribution[device.platform] = device._count.id;
       });
 
       return distribution;
     } catch (error) {
-      logger.error('Failed to get platform distribution:', error);
+      logger.error("Failed to get platform distribution:", error);
       return handleServiceError(error) as any;
     }
   }
@@ -492,46 +513,50 @@ export class AnalyticsService {
   /**
    * Get conversion funnel data
    */
-  static async getConversionFunnel(startDate: Date, endDate: Date): Promise<any> {
+  static async getConversionFunnel(
+    startDate: Date,
+    endDate: Date
+  ): Promise<any> {
     try {
       // This would typically involve complex queries to track user journey
       // For now, return basic funnel metrics
-      
-      const [signups, profileCompleted, firstSwipe, firstMatch, firstMessage] = await Promise.all([
-        prisma.user.count({
-          where: {
-            createdAt: { gte: startDate, lte: endDate },
-          },
-        }),
-        
-        prisma.profile.count({
-          where: {
-            user: {
+
+      const [signups, profileCompleted, firstSwipe, firstMatch, firstMessage] =
+        await Promise.all([
+          prisma.user.count({
+            where: {
               createdAt: { gte: startDate, lte: endDate },
             },
-            displayName: { not: null as any },
-            bio: { not: null },
-          },
-        }),
-        
-        prisma.like.count({
-          where: {
-            createdAt: { gte: startDate, lte: endDate },
-          },
-        }),
-        
-        prisma.match.count({
-          where: {
-            createdAt: { gte: startDate, lte: endDate },
-          },
-        }),
-        
-        prisma.message.count({
-          where: {
-            createdAt: { gte: startDate, lte: endDate },
-          },
-        }),
-      ]);
+          }),
+
+          prisma.profile.count({
+            where: {
+              user: {
+                createdAt: { gte: startDate, lte: endDate },
+              },
+              displayName: { not: null as any },
+              bio: { not: null },
+            },
+          }),
+
+          prisma.like.count({
+            where: {
+              createdAt: { gte: startDate, lte: endDate },
+            },
+          }),
+
+          prisma.match.count({
+            where: {
+              createdAt: { gte: startDate, lte: endDate },
+            },
+          }),
+
+          prisma.message.count({
+            where: {
+              createdAt: { gte: startDate, lte: endDate },
+            },
+          }),
+        ]);
 
       return {
         signups,
@@ -541,13 +566,15 @@ export class AnalyticsService {
         firstMessage,
         conversionRates: {
           signupToProfile: signups > 0 ? (profileCompleted / signups) * 100 : 0,
-          profileToSwipe: profileCompleted > 0 ? (firstSwipe / profileCompleted) * 100 : 0,
+          profileToSwipe:
+            profileCompleted > 0 ? (firstSwipe / profileCompleted) * 100 : 0,
           swipeToMatch: firstSwipe > 0 ? (firstMatch / firstSwipe) * 100 : 0,
-          matchToMessage: firstMatch > 0 ? (firstMessage / firstMatch) * 100 : 0,
+          matchToMessage:
+            firstMatch > 0 ? (firstMessage / firstMatch) * 100 : 0,
         },
       };
     } catch (error) {
-      logger.error('Failed to get conversion funnel:', error);
+      logger.error("Failed to get conversion funnel:", error);
       return handleServiceError(error) as any;
     }
   }
@@ -562,14 +589,14 @@ export class AnalyticsService {
 
       const deleted = await prisma.notification.deleteMany({
         where: {
-          type: 'analytics',
+          type: "analytics",
           createdAt: { lt: cutoffDate },
         },
       });
 
       logger.info(`Cleaned up ${deleted.count} old analytics records`);
     } catch (error) {
-      logger.error('Failed to cleanup analytics data:', error);
+      logger.error("Failed to cleanup analytics data:", error);
     }
   }
 }

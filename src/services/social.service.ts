@@ -455,7 +455,11 @@ export class SocialService {
       ]);
 
       if (!post) {
-        throw new Error("Post not found");
+        const err = new Error("Post not found");
+        logger.warn("getPostLikesBreakdown called for missing post", {
+          postId,
+        });
+        return handleServiceError(err);
       }
 
       const likeBreakdown: Record<string, number> = {};
@@ -798,7 +802,9 @@ export class SocialService {
       ]);
 
       if (!post) {
-        throw new Error("Post not found");
+        const err = new Error("Post not found");
+        logger.warn("getPostStats called for missing post", { postId });
+        return handleServiceError(err);
       }
 
       const likeBreakdown: Record<string, number> = {};

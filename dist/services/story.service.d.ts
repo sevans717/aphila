@@ -293,10 +293,10 @@ export declare class StoryService {
             start: string;
             end: string;
         };
-        totalStories: any;
-        totalViews: any;
+        totalStories: number;
+        totalViews: number;
         totalReplies: number;
-        avgViewDuration: any;
+        avgViewDuration: number;
         topStories: {
             id: any;
             media: any;
@@ -307,10 +307,35 @@ export declare class StoryService {
             views: any;
         }[];
     }>;
-    static addToHighlights(storyId: string, userId: string, highlightName?: string, coverImage?: string): Promise<any>;
+    static addToHighlights(storyId: string, userId: string, highlightName?: string, coverImage?: string): Promise<{
+        id: string;
+        userId: string;
+        createdAt: Date;
+        expiresAt: Date;
+        duration: number;
+        viewsCount: number;
+        mediaId: string;
+        caption: string | null;
+        isHighlight: boolean;
+    }>;
     static getNearbyStories(latitude: number, longitude: number, radiusKm?: number, limit?: number, offset?: number): Promise<{
-        stories: any;
-        total: any;
+        stories: {
+            id: string;
+            createdAt: Date;
+            expiresAt: Date;
+            distanceKm: number;
+            user: {
+                id: string;
+                displayName: string | undefined;
+            };
+            media: {
+                id: string;
+                url: string;
+                type: import(".prisma/client").$Enums.MediaType;
+            };
+            views: number;
+        }[];
+        total: number;
     }>;
     static cleanupExpiredStories(): Promise<{
         deletedCount: number;

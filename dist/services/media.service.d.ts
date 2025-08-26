@@ -34,28 +34,58 @@ export declare class MediaService {
     private static getMediaType;
     private static extractImageMetadata;
     private static extractVideoMetadata;
-    static uploadProfilePhoto(file: FileUpload, userId: string, isPrimary?: boolean): Promise<any>;
+    static uploadProfilePhoto(file: FileUpload, userId: string, isPrimary?: boolean): Promise<{
+        id: string;
+        userId: string;
+        createdAt: Date;
+        url: string;
+        isPrimary: boolean;
+        order: number;
+    }>;
     static getUserMedia(userId: string, options?: {
         type?: string;
         limit?: number;
         offset?: number;
-    }): Promise<any>;
+    }): Promise<{
+        id: string;
+        userId: string;
+        createdAt: Date;
+        url: string;
+        type: import(".prisma/client").$Enums.MediaType;
+        isFavorite: boolean;
+        usedInProfile: boolean;
+        width: number | null;
+        height: number | null;
+        duration: number | null;
+    }[]>;
     static deleteMedia(mediaId: string, userId: string): Promise<any>;
     static getSignedUrl(key: string, expiresIn?: number): Promise<string>;
-    static getMediaById(mediaId: string): Promise<any>;
+    static getMediaById(mediaId: string): Promise<({
+        user: {
+            id: string;
+            profile: {
+                displayName: string;
+            } | null;
+        };
+    } & {
+        id: string;
+        userId: string;
+        createdAt: Date;
+        url: string;
+        type: import(".prisma/client").$Enums.MediaType;
+        isFavorite: boolean;
+        usedInProfile: boolean;
+        width: number | null;
+        height: number | null;
+        duration: number | null;
+    }) | null>;
+    /**
+     * Update media metadata
+     */
     static updateMediaMetadata(mediaId: string, userId: string, metadata: {
         isFavorite?: boolean;
         usedInProfile?: boolean;
     }): Promise<any>;
-    static getFileInfo(filename: string): Promise<string>;
-    static cleanupOldFiles(olderThanDays?: number): Promise<{
-        cleaned: number;
-    }>;
-    static getUploadStats(userId?: string): Promise<{
-        total: any;
-        byType: any;
-        recentUploads: any;
-    }>;
     /**
      * Start a chunked upload session for large files
      */

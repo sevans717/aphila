@@ -16,20 +16,28 @@ class BatchService {
                     try {
                         let result;
                         switch (op.resource) {
-                            case 'message':
+                            case "message":
                                 result = await this.handleMessageOperation(tx, op);
                                 break;
-                            case 'community':
+                            case "community":
                                 result = await this.handleCommunityOperation(tx, op);
                                 break;
-                            case 'user':
+                            case "user":
                                 result = await this.handleUserOperation(tx, op);
                                 break;
-                            case 'friendship':
+                            case "friendship":
                                 result = await this.handleFriendshipOperation(tx, op);
                                 break;
-                            default:
-                                throw new Error(`Unsupported resource: ${op.resource}`);
+                            default: {
+                                const err = new Error(`Unsupported resource: ${op.resource}`);
+                                logger_1.logger.warn("Unsupported batch resource", {
+                                    resource: op.resource,
+                                });
+                                return (0, error_1.handleServiceError)(err);
+                                // In dev, push an error result and continue
+                                results.push({ id: op.id, success: false, error: err.message });
+                                continue;
+                            }
                         }
                         results.push({
                             id: op.id,
@@ -48,7 +56,7 @@ class BatchService {
             });
         }
         catch (error) {
-            logger_1.logger.error('Batch operation failed:', error);
+            logger_1.logger.error("Batch operation failed:", error);
             return (0, error_1.handleServiceError)(error);
         }
         return results;
@@ -64,7 +72,7 @@ class BatchService {
                 where: { userId },
                 select: { communityId: true },
             });
-            const communityIds = userCommunities.map(cm => cm.communityId);
+            const communityIds = userCommunities.map((cm) => cm.communityId);
             // Get updates since last sync
             const [communities, messages, users, friendships] = await Promise.all([
                 // Updated communities
@@ -98,7 +106,7 @@ class BatchService {
                             select: { id: true, profile: { select: { displayName: true } } },
                         },
                     },
-                    orderBy: { createdAt: 'desc' },
+                    orderBy: { createdAt: "desc" },
                     take: 100, // Limit for mobile performance
                 }),
                 // Updated user profiles (friends)
@@ -130,10 +138,7 @@ class BatchService {
                 // New friendship requests/updates
                 prisma_1.prisma.friendship.findMany({
                     where: {
-                        OR: [
-                            { requesterId: userId },
-                            { addresseeId: userId },
-                        ],
+                        OR: [{ requesterId: userId }, { addresseeId: userId }],
                         createdAt: { gt: lastSyncDate },
                     },
                     include: {
@@ -163,7 +168,7 @@ class BatchService {
             };
         }
         catch (error) {
-            logger_1.logger.error('Sync data fetch failed:', error);
+            logger_1.logger.error("Sync data fetch failed:", error);
             return (0, error_1.handleServiceError)(error);
         }
     }
@@ -175,7 +180,7 @@ class BatchService {
         try {
             for (const request of requests) {
                 switch (request.resource) {
-                    case 'users':
+                    case "users":
                         results.users = await prisma_1.prisma.user.findMany({
                             where: { id: { in: request.ids } },
                             select: {
@@ -187,7 +192,7 @@ class BatchService {
                             },
                         });
                         break;
-                    case 'communities':
+                    case "communities":
                         results.communities = await prisma_1.prisma.community.findMany({
                             where: { id: { in: request.ids } },
                             include: {
@@ -197,15 +202,23 @@ class BatchService {
                             },
                         });
                         break;
-                    case 'messages':
+                    case "messages":
                         results.messages = await prisma_1.prisma.communityMessage.findMany({
                             where: { id: { in: request.ids } },
                             include: {
                                 sender: {
-                                    select: { id: true, profile: { select: { displayName: true } } },
+                                    select: {
+                                        id: true,
+                                        profile: { select: { displayName: true } },
+                                    },
                                 },
                             },
-                            orderBy: { createdAt: 'desc' },
+                            orderBy: { createdAt: "desc" },
+                        });
+                        break;
+                    default:
+                        logger_1.logger.warn("Unsupported bulk fetch resource", {
+                            resource: request.resource,
                         });
                         break;
                 }
@@ -213,14 +226,14 @@ class BatchService {
             return results;
         }
         catch (error) {
-            logger_1.logger.error('Bulk fetch failed:', error);
+            logger_1.logger.error("Bulk fetch failed:", error);
             return (0, error_1.handleServiceError)(error);
         }
     }
     // Helper methods for batch operations
     static async handleMessageOperation(tx, op) {
         switch (op.operation) {
-            case 'create':
+            case "create":
                 return await tx.communityMessage.create({
                     data: op.data,
                     include: {
@@ -229,66 +242,86 @@ class BatchService {
                         },
                     },
                 });
-            case 'update':
+            case "update":
                 return await tx.communityMessage.update({
                     where: { id: op.params.id },
                     data: op.data,
                 });
-            case 'delete':
+            case "delete":
                 return await tx.communityMessage.delete({
                     where: { id: op.params.id },
                 });
-            default:
-                throw new Error(`Unsupported operation: ${op.operation}`);
+            default: {
+                const err = new Error(`Unsupported operation: ${op.operation}`);
+                logger_1.logger.warn("Unsupported batch operation", { operation: op.operation });
+                return (0, error_1.handleServiceError)(err);
+                return Promise.reject(err);
+            }
         }
     }
     static async handleCommunityOperation(tx, op) {
         switch (op.operation) {
-            case 'create':
+            case "create":
                 return await tx.community.create({
                     data: op.data,
                 });
-            case 'update':
+            case "update":
                 return await tx.community.update({
                     where: { id: op.params.id },
                     data: op.data,
                 });
-            case 'delete':
+            case "delete":
                 return await tx.community.delete({
                     where: { id: op.params.id },
                 });
-            default:
-                throw new Error(`Unsupported operation: ${op.operation}`);
+            default: {
+                const err = new Error(`Unsupported operation: ${op.operation}`);
+                logger_1.logger.warn("Unsupported community operation", {
+                    operation: op.operation,
+                });
+                return (0, error_1.handleServiceError)(err);
+                return Promise.reject(err);
+            }
         }
     }
     static async handleUserOperation(tx, op) {
         switch (op.operation) {
-            case 'update':
+            case "update":
                 return await tx.user.update({
                     where: { id: op.params.id },
                     data: op.data,
                 });
-            default:
-                throw new Error(`Unsupported operation: ${op.operation}`);
+            default: {
+                const err = new Error(`Unsupported operation: ${op.operation}`);
+                logger_1.logger.warn("Unsupported user operation", { operation: op.operation });
+                return (0, error_1.handleServiceError)(err);
+                return Promise.reject(err);
+            }
         }
     }
     static async handleFriendshipOperation(tx, op) {
         switch (op.operation) {
-            case 'create':
+            case "create":
                 return await tx.friendship.create({
                     data: op.data,
                 });
-            case 'update':
+            case "update":
                 return await tx.friendship.update({
                     where: { id: op.params.id },
                     data: op.data,
                 });
-            case 'delete':
+            case "delete":
                 return await tx.friendship.delete({
                     where: { id: op.params.id },
                 });
-            default:
-                throw new Error(`Unsupported operation: ${op.operation}`);
+            default: {
+                const err = new Error(`Unsupported operation: ${op.operation}`);
+                logger_1.logger.warn("Unsupported friendship operation", {
+                    operation: op.operation,
+                });
+                return (0, error_1.handleServiceError)(err);
+                return Promise.reject(err);
+            }
         }
     }
     /**
@@ -298,10 +331,10 @@ class BatchService {
         try {
             // This method would implement caching logic
             // For now, it's a placeholder for future caching implementation
-            logger_1.logger.info('Cache population requested for user:', userId);
+            logger_1.logger.info("Cache population requested for user:", userId);
         }
         catch (error) {
-            logger_1.logger.error('Cache population failed:', error);
+            logger_1.logger.error("Cache population failed:", error);
             return (0, error_1.handleServiceError)(error);
         }
     }

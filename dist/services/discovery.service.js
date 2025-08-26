@@ -2,6 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DiscoveryService = void 0;
 const prisma_1 = require("../lib/prisma");
+const logger_1 = require("../utils/logger");
+const error_1 = require("../utils/error");
 class DiscoveryService {
     // Calculate distance between two points using Haversine formula
     static calculateDistance(lat1, lon1, lat2, lon2) {
@@ -25,7 +27,9 @@ class DiscoveryService {
             include: { user: { include: { interests: true } } },
         });
         if (!userProfile) {
-            throw new Error("User profile not found");
+            const err = new Error("User profile not found");
+            logger_1.logger.warn("discoverUsers missing profile", { userId });
+            return (0, error_1.handleServiceError)(err);
         }
         // Get users who have already been liked/passed/blocked
         const [likedUsers, blockedUsers] = await Promise.all([

@@ -1,5 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { prisma } from "../lib/prisma";
+import { logger } from "../utils/logger";
+import { handleServiceError } from "../utils/error";
 
 export class FriendshipService {
   static async sendFriendRequest(requesterId: string, addresseeId: string) {
@@ -14,7 +16,9 @@ export class FriendshipService {
     });
 
     if (existing) {
-      throw new Error("Friendship already exists or pending");
+      const err = new Error("Friendship already exists or pending");
+      logger.warn("sendFriendRequest duplicate", { requesterId, addresseeId });
+      return handleServiceError(err);
     }
 
     return await prisma.friendship.create({
@@ -58,7 +62,9 @@ export class FriendshipService {
     });
 
     if (!friendship || friendship.addresseeId !== userId) {
-      throw new Error("Invalid friendship request");
+      const err = new Error("Invalid friendship request");
+      logger.warn("respondToFriendRequest invalid", { friendshipId, userId });
+      return handleServiceError(err);
     }
 
     return await prisma.friendship.update({

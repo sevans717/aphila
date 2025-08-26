@@ -1,8 +1,8 @@
-import admin from 'firebase-admin';
-import { env } from '../config/env';
-import { prisma } from '../lib/prisma';
-import { logger } from '../utils/logger';
-import { handleServiceError } from '../utils/error';
+import admin from "firebase-admin";
+import { env } from "../config/env";
+import { prisma } from "../lib/prisma";
+import { logger } from "../utils/logger";
+import { handleServiceError } from "../utils/error";
 
 export interface PushNotificationPayload {
   title: string;
@@ -14,7 +14,7 @@ export interface PushNotificationPayload {
 export interface SendNotificationOptions {
   userId: string;
   payload: PushNotificationPayload;
-  priority?: 'high' | 'normal';
+  priority?: "high" | "normal";
   timeToLive?: number;
 }
 
@@ -23,12 +23,18 @@ export class PushNotificationService {
 
   async initialize(): Promise<void> {
     if (!env.enablePushNotifications) {
-      logger.info('Push notifications disabled');
+      logger.info("Push notifications disabled");
       return;
     }
 
-    if (!env.firebaseProjectId || !env.firebasePrivateKey || !env.firebaseClientEmail) {
-      logger.warn('Firebase configuration missing, push notifications disabled');
+    if (
+      !env.firebaseProjectId ||
+      !env.firebasePrivateKey ||
+      !env.firebaseClientEmail
+    ) {
+      logger.warn(
+        "Firebase configuration missing, push notifications disabled"
+      );
       return;
     }
 
@@ -42,11 +48,11 @@ export class PushNotificationService {
           }),
         });
       }
-      
+
       this.isInitialized = true;
-      logger.info('Push notification service initialized');
+      logger.info("Push notification service initialized");
     } catch (error) {
-      logger.error('Failed to initialize Firebase Admin SDK:', error);
+      logger.error("Failed to initialize Firebase Admin SDK:", error);
       return handleServiceError(error) as any;
     }
   }
@@ -75,15 +81,22 @@ export class PushNotificationService {
         },
       });
 
-      logger.info(`Device registered: ${deviceData.deviceId} for user ${deviceData.userId}`);
+      logger.info(
+        `Device registered: ${deviceData.deviceId} for user ${deviceData.userId}`
+      );
       return device;
     } catch (error) {
-      logger.error('Failed to register device:', error);
+      logger.error("Failed to register device:", error);
       return handleServiceError(error) as any;
     }
   }
 
-  async registerDevice(userId: string, fcmToken: string, platform: string, deviceId: string): Promise<void> {
+  async registerDevice(
+    userId: string,
+    fcmToken: string,
+    platform: string,
+    deviceId: string
+  ): Promise<void> {
     try {
       await prisma.device.upsert({
         where: { deviceId },
@@ -104,12 +117,15 @@ export class PushNotificationService {
 
       logger.info(`Device registered: ${deviceId} for user ${userId}`);
     } catch (error) {
-      logger.error('Failed to register device:', error);
+      logger.error("Failed to register device:", error);
       return handleServiceError(error) as any;
     }
   }
 
-  static async unregisterDevice(userId: string, deviceToken: string): Promise<void> {
+  static async unregisterDevice(
+    userId: string,
+    deviceToken: string
+  ): Promise<void> {
     try {
       await prisma.device.updateMany({
         where: {
@@ -121,7 +137,7 @@ export class PushNotificationService {
 
       logger.info(`Device unregistered for user ${userId}`);
     } catch (error) {
-      logger.error('Failed to unregister device:', error);
+      logger.error("Failed to unregister device:", error);
       return handleServiceError(error) as any;
     }
   }
@@ -135,7 +151,7 @@ export class PushNotificationService {
 
       logger.info(`Device unregistered: ${deviceId}`);
     } catch (error) {
-      logger.error('Failed to unregister device:', error);
+      logger.error("Failed to unregister device:", error);
       return handleServiceError(error) as any;
     }
   }
@@ -153,23 +169,29 @@ export class PushNotificationService {
         superLikes: true,
       };
     } catch (error) {
-      logger.error('Failed to get notification preferences:', error);
+      logger.error("Failed to get notification preferences:", error);
       return handleServiceError(error) as any;
     }
   }
 
-  static async updateNotificationPreferences(userId: string, preferences: any): Promise<void> {
+  static async updateNotificationPreferences(
+    userId: string,
+    preferences: any
+  ): Promise<void> {
     try {
       // For now, just log the update since we don't have a notification preferences table
       // In production, you could create a separate NotificationPreferences model
       logger.info(`Updated notification preferences for user ${userId}`);
     } catch (error) {
-      logger.error('Failed to update notification preferences:', error);
+      logger.error("Failed to update notification preferences:", error);
       return handleServiceError(error) as any;
     }
   }
 
-  static async sendToUser(userId: string, payload: PushNotificationPayload): Promise<void> {
+  static async sendToUser(
+    userId: string,
+    payload: PushNotificationPayload
+  ): Promise<void> {
     const instance = new PushNotificationService();
     await instance.initialize();
     await instance.sendToUser({
@@ -180,7 +202,7 @@ export class PushNotificationService {
 
   async sendToUser(options: SendNotificationOptions): Promise<boolean> {
     if (!this.isInitialized) {
-      logger.warn('Push notification service not initialized');
+      logger.warn("Push notification service not initialized");
       return false;
     }
 
@@ -198,28 +220,32 @@ export class PushNotificationService {
         return false;
       }
 
-      const tokens = devices.map(device => device.fcmToken).filter(Boolean) as string[];
-      
+      const tokens = devices
+        .map((device) => device.fcmToken)
+        .filter(Boolean) as string[];
+
       const message: admin.messaging.MulticastMessage = {
         tokens,
         notification: {
           title: options.payload.title,
           body: options.payload.body,
-          ...(options.payload.imageUrl && { imageUrl: options.payload.imageUrl }),
+          ...(options.payload.imageUrl && {
+            imageUrl: options.payload.imageUrl,
+          }),
         },
         data: options.payload.data || {},
         android: {
-          priority: options.priority || 'high',
+          priority: options.priority || "high",
           ttl: options.timeToLive || 24 * 60 * 60 * 1000, // 24 hours
           notification: {
-            sound: 'default',
-            clickAction: 'FLUTTER_NOTIFICATION_CLICK',
+            sound: "default",
+            clickAction: "FLUTTER_NOTIFICATION_CLICK",
           },
         },
         apns: {
           payload: {
             aps: {
-              sound: 'default',
+              sound: "default",
               badge: 1,
             },
           },
@@ -227,14 +253,17 @@ export class PushNotificationService {
       };
 
       const response = await admin.messaging().sendMulticast(message);
-      
+
       // Handle failed tokens
       if (response.failureCount > 0) {
         const failedTokens: string[] = [];
         response.responses.forEach((resp, idx) => {
           if (!resp.success) {
             failedTokens.push(tokens[idx]);
-            logger.warn(`Failed to send notification to token ${tokens[idx]}:`, resp.error);
+            logger.warn(
+              `Failed to send notification to token ${tokens[idx]}:`,
+              resp.error
+            );
           }
         });
 
@@ -242,17 +271,22 @@ export class PushNotificationService {
         await this.removeInvalidTokens(failedTokens);
       }
 
-      logger.info(`Sent notifications to user ${options.userId}: ${response.successCount}/${tokens.length} successful`);
+      logger.info(
+        `Sent notifications to user ${options.userId}: ${response.successCount}/${tokens.length} successful`
+      );
       return response.successCount > 0;
     } catch (error) {
-      logger.error('Failed to send push notification:', error);
-      return handleServiceError(error) as any ?? false;
+      logger.error("Failed to send push notification:", error);
+      return (handleServiceError(error) as any) ?? false;
     }
   }
 
-  async sendToTopic(topic: string, payload: PushNotificationPayload): Promise<boolean> {
+  async sendToTopic(
+    topic: string,
+    payload: PushNotificationPayload
+  ): Promise<boolean> {
     if (!this.isInitialized) {
-      logger.warn('Push notification service not initialized');
+      logger.warn("Push notification service not initialized");
       return false;
     }
 
@@ -271,8 +305,8 @@ export class PushNotificationService {
       logger.info(`Sent notification to topic: ${topic}`);
       return true;
     } catch (error) {
-      logger.error('Failed to send topic notification:', error);
-      return handleServiceError(error) as any ?? false;
+      logger.error("Failed to send topic notification:", error);
+      return (handleServiceError(error) as any) ?? false;
     }
   }
 
@@ -283,7 +317,7 @@ export class PushNotificationService {
       await admin.messaging().subscribeToTopic([fcmToken], topic);
       logger.info(`Subscribed token to topic: ${topic}`);
     } catch (error) {
-      logger.error('Failed to subscribe to topic:', error);
+      logger.error("Failed to subscribe to topic:", error);
       return handleServiceError(error) as any;
     }
   }
@@ -295,7 +329,7 @@ export class PushNotificationService {
       await admin.messaging().unsubscribeFromTopic([fcmToken], topic);
       logger.info(`Unsubscribed token from topic: ${topic}`);
     } catch (error) {
-      logger.error('Failed to unsubscribe from topic:', error);
+      logger.error("Failed to unsubscribe from topic:", error);
       return handleServiceError(error) as any;
     }
   }
@@ -313,34 +347,41 @@ export class PushNotificationService {
 
       logger.info(`Removed ${tokens.length} invalid FCM tokens`);
     } catch (error) {
-      logger.error('Failed to remove invalid tokens:', error);
+      logger.error("Failed to remove invalid tokens:", error);
       return handleServiceError(error) as any;
     }
   }
 
-  async sendMatchNotification(userId: string, matchUserName: string): Promise<void> {
+  async sendMatchNotification(
+    userId: string,
+    matchUserName: string
+  ): Promise<void> {
     await this.sendToUser({
       userId,
       payload: {
-        title: '🎉 New Match!',
+        title: "🎉 New Match!",
         body: `You matched with ${matchUserName}`,
         data: {
-          type: 'match',
-          action: 'open_chat',
+          type: "match",
+          action: "open_chat",
         },
       },
     });
   }
 
-  async sendMessageNotification(userId: string, senderName: string, message: string): Promise<void> {
+  async sendMessageNotification(
+    userId: string,
+    senderName: string,
+    message: string
+  ): Promise<void> {
     await this.sendToUser({
       userId,
       payload: {
         title: senderName,
-        body: message.length > 50 ? message.substring(0, 50) + '...' : message,
+        body: message.length > 50 ? message.substring(0, 50) + "..." : message,
         data: {
-          type: 'message',
-          action: 'open_chat',
+          type: "message",
+          action: "open_chat",
         },
       },
     });
@@ -350,11 +391,11 @@ export class PushNotificationService {
     await this.sendToUser({
       userId,
       payload: {
-        title: 'Someone likes you! 💖',
+        title: "Someone likes you! 💖",
         body: `${likerName} liked your profile`,
         data: {
-          type: 'like',
-          action: 'open_discovery',
+          type: "like",
+          action: "open_discovery",
         },
       },
     });

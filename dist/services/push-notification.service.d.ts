@@ -7,7 +7,7 @@ export interface PushNotificationPayload {
 export interface SendNotificationOptions {
     userId: string;
     payload: PushNotificationPayload;
-    priority?: 'high' | 'normal';
+    priority?: "high" | "normal";
     timeToLive?: number;
 }
 export declare class PushNotificationService {

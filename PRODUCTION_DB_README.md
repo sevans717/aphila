@@ -42,6 +42,8 @@ Helpful runtime checks
 - Use the included PgBouncer connectivity helper to verify pooling connectivity from your host:
   - PowerShell: `./scripts/check-pgbouncer.ps1`
   - This runs a temporary container and executes a `SELECT 1;` against PgBouncer (port 6432). Useful when troubleshooting connection issues between the API and PgBouncer.
+  - On service startup the API will also run a lightweight connectivity check against PgBouncer and log warnings if it cannot reach the pool. This helps surface misconfigured `DATABASE_URL`s that point directly to Postgres instead of PgBouncer.
+  - Ensure `DATABASE_URL` used by running containers points to PgBouncer: `postgresql://<user>:<pass>@pgbouncer:6432/<db>?schema=public`
 - Traefik configuration lives in `./traefik` and stores ACME data in `./traefik/acme`.
 
 Backups
@@ -56,6 +58,13 @@ Security & Hardening Checklist
 - Limit access to backup files and manage retention/rotation.
 - Consider running PgBouncer and Postgres under dedicated system users or separate VMs if you need stricter isolation.
 - Enable monitoring (Prometheus, Grafana) and alerting for DB health, connection counts, and failed jobs.
+
+Startup checks
+
+- The API now runs a lightweight PgBouncer connectivity check on startup and will log a warning if it cannot reach the pool. This surfaces misconfigured `DATABASE_URL` values that point directly to Postgres instead of PgBouncer.
+- You can run the included PgBouncer connectivity helper from the host to verify pooling is reachable before starting services:
+  - PowerShell: `./scripts/check-pgbouncer.ps1`
+  - The helper launches a temporary container and executes `SELECT 1;` against PgBouncer on port `6432`.
 
 Restoring backups
 

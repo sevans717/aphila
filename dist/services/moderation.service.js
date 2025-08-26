@@ -2,6 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ModerationService = void 0;
 const prisma_1 = require("../lib/prisma");
+const logger_1 = require("../utils/logger");
+const error_1 = require("../utils/error");
 // Common inappropriate content patterns
 const INAPPROPRIATE_PATTERNS = [
     // Add regex patterns for content filtering
@@ -80,7 +82,9 @@ class ModerationService {
         const { reporterId, reportedId, reason, description, contentId } = data;
         // Prevent self-reporting
         if (reporterId === reportedId) {
-            throw new Error("Cannot report yourself");
+            const err = new Error("Cannot report yourself");
+            logger_1.logger.warn("createReport called with self-report", { reporterId });
+            return (0, error_1.handleServiceError)(err);
         }
         // Check if user already reported this content/user recently
         const existingReport = await prisma_1.prisma.report.findFirst({
@@ -93,7 +97,9 @@ class ModerationService {
             },
         });
         if (existingReport) {
-            throw new Error("You have already reported this content recently");
+            const err = new Error("You have already reported this content recently");
+            logger_1.logger.warn("Duplicate report attempt", { reporterId, reportedId });
+            return (0, error_1.handleServiceError)(err);
         }
         // Create the report
         const report = await prisma_1.prisma.report.create({
@@ -228,7 +234,9 @@ class ModerationService {
             where: { id: reportId },
         });
         if (!report) {
-            throw new Error("Report not found");
+            const err = new Error("Report not found");
+            logger_1.logger.warn("updateReportStatus called for missing report", { reportId });
+            return (0, error_1.handleServiceError)(err);
         }
         // Update report
         await prisma_1.prisma.report.update({

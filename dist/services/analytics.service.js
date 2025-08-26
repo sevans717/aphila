@@ -32,7 +32,7 @@ class AnalyticsService {
             logger_1.logger.info(`Analytics event tracked: ${event.event} for user ${event.userId}`);
         }
         catch (error) {
-            logger_1.logger.error('Failed to track analytics event:', error);
+            logger_1.logger.error("Failed to track analytics event:", error);
         }
     }
     /**
@@ -41,7 +41,7 @@ class AnalyticsService {
     static async trackSessionStart(userId, platform, appVersion) {
         await this.trackEvent({
             userId,
-            event: 'session_start',
+            event: "session_start",
             platform,
             appVersion,
             properties: {
@@ -60,7 +60,7 @@ class AnalyticsService {
     static async trackSessionEnd(userId, platform, sessionDuration, appVersion) {
         await this.trackEvent({
             userId,
-            event: 'session_end',
+            event: "session_end",
             platform,
             appVersion,
             properties: {
@@ -75,7 +75,7 @@ class AnalyticsService {
     static async trackSwipe(userId, targetUserId, action, platform) {
         await this.trackEvent({
             userId,
-            event: 'swipe',
+            event: "swipe",
             platform,
             properties: {
                 action,
@@ -92,7 +92,7 @@ class AnalyticsService {
         await Promise.all([
             this.trackEvent({
                 userId: userId1,
-                event: 'match_created',
+                event: "match_created",
                 platform,
                 properties: {
                     matchedUserId: userId2,
@@ -101,7 +101,7 @@ class AnalyticsService {
             }),
             this.trackEvent({
                 userId: userId2,
-                event: 'match_created',
+                event: "match_created",
                 platform,
                 properties: {
                     matchedUserId: userId1,
@@ -116,7 +116,7 @@ class AnalyticsService {
     static async trackMessage(senderId, receiverId, messageType, platform) {
         await this.trackEvent({
             userId: senderId,
-            event: 'message_sent',
+            event: "message_sent",
             platform,
             properties: {
                 receiverId,
@@ -131,7 +131,7 @@ class AnalyticsService {
     static async trackProfileCompletion(userId, completionPercentage, platform) {
         await this.trackEvent({
             userId,
-            event: 'profile_completion',
+            event: "profile_completion",
             platform,
             properties: {
                 completionPercentage,
@@ -145,7 +145,7 @@ class AnalyticsService {
     static async trackSubscription(userId, action, subscriptionType, platform) {
         await this.trackEvent({
             userId,
-            event: 'subscription',
+            event: "subscription",
             platform,
             properties: {
                 action,
@@ -160,7 +160,7 @@ class AnalyticsService {
     static async trackFeatureUsage(userId, feature, action, platform, metadata) {
         await this.trackEvent({
             userId,
-            event: 'feature_usage',
+            event: "feature_usage",
             platform,
             properties: {
                 feature,
@@ -229,7 +229,7 @@ class AnalyticsService {
             };
         }
         catch (error) {
-            logger_1.logger.error('Failed to get user metrics:', error);
+            logger_1.logger.error("Failed to get user metrics:", error);
             return (0, error_1.handleServiceError)(error);
         }
     }
@@ -270,7 +270,7 @@ class AnalyticsService {
             };
         }
         catch (error) {
-            logger_1.logger.error('Failed to get engagement metrics:', error);
+            logger_1.logger.error("Failed to get engagement metrics:", error);
             return (0, error_1.handleServiceError)(error);
         }
     }
@@ -280,20 +280,20 @@ class AnalyticsService {
     static async getPlatformDistribution() {
         try {
             const devices = await prisma_1.prisma.device.groupBy({
-                by: ['platform'],
+                by: ["platform"],
                 _count: { id: true },
                 where: {
                     isActive: true,
                 },
             });
             const distribution = {};
-            devices.forEach(device => {
+            devices.forEach((device) => {
                 distribution[device.platform] = device._count.id;
             });
             return distribution;
         }
         catch (error) {
-            logger_1.logger.error('Failed to get platform distribution:', error);
+            logger_1.logger.error("Failed to get platform distribution:", error);
             return (0, error_1.handleServiceError)(error);
         }
     }
@@ -350,7 +350,7 @@ class AnalyticsService {
             };
         }
         catch (error) {
-            logger_1.logger.error('Failed to get conversion funnel:', error);
+            logger_1.logger.error("Failed to get conversion funnel:", error);
             return (0, error_1.handleServiceError)(error);
         }
     }
@@ -363,14 +363,14 @@ class AnalyticsService {
             cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
             const deleted = await prisma_1.prisma.notification.deleteMany({
                 where: {
-                    type: 'analytics',
+                    type: "analytics",
                     createdAt: { lt: cutoffDate },
                 },
             });
             logger_1.logger.info(`Cleaned up ${deleted.count} old analytics records`);
         }
         catch (error) {
-            logger_1.logger.error('Failed to cleanup analytics data:', error);
+            logger_1.logger.error("Failed to cleanup analytics data:", error);
         }
     }
 }

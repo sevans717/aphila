@@ -153,25 +153,110 @@ export interface TrendingSearch {
 }
 export declare class SearchService {
     static searchAll(userId: string, query: string, limit?: number): Promise<{
-        posts: any;
-        users: any;
-        communities: any;
+        posts: {
+            id: string;
+            createdAt: Date;
+            content: string | null;
+            author: {
+                id: string;
+                profile: {
+                    displayName: string;
+                } | null;
+            };
+        }[];
+        users: {
+            id: string;
+            profile: {
+                displayName: string;
+                bio: string | null;
+            } | null;
+            photos: {
+                url: string;
+            }[];
+        }[];
+        communities: {
+            id: string;
+            name: string;
+            description: string | null;
+            _count: {
+                memberships: number;
+            };
+        }[];
     }>;
     static searchPosts(userId: string, query: string, options?: {
         limit?: number;
         cursor?: string;
     }): Promise<{
-        items: any;
+        items: ({
+            _count: {
+                likes: number;
+                comments: number;
+            };
+            author: {
+                profile: {
+                    displayName: string;
+                } | null;
+                photos: {
+                    url: string;
+                }[];
+            } & {
+                id: string;
+                email: string;
+                password: string;
+                isActive: boolean;
+                isAdmin: boolean;
+                lastLogin: Date | null;
+                createdAt: Date;
+                updatedAt: Date;
+            };
+        } & {
+            id: string;
+            createdAt: Date;
+            updatedAt: Date;
+            content: string | null;
+            type: import(".prisma/client").$Enums.PostType;
+            communityId: string | null;
+            editedAt: Date | null;
+            visibility: import(".prisma/client").$Enums.PostVisibility;
+            authorId: string;
+            likesCount: number;
+            commentsCount: number;
+            sharesCount: number;
+            viewsCount: number;
+            isEdited: boolean;
+            isPinned: boolean;
+            isArchived: boolean;
+        })[];
         nextCursor: string | undefined;
     }>;
     static searchUsers(userId: string, query: string, options?: {
         limit?: number;
         cursor?: string;
     }): Promise<{
-        items: any;
+        items: ({
+            profile: {
+                displayName: string;
+                bio: string | null;
+            } | null;
+            photos: {
+                url: string;
+            }[];
+        } & {
+            id: string;
+            email: string;
+            password: string;
+            isActive: boolean;
+            isAdmin: boolean;
+            lastLogin: Date | null;
+            createdAt: Date;
+            updatedAt: Date;
+        })[];
         nextCursor: string | undefined;
     }>;
-    static getSearchHistory(userId: string, limit?: number): Promise<any>;
+    static getSearchHistory(userId: string, limit?: number): Promise<{
+        query: string;
+        createdAt: Date;
+    }[]>;
     static clearSearchHistory(userId: string): Promise<{
         success: boolean;
     }>;

@@ -49,12 +49,13 @@ class WebSocketService {
                 const token = socket.handshake.auth.token ||
                     socket.handshake.headers.authorization?.split(" ")[1];
                 if (!token) {
-                    throw new Error("No token provided");
+                    // let auth middleware handle failure without throwing in sync
+                    return next(new Error("Authentication failed: no token"));
                 }
                 const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
                 const decodedUserId = decoded?.id || decoded?.userId;
                 if (!decodedUserId) {
-                    throw new Error("Invalid token payload");
+                    return next(new Error("Authentication failed: invalid token payload"));
                 }
                 // Get user from database
                 const user = await prisma_1.prisma.user.findUnique({
@@ -66,7 +67,7 @@ class WebSocketService {
                     },
                 });
                 if (!user || !user.isActive) {
-                    throw new Error("User not found or inactive");
+                    return next(new Error("Authentication failed: user not found or inactive"));
                 }
                 socket.userId = user.id;
                 socket.user = user;

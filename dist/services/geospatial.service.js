@@ -226,7 +226,11 @@ class GeospatialService {
     static async getUsersNearUser(userId, radiusKm = 50) {
         const userLocation = await this.getUserLocation(userId);
         if (!userLocation) {
-            throw new Error("User location not available");
+            const err = new Error("User location not available");
+            logger_1.logger.warn("getUsersNearUser called but user location missing", {
+                userId,
+            });
+            return (0, error_1.handleServiceError)(err);
         }
         return this.findNearbyUsers({
             latitude: userLocation.latitude,
@@ -283,7 +287,11 @@ class GeospatialService {
                 },
             });
             if (!userProfile?.latitude || !userProfile?.longitude) {
-                throw new Error("User location not available");
+                const err = new Error("User location not available");
+                logger_1.logger.warn("getDiscoveryFeed called but user location missing", {
+                    userId,
+                });
+                return (0, error_1.handleServiceError)(err);
             }
             // Get potential matches based on location and preferences
             const nearbyUsers = await this.findNearbyUsers({

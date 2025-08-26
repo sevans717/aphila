@@ -2,6 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MessagingService = void 0;
 const prisma_1 = require("../lib/prisma");
+const logger_1 = require("../utils/logger");
+const error_1 = require("../utils/error");
 class MessagingService {
     // Send a message in a match
     static async sendMessage(data) {
@@ -17,7 +19,9 @@ class MessagingService {
             },
         });
         if (!match) {
-            throw new Error("No active match found between users");
+            const err = new Error("No active match found between users");
+            logger_1.logger.warn("sendMessage no active match", { senderId, receiverId });
+            return (0, error_1.handleServiceError)(err);
         }
         // Create message
         const message = await prisma_1.prisma.message.create({
@@ -125,10 +129,14 @@ class MessagingService {
             where: { id: messageId },
         });
         if (!message) {
-            throw new Error("Message not found");
+            const err = new Error("Message not found");
+            logger_1.logger.warn("deleteMessage message not found", { messageId });
+            return (0, error_1.handleServiceError)(err);
         }
         if (message.senderId !== userId) {
-            throw new Error("Can only delete your own messages");
+            const err = new Error("Can only delete your own messages");
+            logger_1.logger.warn("deleteMessage unauthorized", { messageId, userId });
+            return (0, error_1.handleServiceError)(err);
         }
         await prisma_1.prisma.message.update({
             where: { id: messageId },
@@ -193,7 +201,9 @@ class MessagingService {
             },
         });
         if (!match) {
-            throw new Error("Match not found");
+            const err = new Error("Match not found");
+            logger_1.logger.warn("getMatchDetails match not found", { matchId, userId });
+            return (0, error_1.handleServiceError)(err);
         }
         const otherUser = match.initiatorId === userId ? match.receiver : match.initiator;
         return {
@@ -208,10 +218,14 @@ class MessagingService {
             where: { id: messageId },
         });
         if (!message) {
-            throw new Error("Message not found");
+            const err = new Error("Message not found");
+            logger_1.logger.warn("reportMessage message not found", { messageId });
+            return (0, error_1.handleServiceError)(err);
         }
         if (message.senderId === reporterId) {
-            throw new Error("Cannot report your own message");
+            const err = new Error("Cannot report your own message");
+            logger_1.logger.warn("reportMessage self-report", { messageId, reporterId });
+            return (0, error_1.handleServiceError)(err);
         }
         await prisma_1.prisma.report.create({
             data: {

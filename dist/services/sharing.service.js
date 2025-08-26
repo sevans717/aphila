@@ -9,7 +9,9 @@ class SharingService {
         try {
             const { userId, postId, platform, comment } = data;
             if (!postId) {
-                throw new Error("Post ID is required for post sharing");
+                const err = new Error("Post ID is required for post sharing");
+                logger_1.logger.warn("sharePost called without postId", { userId });
+                return (0, error_1.handleServiceError)(err);
             }
             const share = await prisma_1.prisma.postShare.create({
                 data: {
@@ -66,7 +68,9 @@ class SharingService {
         try {
             const { userId, mediaId, platform, comment } = data;
             if (!mediaId) {
-                throw new Error("Media ID is required for media sharing");
+                const err = new Error("Media ID is required for media sharing");
+                logger_1.logger.warn("shareMedia called without mediaId", { userId });
+                return (0, error_1.handleServiceError)(err);
             }
             const share = await prisma_1.prisma.mediaShare.create({
                 data: {
@@ -184,10 +188,17 @@ class SharingService {
                     select: { userId: true },
                 });
                 if (!share) {
-                    throw new Error("Share not found");
+                    const err = new Error("Share not found");
+                    logger_1.logger.warn("deleteShare called for missing post share", {
+                        shareId,
+                        userId,
+                    });
+                    return (0, error_1.handleServiceError)(err);
                 }
                 if (share.userId !== userId) {
-                    throw new Error("Unauthorized to delete this share");
+                    const err = new Error("Unauthorized to delete this share");
+                    logger_1.logger.warn("deleteShare unauthorized for post", { shareId, userId });
+                    return (0, error_1.handleServiceError)(err);
                 }
                 await prisma_1.prisma.postShare.delete({
                     where: { id: shareId },
@@ -199,10 +210,20 @@ class SharingService {
                     select: { userId: true },
                 });
                 if (!share) {
-                    throw new Error("Share not found");
+                    const err = new Error("Share not found");
+                    logger_1.logger.warn("deleteShare called for missing media share", {
+                        shareId,
+                        userId,
+                    });
+                    return (0, error_1.handleServiceError)(err);
                 }
                 if (share.userId !== userId) {
-                    throw new Error("Unauthorized to delete this share");
+                    const err = new Error("Unauthorized to delete this share");
+                    logger_1.logger.warn("deleteShare unauthorized for media", {
+                        shareId,
+                        userId,
+                    });
+                    return (0, error_1.handleServiceError)(err);
                 }
                 await prisma_1.prisma.mediaShare.delete({
                     where: { id: shareId },
@@ -224,7 +245,9 @@ class SharingService {
                 return this.shareMedia(data);
             }
             else {
-                throw new Error("Either postId or mediaId must be provided");
+                const err = new Error("Either postId or mediaId must be provided");
+                logger_1.logger.warn("shareContent called without postId or mediaId", { data });
+                return (0, error_1.handleServiceError)(err);
             }
         }
         catch (error) {

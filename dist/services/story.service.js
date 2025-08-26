@@ -122,10 +122,14 @@ class StoryService {
                 select: { expiresAt: true, userId: true },
             });
             if (!story) {
-                throw new Error("Story not found");
+                const err = new Error("Story not found");
+                logger_1.logger.warn("viewStory called for missing story", { storyId });
+                return (0, error_1.handleServiceError)(err);
             }
             if (story.expiresAt < new Date()) {
-                throw new Error("Story has expired");
+                const err = new Error("Story has expired");
+                logger_1.logger.warn("viewStory called for expired story", { storyId });
+                return (0, error_1.handleServiceError)(err);
             }
             // Don't record views from the story author
             if (story.userId === viewerId) {
@@ -162,10 +166,17 @@ class StoryService {
                 select: { userId: true },
             });
             if (!story) {
-                throw new Error("Story not found");
+                const err = new Error("Story not found");
+                logger_1.logger.warn("deleteStory called for missing story", {
+                    storyId,
+                    userId,
+                });
+                return (0, error_1.handleServiceError)(err);
             }
             if (story.userId !== userId) {
-                throw new Error("Unauthorized to delete this story");
+                const err = new Error("Unauthorized to delete this story");
+                logger_1.logger.warn("deleteStory unauthorized", { storyId, userId });
+                return (0, error_1.handleServiceError)(err);
             }
             await prisma_1.prisma.story.delete({
                 where: { id: storyId },
@@ -206,7 +217,12 @@ class StoryService {
                 },
             });
             if (!story) {
-                return null;
+                const err = new Error("Story not found");
+                logger_1.logger.warn("getStoryById called for missing story", {
+                    storyId,
+                    viewerId,
+                });
+                return (0, error_1.handleServiceError)(err);
             }
             // Check if story is still active
             if (story.expiresAt < new Date()) {
@@ -238,10 +254,16 @@ class StoryService {
                 select: { userId: true },
             });
             if (!story) {
-                throw new Error("Story not found");
+                const err = new Error("Story not found");
+                logger_1.logger.warn("updateStorySettings called for missing story", {
+                    storyId,
+                });
+                return (0, error_1.handleServiceError)(err);
             }
             if (story.userId !== userId) {
-                throw new Error("Unauthorized to update this story");
+                const err = new Error("Unauthorized to update this story");
+                logger_1.logger.warn("updateStorySettings unauthorized", { storyId, userId });
+                return (0, error_1.handleServiceError)(err);
             }
             const updatedStory = await prisma_1.prisma.story.update({
                 where: { id: storyId },
@@ -441,10 +463,17 @@ class StoryService {
                 select: { userId: true },
             });
             if (!story) {
-                throw new Error("Story not found");
+                const err = new Error("Story not found");
+                logger_1.logger.warn("getStoryViewers called for missing story", {
+                    storyId,
+                    ownerId,
+                });
+                return (0, error_1.handleServiceError)(err);
             }
             if (story.userId !== ownerId) {
-                throw new Error("Unauthorized to view story viewers");
+                const err = new Error("Unauthorized to view story viewers");
+                logger_1.logger.warn("getStoryViewers unauthorized", { storyId, ownerId });
+                return (0, error_1.handleServiceError)(err);
             }
             const [viewers, total] = await Promise.all([
                 prisma_1.prisma.storyView.findMany({
@@ -503,10 +532,17 @@ class StoryService {
                 select: { userId: true },
             });
             if (!story) {
-                throw new Error("Story not found");
+                const err = new Error("Story not found");
+                logger_1.logger.warn("getStoryStats called for missing story", {
+                    storyId,
+                    userId,
+                });
+                return (0, error_1.handleServiceError)(err);
             }
             if (story.userId !== userId) {
-                throw new Error("Unauthorized to view story stats");
+                const err = new Error("Unauthorized to view story stats");
+                logger_1.logger.warn("getStoryStats unauthorized", { storyId, userId });
+                return (0, error_1.handleServiceError)(err);
             }
             const [viewsCount, topViewers] = await Promise.all([
                 prisma_1.prisma.storyView.count({
@@ -622,10 +658,19 @@ class StoryService {
     static async addToHighlights(storyId, userId, highlightName, coverImage) {
         try {
             const story = await prisma_1.prisma.story.findUnique({ where: { id: storyId } });
-            if (!story)
-                throw new Error("Story not found");
-            if (story.userId !== userId)
-                throw new Error("Unauthorized to highlight this story");
+            if (!story) {
+                const err = new Error("Story not found");
+                logger_1.logger.warn("addToHighlights called for missing story", {
+                    storyId,
+                    userId,
+                });
+                return (0, error_1.handleServiceError)(err);
+            }
+            if (story.userId !== userId) {
+                const err = new Error("Unauthorized to highlight this story");
+                logger_1.logger.warn("addToHighlights unauthorized", { storyId, userId });
+                return (0, error_1.handleServiceError)(err);
+            }
             const updated = await prisma_1.prisma.story.update({
                 where: { id: storyId },
                 data: { isHighlight: true },

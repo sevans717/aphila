@@ -201,14 +201,14 @@ export class SubscriptionService {
     await prisma.subscription.upsert({
       where: { userId },
       update: {
-        type: planEnum,
+        type: planEnum as any,
         isActive: true,
         startDate: new Date(),
         endDate,
       },
       create: {
         userId,
-        type: planEnum,
+        type: planEnum as any,
         isActive: true,
         startDate: new Date(),
         endDate,
@@ -358,7 +358,7 @@ export class SubscriptionService {
 
     if (!usage.canBoost) {
       const err = new Error("Boost limit reached for your subscription");
-      if (env.nodeEnv === "production") throw err;
+      return handleServiceError(err);
       return Promise.reject(err);
     }
 

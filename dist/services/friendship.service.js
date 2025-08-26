@@ -2,6 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FriendshipService = void 0;
 const prisma_1 = require("../lib/prisma");
+const logger_1 = require("../utils/logger");
+const error_1 = require("../utils/error");
 class FriendshipService {
     static async sendFriendRequest(requesterId, addresseeId) {
         // Check if friendship already exists
@@ -14,7 +16,9 @@ class FriendshipService {
             },
         });
         if (existing) {
-            throw new Error("Friendship already exists or pending");
+            const err = new Error("Friendship already exists or pending");
+            logger_1.logger.warn("sendFriendRequest duplicate", { requesterId, addresseeId });
+            return (0, error_1.handleServiceError)(err);
         }
         return await prisma_1.prisma.friendship.create({
             data: {
@@ -51,7 +55,9 @@ class FriendshipService {
             where: { id: friendshipId },
         });
         if (!friendship || friendship.addresseeId !== userId) {
-            throw new Error("Invalid friendship request");
+            const err = new Error("Invalid friendship request");
+            logger_1.logger.warn("respondToFriendRequest invalid", { friendshipId, userId });
+            return (0, error_1.handleServiceError)(err);
         }
         return await prisma_1.prisma.friendship.update({
             where: { id: friendshipId },

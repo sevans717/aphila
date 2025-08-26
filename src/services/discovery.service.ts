@@ -1,5 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import { prisma } from "../lib/prisma";
+import { logger } from "../utils/logger";
+import { handleServiceError } from "../utils/error";
 
 interface DiscoveryFilters {
   userId: string;
@@ -62,7 +64,9 @@ export class DiscoveryService {
     });
 
     if (!userProfile) {
-      throw new Error("User profile not found");
+      const err = new Error("User profile not found");
+      logger.warn("discoverUsers missing profile", { userId });
+      return handleServiceError(err);
     }
 
     // Get users who have already been liked/passed/blocked

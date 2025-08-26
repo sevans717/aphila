@@ -309,7 +309,11 @@ export class GeospatialService {
     const userLocation = await this.getUserLocation(userId);
 
     if (!userLocation) {
-      throw new Error("User location not available");
+      const err = new Error("User location not available");
+      logger.warn("getUsersNearUser called but user location missing", {
+        userId,
+      });
+      return handleServiceError(err) as any;
     }
 
     return this.findNearbyUsers({
@@ -383,7 +387,11 @@ export class GeospatialService {
       });
 
       if (!userProfile?.latitude || !userProfile?.longitude) {
-        throw new Error("User location not available");
+        const err = new Error("User location not available");
+        logger.warn("getDiscoveryFeed called but user location missing", {
+          userId,
+        });
+        return handleServiceError(err) as any;
       }
 
       // Get potential matches based on location and preferences

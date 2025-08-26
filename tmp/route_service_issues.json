@@ -53,7 +53,7 @@
       "getUsersNearUser": { "status": "implemented" },
       "getDiscoveryFeed": {
         "status": "implemented",
-        "notes": "age filtering TODO"
+        "notes": "age filtering implemented (verified Aug 26 2025)"
       },
       "updateLocationAndGetNearby": { "status": "implemented" }
     }
@@ -75,5 +75,41 @@
       "getNearbyStories": { "status": "implemented" },
       "cleanupExpiredStories": { "status": "implemented" }
     }
+  },
+  "batch.service.ts": {
+    "service": "BatchService",
+    "methods": {
+      "runScheduledJobs": { "status": "implemented" },
+      "syncExternalData": { "status": "implemented" },
+      "populateCache": { "status": "implemented" }
+    },
+    "notes": "Replaced thrown errors with centralized handler"
+  },
+  "analytics.service.ts": {
+    "service": "AnalyticsService",
+    "methods": {
+      "trackEvent": { "status": "implemented" },
+      "getUserMetrics": { "status": "implemented" },
+      "getEngagementMetrics": { "status": "implemented" }
+    },
+    "notes": "Centralized error handler applied; platform distribution corrected"
+  },
+  "websocket.service.ts": {
+    "service": "WebSocketService",
+    "methods": {
+      "handleSendMessage": { "status": "implemented" },
+      "handleJoinMatch": { "status": "implemented" },
+      "updateUserOnlineStatus": { "status": "implemented" }
+    },
+    "notes": "Error handler calls added; socket behavior preserved"
+  },
+  "push-notification.service.ts": {
+    "service": "PushNotificationService",
+    "methods": {
+      "registerDevice": { "status": "implemented" },
+      "sendToUser": { "status": "implemented" },
+      "sendToTopic": { "status": "implemented" }
+    },
+    "notes": "Centralized error handling added; boolean fallbacks preserved"
   }
 }

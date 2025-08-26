@@ -1,0 +1,30 @@
+{
+  "auth": {
+    "login": "/api/v1/auth/login",
+    "register": "/api/v1/auth/register",
+    "refresh": "/api/v1/auth/refresh"
+  },
+  "users": {
+    "getProfile": "/api/v1/users/me",
+    "updateProfile": "/api/v1/users/me",
+    "uploadAvatar": "/api/v1/media/uploadProfilePhoto"
+  },
+  "discovery": {
+    "feed": "/api/v1/discovery/feed",
+    "updateLocation": "/api/v1/discovery/location"
+  },
+  "stories": {
+    "create": "/api/v1/stories",
+    "list": "/api/v1/stories/feed",
+    "nearby": "/api/v1/stories/nearby"
+  },
+  "messages": {
+    "send": "/api/v1/messages/send",
+    "list": "/api/v1/messages/match",
+    "unreadCount": "/api/v1/messages/unreadCount"
+  },
+  "subscriptions": {
+    "plans": "/api/v1/subscriptions/plans",
+    "status": "/api/v1/subscriptions/me"
+  }
+}

@@ -23,7 +23,7 @@ export interface EngagementMetrics {
 }
 export interface DeviceInfo {
     deviceId: string;
-    deviceType: 'mobile' | 'tablet' | 'desktop';
+    deviceType: "mobile" | "tablet" | "desktop";
     operatingSystem: string;
     osVersion: string;
     appVersion: string;
@@ -44,7 +44,7 @@ export interface SessionData {
 export interface SwipeAnalytics {
     userId: string;
     targetUserId: string;
-    action: 'like' | 'pass' | 'super_like';
+    action: "like" | "pass" | "super_like";
     timestamp: Date;
     platform: string;
     location?: {
@@ -65,7 +65,7 @@ export interface MessageAnalytics {
     messageId: string;
     senderId: string;
     receiverId: string;
-    messageType: 'text' | 'image' | 'gif' | 'sticker' | 'voice';
+    messageType: "text" | "image" | "gif" | "sticker" | "voice";
     timestamp: Date;
     responseTime?: number;
     isFirstMessage: boolean;
@@ -73,7 +73,7 @@ export interface MessageAnalytics {
 }
 export interface SubscriptionAnalytics {
     userId: string;
-    action: 'subscribe' | 'cancel' | 'renew' | 'expire';
+    action: "subscribe" | "cancel" | "renew" | "expire";
     subscriptionType: string;
     timestamp: Date;
     platform: string;
@@ -147,7 +147,7 @@ export declare class AnalyticsService {
     /**
      * Track swipe action
      */
-    static trackSwipe(userId: string, targetUserId: string, action: 'like' | 'pass' | 'super_like', platform: string): Promise<void>;
+    static trackSwipe(userId: string, targetUserId: string, action: "like" | "pass" | "super_like", platform: string): Promise<void>;
     /**
      * Track match creation
      */
@@ -163,7 +163,7 @@ export declare class AnalyticsService {
     /**
      * Track subscription events
      */
-    static trackSubscription(userId: string, action: 'subscribe' | 'cancel' | 'renew' | 'expire', subscriptionType: string, platform: string): Promise<void>;
+    static trackSubscription(userId: string, action: "subscribe" | "cancel" | "renew" | "expire", subscriptionType: string, platform: string): Promise<void>;
     /**
      * Track feature usage
      */

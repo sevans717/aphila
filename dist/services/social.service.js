@@ -191,7 +191,11 @@ class SocialService {
                 }),
             ]);
             if (!post) {
-                throw new Error("Post not found");
+                const err = new Error("Post not found");
+                logger_1.logger.warn("getPostLikesBreakdown called for missing post", {
+                    postId,
+                });
+                return (0, error_1.handleServiceError)(err);
             }
             const likeBreakdown = {};
             likesBreakdown.forEach((item) => {
@@ -476,7 +480,9 @@ class SocialService {
                 }),
             ]);
             if (!post) {
-                throw new Error("Post not found");
+                const err = new Error("Post not found");
+                logger_1.logger.warn("getPostStats called for missing post", { postId });
+                return (0, error_1.handleServiceError)(err);
             }
             const likeBreakdown = {};
             likesBreakdown.forEach((item) => {

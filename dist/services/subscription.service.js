@@ -308,8 +308,7 @@ class SubscriptionService {
         const usage = await this.getUsage(userId);
         if (!usage.canBoost) {
             const err = new Error("Boost limit reached for your subscription");
-            if (env_1.env.nodeEnv === "production")
-                throw err;
+            return (0, error_1.handleServiceError)(err);
             return Promise.reject(err);
         }
         // Create boost record

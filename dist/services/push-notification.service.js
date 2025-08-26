@@ -13,11 +13,13 @@ class PushNotificationService {
     isInitialized = false;
     async initialize() {
         if (!env_1.env.enablePushNotifications) {
-            logger_1.logger.info('Push notifications disabled');
+            logger_1.logger.info("Push notifications disabled");
             return;
         }
-        if (!env_1.env.firebaseProjectId || !env_1.env.firebasePrivateKey || !env_1.env.firebaseClientEmail) {
-            logger_1.logger.warn('Firebase configuration missing, push notifications disabled');
+        if (!env_1.env.firebaseProjectId ||
+            !env_1.env.firebasePrivateKey ||
+            !env_1.env.firebaseClientEmail) {
+            logger_1.logger.warn("Firebase configuration missing, push notifications disabled");
             return;
         }
         try {
@@ -31,10 +33,10 @@ class PushNotificationService {
                 });
             }
             this.isInitialized = true;
-            logger_1.logger.info('Push notification service initialized');
+            logger_1.logger.info("Push notification service initialized");
         }
         catch (error) {
-            logger_1.logger.error('Failed to initialize Firebase Admin SDK:', error);
+            logger_1.logger.error("Failed to initialize Firebase Admin SDK:", error);
             return (0, error_1.handleServiceError)(error);
         }
     }
@@ -60,7 +62,7 @@ class PushNotificationService {
             return device;
         }
         catch (error) {
-            logger_1.logger.error('Failed to register device:', error);
+            logger_1.logger.error("Failed to register device:", error);
             return (0, error_1.handleServiceError)(error);
         }
     }
@@ -85,7 +87,7 @@ class PushNotificationService {
             logger_1.logger.info(`Device registered: ${deviceId} for user ${userId}`);
         }
         catch (error) {
-            logger_1.logger.error('Failed to register device:', error);
+            logger_1.logger.error("Failed to register device:", error);
             return (0, error_1.handleServiceError)(error);
         }
     }
@@ -101,7 +103,7 @@ class PushNotificationService {
             logger_1.logger.info(`Device unregistered for user ${userId}`);
         }
         catch (error) {
-            logger_1.logger.error('Failed to unregister device:', error);
+            logger_1.logger.error("Failed to unregister device:", error);
             return (0, error_1.handleServiceError)(error);
         }
     }
@@ -114,7 +116,7 @@ class PushNotificationService {
             logger_1.logger.info(`Device unregistered: ${deviceId}`);
         }
         catch (error) {
-            logger_1.logger.error('Failed to unregister device:', error);
+            logger_1.logger.error("Failed to unregister device:", error);
             return (0, error_1.handleServiceError)(error);
         }
     }
@@ -132,7 +134,7 @@ class PushNotificationService {
             };
         }
         catch (error) {
-            logger_1.logger.error('Failed to get notification preferences:', error);
+            logger_1.logger.error("Failed to get notification preferences:", error);
             return (0, error_1.handleServiceError)(error);
         }
     }
@@ -143,7 +145,7 @@ class PushNotificationService {
             logger_1.logger.info(`Updated notification preferences for user ${userId}`);
         }
         catch (error) {
-            logger_1.logger.error('Failed to update notification preferences:', error);
+            logger_1.logger.error("Failed to update notification preferences:", error);
             return (0, error_1.handleServiceError)(error);
         }
     }
@@ -157,7 +159,7 @@ class PushNotificationService {
     }
     async sendToUser(options) {
         if (!this.isInitialized) {
-            logger_1.logger.warn('Push notification service not initialized');
+            logger_1.logger.warn("Push notification service not initialized");
             return false;
         }
         try {
@@ -172,27 +174,31 @@ class PushNotificationService {
                 logger_1.logger.info(`No active devices found for user ${options.userId}`);
                 return false;
             }
-            const tokens = devices.map(device => device.fcmToken).filter(Boolean);
+            const tokens = devices
+                .map((device) => device.fcmToken)
+                .filter(Boolean);
             const message = {
                 tokens,
                 notification: {
                     title: options.payload.title,
                     body: options.payload.body,
-                    ...(options.payload.imageUrl && { imageUrl: options.payload.imageUrl }),
+                    ...(options.payload.imageUrl && {
+                        imageUrl: options.payload.imageUrl,
+                    }),
                 },
                 data: options.payload.data || {},
                 android: {
-                    priority: options.priority || 'high',
+                    priority: options.priority || "high",
                     ttl: options.timeToLive || 24 * 60 * 60 * 1000, // 24 hours
                     notification: {
-                        sound: 'default',
-                        clickAction: 'FLUTTER_NOTIFICATION_CLICK',
+                        sound: "default",
+                        clickAction: "FLUTTER_NOTIFICATION_CLICK",
                     },
                 },
                 apns: {
                     payload: {
                         aps: {
-                            sound: 'default',
+                            sound: "default",
                             badge: 1,
                         },
                     },
@@ -215,13 +221,13 @@ class PushNotificationService {
             return response.successCount > 0;
         }
         catch (error) {
-            logger_1.logger.error('Failed to send push notification:', error);
+            logger_1.logger.error("Failed to send push notification:", error);
             return (0, error_1.handleServiceError)(error) ?? false;
         }
     }
     async sendToTopic(topic, payload) {
         if (!this.isInitialized) {
-            logger_1.logger.warn('Push notification service not initialized');
+            logger_1.logger.warn("Push notification service not initialized");
             return false;
         }
         try {
@@ -239,7 +245,7 @@ class PushNotificationService {
             return true;
         }
         catch (error) {
-            logger_1.logger.error('Failed to send topic notification:', error);
+            logger_1.logger.error("Failed to send topic notification:", error);
             return (0, error_1.handleServiceError)(error) ?? false;
         }
     }
@@ -251,7 +257,7 @@ class PushNotificationService {
             logger_1.logger.info(`Subscribed token to topic: ${topic}`);
         }
         catch (error) {
-            logger_1.logger.error('Failed to subscribe to topic:', error);
+            logger_1.logger.error("Failed to subscribe to topic:", error);
             return (0, error_1.handleServiceError)(error);
         }
     }
@@ -263,7 +269,7 @@ class PushNotificationService {
             logger_1.logger.info(`Unsubscribed token from topic: ${topic}`);
         }
         catch (error) {
-            logger_1.logger.error('Failed to unsubscribe from topic:', error);
+            logger_1.logger.error("Failed to unsubscribe from topic:", error);
             return (0, error_1.handleServiceError)(error);
         }
     }
@@ -280,7 +286,7 @@ class PushNotificationService {
             logger_1.logger.info(`Removed ${tokens.length} invalid FCM tokens`);
         }
         catch (error) {
-            logger_1.logger.error('Failed to remove invalid tokens:', error);
+            logger_1.logger.error("Failed to remove invalid tokens:", error);
             return (0, error_1.handleServiceError)(error);
         }
     }
@@ -288,11 +294,11 @@ class PushNotificationService {
         await this.sendToUser({
             userId,
             payload: {
-                title: '🎉 New Match!',
+                title: "🎉 New Match!",
                 body: `You matched with ${matchUserName}`,
                 data: {
-                    type: 'match',
-                    action: 'open_chat',
+                    type: "match",
+                    action: "open_chat",
                 },
             },
         });
@@ -302,10 +308,10 @@ class PushNotificationService {
             userId,
             payload: {
                 title: senderName,
-                body: message.length > 50 ? message.substring(0, 50) + '...' : message,
+                body: message.length > 50 ? message.substring(0, 50) + "..." : message,
                 data: {
-                    type: 'message',
-                    action: 'open_chat',
+                    type: "message",
+                    action: "open_chat",
                 },
             },
         });
@@ -314,11 +320,11 @@ class PushNotificationService {
         await this.sendToUser({
             userId,
             payload: {
-                title: 'Someone likes you! 💖',
+                title: "Someone likes you! 💖",
                 body: `${likerName} liked your profile`,
                 data: {
-                    type: 'like',
-                    action: 'open_discovery',
+                    type: "like",
+                    action: "open_discovery",
                 },
             },
         });

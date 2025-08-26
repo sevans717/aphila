@@ -12,7 +12,7 @@ export declare class SubscriptionService {
     static getPlans(): SubscriptionPlan[];
     static getUserSubscription(userId: string): Promise<{
         type: string;
-        endDate: any;
+        endDate: Date | null | undefined;
         isActive: boolean;
         features: string[];
     }>;
@@ -34,14 +34,14 @@ export declare class SubscriptionService {
     static getUsage(userId: string): Promise<{
         subscription: {
             type: string;
-            endDate: any;
+            endDate: Date | null | undefined;
             isActive: boolean;
             features: string[];
         };
         usage: {
-            likesToday: any;
-            superlikesToday: any;
-            boostsThisMonth: any;
+            likesToday: number;
+            superlikesToday: number;
+            boostsThisMonth: number;
         };
         limits: {
             dailyLikes: number;
@@ -53,7 +53,18 @@ export declare class SubscriptionService {
         canBoost: boolean;
     }>;
     private static getLimits;
-    static useBoost(userId: string): Promise<any>;
+    static useBoost(userId: string): Promise<{
+        id: string;
+        userId: string;
+        createdAt: Date;
+        status: import(".prisma/client").$Enums.BoostStatus;
+        type: import(".prisma/client").$Enums.BoostType;
+        categoryId: string | null;
+        communityId: string | null;
+        startAt: Date;
+        endAt: Date;
+        priority: number;
+    }>;
 }
 export {};
 //# sourceMappingURL=subscription.service.d.ts.map

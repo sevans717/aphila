@@ -73,13 +73,16 @@ export class WebSocketService {
           socket.handshake.headers.authorization?.split(" ")[1];
 
         if (!token) {
-          throw new Error("No token provided");
+          // let auth middleware handle failure without throwing in sync
+          return next(new Error("Authentication failed: no token"));
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
         const decodedUserId = decoded?.id || decoded?.userId;
         if (!decodedUserId) {
-          throw new Error("Invalid token payload");
+          return next(
+            new Error("Authentication failed: invalid token payload")
+          );
         }
 
         // Get user from database
@@ -93,7 +96,9 @@ export class WebSocketService {
         });
 
         if (!user || !user.isActive) {
-          throw new Error("User not found or inactive");
+          return next(
+            new Error("Authentication failed: user not found or inactive")
+          );
         }
 
         socket.userId = user.id;
