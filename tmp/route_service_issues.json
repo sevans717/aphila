@@ -26,7 +26,7 @@
       "getUserSubscription": { "status": "implemented" },
       "createSubscription": {
         "status": "implemented",
-        "notes": "placeholder payment flow — requires Stripe integration for paid plans"
+        "notes": "dev payment bypass implemented (DISABLE_PAYMENTS=true). Stripe required for production paid plans."
       },
       "cancelSubscription": { "status": "implemented" },
       "getUsage": { "status": "implemented" },
