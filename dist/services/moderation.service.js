@@ -1,8 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ModerationService = void 0;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../lib/prisma");
 // Common inappropriate content patterns
 const INAPPROPRIATE_PATTERNS = [
     // Add regex patterns for content filtering
@@ -20,24 +19,24 @@ class ModerationService {
         // Check against inappropriate patterns
         for (const pattern of INAPPROPRIATE_PATTERNS) {
             if (pattern.test(content)) {
-                flags.push('inappropriate_content');
+                flags.push("inappropriate_content");
                 confidence += 0.3;
             }
         }
         // Check for excessive caps
         const capsRatio = (content.match(/[A-Z]/g) || []).length / content.length;
         if (capsRatio > 0.7 && content.length > 10) {
-            flags.push('excessive_caps');
+            flags.push("excessive_caps");
             confidence += 0.2;
         }
         // Check for spam patterns
         if (this.isSpamLike(content)) {
-            flags.push('spam');
+            flags.push("spam");
             confidence += 0.5;
         }
         // Check for external contact info
         if (this.hasContactInfo(content)) {
-            flags.push('external_contact');
+            flags.push("external_contact");
             confidence += 0.4;
         }
         const isApproved = confidence < 0.5 && flags.length === 0;
@@ -45,7 +44,9 @@ class ModerationService {
             isApproved,
             confidence: Math.min(confidence, 1),
             flags,
-            reason: !isApproved ? `Content flagged for: ${flags.join(', ')}` : undefined,
+            reason: !isApproved
+                ? `Content flagged for: ${flags.join(", ")}`
+                : undefined,
         };
     }
     // Check if content is spam-like
@@ -72,17 +73,17 @@ class ModerationService {
             /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/, // Email
             /\b(?:snap|ig|insta|kik|telegram):\s*\w+/i, // Social handles
         ];
-        return patterns.some(pattern => pattern.test(content));
+        return patterns.some((pattern) => pattern.test(content));
     }
     // Create a report
     static async createReport(data) {
         const { reporterId, reportedId, reason, description, contentId } = data;
         // Prevent self-reporting
         if (reporterId === reportedId) {
-            throw new Error('Cannot report yourself');
+            throw new Error("Cannot report yourself");
         }
         // Check if user already reported this content/user recently
-        const existingReport = await prisma.report.findFirst({
+        const existingReport = await prisma_1.prisma.report.findFirst({
             where: {
                 reporterId,
                 reportedId,
@@ -92,15 +93,15 @@ class ModerationService {
             },
         });
         if (existingReport) {
-            throw new Error('You have already reported this content recently');
+            throw new Error("You have already reported this content recently");
         }
         // Create the report
-        const report = await prisma.report.create({
+        const report = await prisma_1.prisma.report.create({
             data: {
                 reporterId,
                 reportedId,
                 reason,
-                status: 'pending',
+                status: "pending",
             },
             include: {
                 reporter: {
@@ -122,7 +123,7 @@ class ModerationService {
     }
     // Check if user has too many reports and take action
     static async checkReportThreshold(userId) {
-        const recentReports = await prisma.report.count({
+        const recentReports = await prisma_1.prisma.report.count({
             where: {
                 reportedId: userId,
                 createdAt: {
@@ -133,7 +134,7 @@ class ModerationService {
         // Automatic actions based on report count
         if (recentReports >= 5) {
             // Temporary suspension
-            await prisma.user.update({
+            await prisma_1.prisma.user.update({
                 where: { id: userId },
                 data: {
                 // // @ts-ignore
@@ -143,19 +144,19 @@ class ModerationService {
                 },
             });
             // @ts-ignore - notification type field might not exist in schema
-            await prisma.notification.create({
+            await prisma_1.prisma.notification.create({
                 data: {
                     userId,
-                    type: 'account',
-                    title: 'Account Temporarily Suspended',
-                    body: 'Your account has been temporarily suspended due to multiple reports',
-                    data: { action: 'suspended', duration: '24h' },
+                    type: "account",
+                    title: "Account Temporarily Suspended",
+                    body: "Your account has been temporarily suspended due to multiple reports",
+                    data: { action: "suspended", duration: "24h" },
                 },
             });
         }
         else if (recentReports >= 10) {
             // Permanent ban
-            await prisma.user.update({
+            await prisma_1.prisma.user.update({
                 where: { id: userId },
                 data: {
                     isActive: false,
@@ -164,13 +165,13 @@ class ModerationService {
                 },
             });
             // @ts-ignore - notification type field might not exist in schema
-            await prisma.notification.create({
+            await prisma_1.prisma.notification.create({
                 data: {
                     userId,
-                    type: 'account',
-                    title: 'Account Suspended',
-                    body: 'Your account has been suspended due to violations of our community guidelines',
-                    data: { action: 'banned' },
+                    type: "account",
+                    title: "Account Suspended",
+                    body: "Your account has been suspended due to violations of our community guidelines",
+                    data: { action: "banned" },
                 },
             });
         }
@@ -185,7 +186,7 @@ class ModerationService {
         if (type)
             where.type = type;
         const [reports, total] = await Promise.all([
-            prisma.report.findMany({
+            prisma_1.prisma.report.findMany({
                 where,
                 include: {
                     reporter: {
@@ -205,11 +206,11 @@ class ModerationService {
                         },
                     },
                 },
-                orderBy: { createdAt: 'desc' },
+                orderBy: { createdAt: "desc" },
                 skip,
                 take: limit,
             }),
-            prisma.report.count({ where }),
+            prisma_1.prisma.report.count({ where }),
         ]);
         return {
             reports,
@@ -223,14 +224,14 @@ class ModerationService {
     }
     // Update report status (admin action)
     static async updateReportStatus(reportId, status, action, adminNotes) {
-        const report = await prisma.report.findUnique({
+        const report = await prisma_1.prisma.report.findUnique({
             where: { id: reportId },
         });
         if (!report) {
-            throw new Error('Report not found');
+            throw new Error("Report not found");
         }
         // Update report
-        await prisma.report.update({
+        await prisma_1.prisma.report.update({
             where: { id: reportId },
             data: {
                 status,
@@ -240,7 +241,7 @@ class ModerationService {
             },
         });
         // Take action if specified
-        if (action && action !== 'dismiss') {
+        if (action && action !== "dismiss") {
             await this.takeActionOnUser(report.reportedId, action);
         }
         return { success: true };
@@ -248,20 +249,20 @@ class ModerationService {
     // Take action on a user
     static async takeActionOnUser(userId, action) {
         switch (action) {
-            case 'warn':
+            case "warn":
                 // @ts-ignore - notification type field might not exist in schema
-                await prisma.notification.create({
+                await prisma_1.prisma.notification.create({
                     data: {
                         userId,
-                        type: 'account',
-                        title: 'Community Guidelines Warning',
-                        body: 'Please review our community guidelines to ensure your content complies',
-                        data: { action: 'warning' },
+                        type: "account",
+                        title: "Community Guidelines Warning",
+                        body: "Please review our community guidelines to ensure your content complies",
+                        data: { action: "warning" },
                     },
                 });
                 break;
-            case 'suspend':
-                await prisma.user.update({
+            case "suspend":
+                await prisma_1.prisma.user.update({
                     where: { id: userId },
                     data: {
                     // // @ts-ignore
@@ -271,18 +272,18 @@ class ModerationService {
                     },
                 });
                 // @ts-ignore - notification type field might not exist in schema
-                await prisma.notification.create({
+                await prisma_1.prisma.notification.create({
                     data: {
                         userId,
-                        type: 'account',
-                        title: 'Account Suspended',
-                        body: 'Your account has been suspended for 7 days due to community guideline violations',
-                        data: { action: 'suspended', duration: '7d' },
+                        type: "account",
+                        title: "Account Suspended",
+                        body: "Your account has been suspended for 7 days due to community guideline violations",
+                        data: { action: "suspended", duration: "7d" },
                     },
                 });
                 break;
-            case 'ban':
-                await prisma.user.update({
+            case "ban":
+                await prisma_1.prisma.user.update({
                     where: { id: userId },
                     data: {
                         isActive: false,
@@ -291,13 +292,13 @@ class ModerationService {
                     },
                 });
                 // @ts-ignore - notification type field might not exist in schema
-                await prisma.notification.create({
+                await prisma_1.prisma.notification.create({
                     data: {
                         userId,
-                        type: 'account',
-                        title: 'Account Banned',
-                        body: 'Your account has been permanently banned due to severe violations',
-                        data: { action: 'banned' },
+                        type: "account",
+                        title: "Account Banned",
+                        body: "Your account has been permanently banned due to severe violations",
+                        data: { action: "banned" },
                     },
                 });
                 break;
@@ -305,7 +306,7 @@ class ModerationService {
     }
     // Check if user is currently suspended
     static async isUserSuspended(userId) {
-        const user = await prisma.user.findUnique({
+        const user = await prisma_1.prisma.user.findUnique({
             where: { id: userId },
             select: {
                 // // @ts-ignore
@@ -324,7 +325,7 @@ class ModerationService {
         // @ts-ignore - suspension fields might not exist in schema
         if (user.suspensionEnd && new Date() > user.suspensionEnd) {
             // Auto-lift suspension
-            await prisma.user.update({
+            await prisma_1.prisma.user.update({
                 where: { id: userId },
                 data: {
                 // // @ts-ignore
@@ -341,17 +342,17 @@ class ModerationService {
     // Get user's moderation history
     static async getUserModerationHistory(userId) {
         const [reportsBy, reportsAgainst, warnings] = await Promise.all([
-            prisma.report.count({
+            prisma_1.prisma.report.count({
                 where: { reporterId: userId },
             }),
-            prisma.report.count({
+            prisma_1.prisma.report.count({
                 where: { reportedId: userId },
             }),
-            prisma.notification.count({
+            prisma_1.prisma.notification.count({
                 where: {
                     userId,
                     // type not in schema, using reason instead 'account',
-                    title: { contains: 'Warning' },
+                    title: { contains: "Warning" },
                 },
             }),
         ]);

@@ -11,11 +11,13 @@ export declare const SUBSCRIPTION_PLANS: SubscriptionPlan[];
 export declare class SubscriptionService {
     static getPlans(): SubscriptionPlan[];
     static getUserSubscription(userId: string): Promise<{
-        type: any;
+        type: string;
         endDate: any;
-        isActive: any;
+        isActive: boolean;
         features: string[];
     }>;
+    private static mapSubscriptionEnumToPlanId;
+    private static mapPlanIdToSubscriptionEnum;
     static getFeatures(subscriptionType: string): string[];
     static hasFeature(userId: string, feature: string): Promise<boolean>;
     static createSubscription(userId: string, planId: string, paymentToken?: string): Promise<{
@@ -31,15 +33,15 @@ export declare class SubscriptionService {
     }>;
     static getUsage(userId: string): Promise<{
         subscription: {
-            type: any;
+            type: string;
             endDate: any;
-            isActive: any;
+            isActive: boolean;
             features: string[];
         };
         usage: {
-            likesToday: number;
-            superlikesToday: number;
-            boostsThisMonth: number;
+            likesToday: any;
+            superlikesToday: any;
+            boostsThisMonth: any;
         };
         limits: {
             dailyLikes: number;
@@ -51,18 +53,7 @@ export declare class SubscriptionService {
         canBoost: boolean;
     }>;
     private static getLimits;
-    static useBoost(userId: string): Promise<{
-        id: string;
-        createdAt: Date;
-        userId: string;
-        status: import(".prisma/client").$Enums.BoostStatus;
-        type: import(".prisma/client").$Enums.BoostType;
-        categoryId: string | null;
-        communityId: string | null;
-        startAt: Date;
-        endAt: Date;
-        priority: number;
-    }>;
+    static useBoost(userId: string): Promise<any>;
 }
 export {};
 //# sourceMappingURL=subscription.service.d.ts.map

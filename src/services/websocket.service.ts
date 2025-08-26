@@ -1,10 +1,11 @@
-import { PrismaClient } from '@prisma/client';
-import { Server as HTTPServer } from 'http';
-import jwt from 'jsonwebtoken';
-import { Socket, Server as SocketIOServer } from 'socket.io';
-import { logger } from '../utils/logger';
+import { PrismaClient } from "@prisma/client";
+import { prisma } from "../lib/prisma";
+import { Server as HTTPServer } from "http";
+import jwt from "jsonwebtoken";
+import { Socket, Server as SocketIOServer } from "socket.io";
+import { logger } from "../utils/logger";
 
-const prisma = new PrismaClient();
+// using shared singleton `prisma` from src/lib/prisma
 
 interface AuthenticatedSocket extends Socket {
   userId?: string;
@@ -13,7 +14,7 @@ interface AuthenticatedSocket extends Socket {
 
 interface PresenceInfo {
   userId: string;
-  status: 'online' | 'away' | 'offline';
+  status: "online" | "away" | "offline";
   lastSeen: Date;
   deviceInfo?: {
     platform: string;
@@ -47,11 +48,11 @@ export class WebSocketService {
         pingTimeout: 60000, // 60 seconds
         pingInterval: 25000, // 25 seconds
         connectTimeout: 45000, // 45 seconds
-        transports: ['websocket', 'polling'], // Fallback support
+        transports: ["websocket", "polling"], // Fallback support
       });
     } catch (err) {
-      logger.error('Socket.IO initialization failed', { err });
-  this.io = null;
+      logger.error("Socket.IO initialization failed", { err });
+      this.io = null;
       return;
     }
 
@@ -62,20 +63,22 @@ export class WebSocketService {
   }
 
   private setupAuth() {
-  const io = this.io;
-  if (!io) return;
-  io.use(async (socket: any, next: any) => {
+    const io = this.io;
+    if (!io) return;
+    io.use(async (socket: any, next: any) => {
       try {
-        const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
-        
+        const token =
+          socket.handshake.auth.token ||
+          socket.handshake.headers.authorization?.split(" ")[1];
+
         if (!token) {
-          throw new Error('No token provided');
+          throw new Error("No token provided");
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
         const decodedUserId = decoded?.id || decoded?.userId;
         if (!decodedUserId) {
-          throw new Error('Invalid token payload');
+          throw new Error("Invalid token payload");
         }
 
         // Get user from database
@@ -89,64 +92,64 @@ export class WebSocketService {
         });
 
         if (!user || !user.isActive) {
-          throw new Error('User not found or inactive');
+          throw new Error("User not found or inactive");
         }
 
-  socket.userId = user.id;
+        socket.userId = user.id;
         socket.user = user;
         next();
       } catch (error) {
-        next(new Error('Authentication failed'));
+        next(new Error("Authentication failed"));
       }
     });
   }
 
   private setupEventHandlers() {
-  const io = this.io;
-  if (!io) return;
-  io.on('connection', (socket: any) => {
+    const io = this.io;
+    if (!io) return;
+    io.on("connection", (socket: any) => {
       console.log(`User ${socket.userId} connected`);
-      
+
       // Store user socket mapping
-  this.userSockets.set(socket.userId, socket.id);
+      this.userSockets.set(socket.userId, socket.id);
 
       // Update user online status
       this.updateUserOnlineStatus(socket.userId, true);
 
       // Join user to their personal room for direct notifications
-  socket.join(`user:${socket.userId}`);
+      socket.join(`user:${socket.userId}`);
 
       // Handle joining match rooms
-      socket.on('join_match', (matchId: string) => {
+      socket.on("join_match", (matchId: string) => {
         this.handleJoinMatch(socket, matchId);
       });
 
       // Handle leaving match rooms
-      socket.on('leave_match', (matchId: string) => {
+      socket.on("leave_match", (matchId: string) => {
         socket.leave(`match:${matchId}`);
       });
 
       // Handle real-time messaging
-      socket.on('send_message', (data: any) => {
+      socket.on("send_message", (data: any) => {
         this.handleSendMessage(socket, data);
       });
 
       // Handle typing indicators
-      socket.on('typing_start', (data: { matchId: string }) => {
+      socket.on("typing_start", (data: { matchId: string }) => {
         this.handleTypingStart(socket, data);
       });
 
-      socket.on('typing_stop', (data: { matchId: string }) => {
+      socket.on("typing_stop", (data: { matchId: string }) => {
         this.handleTypingStop(socket, data);
       });
 
       // Handle message read receipts
-      socket.on('mark_read', (data: { matchId: string }) => {
+      socket.on("mark_read", (data: { matchId: string }) => {
         this.handleMarkRead(socket, data);
       });
 
       // Handle disconnect
-      socket.on('disconnect', () => {
+      socket.on("disconnect", () => {
         console.log(`User ${socket.userId} disconnected`);
         this.userSockets.delete(socket.userId);
         this.updateUserOnlineStatus(socket.userId, false);
@@ -160,49 +163,49 @@ export class WebSocketService {
       const match = await prisma.match.findFirst({
         where: {
           id: matchId,
-          OR: [
-            { initiatorId: socket.userId },
-            { receiverId: socket.userId },
-          ],
-          status: 'ACTIVE',
+          OR: [{ initiatorId: socket.userId }, { receiverId: socket.userId }],
+          status: "ACTIVE",
         },
       });
 
       if (!match) {
-        socket.emit('error', { message: 'Match not found or access denied' });
+        socket.emit("error", { message: "Match not found or access denied" });
         return;
       }
 
       socket.join(`match:${matchId}`);
-      socket.emit('joined_match', { matchId });
+      socket.emit("joined_match", { matchId });
     } catch (error) {
-      socket.emit('error', { message: 'Failed to join match' });
+      socket.emit("error", { message: "Failed to join match" });
     }
   }
 
   private async handleSendMessage(socket: any, data: any) {
     try {
-      const { matchId, content, messageType = 'text', clientNonce } = data;
+      const { matchId, content, messageType = "text", clientNonce } = data;
 
       // Get match to find receiver
       const match = await prisma.match.findFirst({
         where: {
           id: matchId,
-          OR: [
-            { initiatorId: socket.userId },
-            { receiverId: socket.userId },
-          ],
-          status: 'ACTIVE',
+          OR: [{ initiatorId: socket.userId }, { receiverId: socket.userId }],
+          status: "ACTIVE",
         },
       });
 
       if (!match) {
         // emit specific error with clientNonce so clients can mark failed
-        socket.emit('message_error', { message: 'Match not found', clientNonce });
+        socket.emit("message_error", {
+          message: "Match not found",
+          clientNonce,
+        });
         return;
       }
 
-      const receiverId = match.initiatorId === socket.userId ? match.receiverId : match.initiatorId;
+      const receiverId =
+        match.initiatorId === socket.userId
+          ? match.receiverId
+          : match.initiatorId;
 
       // Create message in database
       const message = await prisma.message.create({
@@ -212,7 +215,7 @@ export class WebSocketService {
           matchId,
           content,
           messageType,
-          },
+        },
         include: {
           sender: {
             select: {
@@ -226,51 +229,54 @@ export class WebSocketService {
       });
 
       // Broadcast message to match room
-  const io = this.io;
-  if (io) io.to(`match:${matchId}`).emit('new_message', {
-        id: message.id,
-        senderId: message.senderId,
-        receiverId: message.receiverId,
-        content: message.content,
-        messageType: message.messageType,
-        createdAt: message.createdAt,
-        sender: message.sender,
-        clientNonce,
-      });
+      const io = this.io;
+      if (io)
+        io.to(`match:${matchId}`).emit("new_message", {
+          id: message.id,
+          senderId: message.senderId,
+          receiverId: message.receiverId,
+          content: message.content,
+          messageType: message.messageType,
+          createdAt: message.createdAt,
+          sender: message.sender,
+          clientNonce,
+        });
 
       // Emit delivery ack back to sender with clientNonce for reconciliation
-      socket.emit('message_ack', {
+      socket.emit("message_ack", {
         messageId: message.id,
         clientNonce,
         deliveredAt: new Date(),
       });
 
       // Send push notification if receiver is offline
-  const receiverSocketId = this.userSockets.get(receiverId);
+      const receiverSocketId = this.userSockets.get(receiverId);
       if (!receiverSocketId) {
         await this.sendPushNotification(receiverId, {
           title: `New message from ${message.sender.profile?.displayName}`,
-          body: messageType === 'text' ? content : `Sent a ${messageType}`,
+          body: messageType === "text" ? content : `Sent a ${messageType}`,
           data: { matchId, messageId: message.id },
         });
       }
-
     } catch (error) {
       // emit specific error with clientNonce so clients can mark failed
       const clientNonce = data?.clientNonce;
-      socket.emit('message_error', { message: 'Failed to send message', clientNonce });
+      socket.emit("message_error", {
+        message: "Failed to send message",
+        clientNonce,
+      });
     }
   }
 
   private handleTypingStart(socket: any, data: { matchId: string }) {
-    socket.to(`match:${data.matchId}`).emit('user_typing', {
+    socket.to(`match:${data.matchId}`).emit("user_typing", {
       userId: socket.userId,
       matchId: data.matchId,
     });
   }
 
   private handleTypingStop(socket: any, data: { matchId: string }) {
-    socket.to(`match:${data.matchId}`).emit('user_stopped_typing', {
+    socket.to(`match:${data.matchId}`).emit("user_stopped_typing", {
       userId: socket.userId,
       matchId: data.matchId,
     });
@@ -300,14 +306,14 @@ export class WebSocketService {
       });
 
       // Notify sender about read receipt
-      socket.to(`match:${data.matchId}`).emit('messages_read', {
+      socket.to(`match:${data.matchId}`).emit("messages_read", {
         matchId: data.matchId,
         readBy: socket.userId,
         readAt: new Date(),
-        messageIds: unread.map(m => m.id),
+        messageIds: unread.map((m) => m.id),
       });
     } catch (error) {
-      socket.emit('error', { message: 'Failed to mark messages as read' });
+      socket.emit("error", { message: "Failed to mark messages as read" });
     }
   }
 
@@ -315,28 +321,28 @@ export class WebSocketService {
     try {
       await prisma.user.update({
         where: { id: userId },
-        data: { 
+        data: {
           // lastSeen not in schema new Date(),
           // You could add an isOnline field to the user model if needed
         },
       });
     } catch (error) {
-      console.error('Failed to update online status:', error);
+      console.error("Failed to update online status:", error);
     }
   }
 
   // Public method to send notifications to specific users
   public sendNotificationToUser(userId: string, notification: any) {
-  const io = this.io;
-  if (!io) return;
-  io.to(`user:${userId}`).emit('notification', notification);
+    const io = this.io;
+    if (!io) return;
+    io.to(`user:${userId}`).emit("notification", notification);
   }
 
   // Public method to send match notification
   public sendMatchNotification(userId: string, matchData: any) {
-  const io = this.io;
-  if (!io) return;
-  io.to(`user:${userId}`).emit('new_match', matchData);
+    const io = this.io;
+    if (!io) return;
+    io.to(`user:${userId}`).emit("new_match", matchData);
   }
 
   // Send push notification (placeholder for FCM integration)
@@ -344,7 +350,7 @@ export class WebSocketService {
     try {
       // Get user's device tokens
       const devices = await prisma.device.findMany({
-        where: { 
+        where: {
           userId,
           fcmToken: { not: null },
         },
@@ -355,7 +361,7 @@ export class WebSocketService {
       await prisma.notification.create({
         data: {
           userId,
-          type: 'message',
+          type: "message",
           title: notification.title,
           body: notification.body,
           data: notification.data,
@@ -364,7 +370,7 @@ export class WebSocketService {
 
       logger.info(`Push notification sent to user ${userId}:`, notification);
     } catch (error: any) {
-      logger.error('Failed to send push notification:', error);
+      logger.error("Failed to send push notification:", error);
     }
   }
 
@@ -399,7 +405,7 @@ export class WebSocketService {
         //     lastSeen: presence.lastSeen,
         //   },
         // });
-        
+
         logger.debug(`User ${userId} presence: ${presence.status}`);
       } catch (error: any) {
         logger.error(`Failed to update presence for user ${userId}:`, error);
@@ -419,8 +425,8 @@ export class WebSocketService {
           const socket = io?.sockets.sockets.get(socketId);
           if (socket) {
             // Send queued messages
-            queue.messages.forEach(message => {
-              socket.emit('message', message);
+            queue.messages.forEach((message) => {
+              socket.emit("message", message);
             });
 
             // Clear the queue
@@ -457,12 +463,16 @@ export class WebSocketService {
   /**
    * Enhanced message sending with fallback and queue support
    */
-  public sendMessageWithFallback(userId: string, event: string, data: any): boolean {
+  public sendMessageWithFallback(
+    userId: string,
+    event: string,
+    data: any
+  ): boolean {
     const socketId = this.userSockets.get(userId);
-    
+
     if (socketId) {
-  const io = this.io;
-  const socket = io?.sockets.sockets.get(socketId);
+      const io = this.io;
+      const socket = io?.sockets.sockets.get(socketId);
       if (socket && socket.connected) {
         socket.emit(event, data);
         return true;
@@ -484,7 +494,11 @@ export class WebSocketService {
   /**
    * Set user presence
    */
-  public setUserPresence(userId: string, status: 'online' | 'away' | 'offline', deviceInfo?: any) {
+  public setUserPresence(
+    userId: string,
+    status: "online" | "away" | "offline",
+    deviceInfo?: any
+  ) {
     this.presence.set(userId, {
       userId,
       status,
@@ -519,27 +533,27 @@ export class WebSocketService {
    * Broadcast to all users in a community
    */
   public broadcastToCommunity(communityId: string, event: string, data: any) {
-  const io = this.io;
-  if (!io) return;
-  io.to(`community:${communityId}`).emit(event, data);
+    const io = this.io;
+    if (!io) return;
+    io.to(`community:${communityId}`).emit(event, data);
   }
 
   /**
    * Broadcast to all online users
    */
   public broadcastToAll(event: string, data: any) {
-  const io = this.io;
-  if (!io) return;
-  io.emit(event, data);
+    const io = this.io;
+    if (!io) return;
+    io.emit(event, data);
   }
 
   /**
    * Close the WebSocket service
    */
   public close() {
-  const io = this.io;
-  if (!io) return;
-  io.close();
+    const io = this.io;
+    if (!io) return;
+    io.close();
   }
 
   // Get Socket.IO instance for external use

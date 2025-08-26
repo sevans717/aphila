@@ -1,8 +1,7 @@
-import { MediaType } from '@prisma/client';
 interface UploadResult {
     id: string;
     url: string;
-    type: MediaType;
+    type: string;
     width?: number;
     height?: number;
     duration?: number;
@@ -35,76 +34,29 @@ export declare class MediaService {
     private static getMediaType;
     private static extractImageMetadata;
     private static extractVideoMetadata;
-    static uploadProfilePhoto(file: FileUpload, userId: string, isPrimary?: boolean): Promise<{
-        id: string;
-        createdAt: Date;
-        userId: string;
-        url: string;
-        isPrimary: boolean;
-        order: number;
-    }>;
+    static uploadProfilePhoto(file: FileUpload, userId: string, isPrimary?: boolean): Promise<any>;
     static getUserMedia(userId: string, options?: {
-        type?: MediaType;
+        type?: string;
         limit?: number;
         offset?: number;
-    }): Promise<{
-        id: string;
-        createdAt: Date;
-        userId: string;
-        url: string;
-        type: import(".prisma/client").$Enums.MediaType;
-        isFavorite: boolean;
-        usedInProfile: boolean;
-        width: number | null;
-        height: number | null;
-        duration: number | null;
-    }[]>;
+    }): Promise<any>;
     static deleteMedia(mediaId: string, userId: string): Promise<{
         success: boolean;
     }>;
     static getSignedUrl(key: string, expiresIn?: number): Promise<string>;
-    static getMediaById(mediaId: string): Promise<({
-        user: {
-            id: string;
-            profile: {
-                displayName: string;
-            } | null;
-        };
-    } & {
-        id: string;
-        createdAt: Date;
-        userId: string;
-        url: string;
-        type: import(".prisma/client").$Enums.MediaType;
-        isFavorite: boolean;
-        usedInProfile: boolean;
-        width: number | null;
-        height: number | null;
-        duration: number | null;
-    }) | null>;
+    static getMediaById(mediaId: string): Promise<any>;
     static updateMediaMetadata(mediaId: string, userId: string, metadata: {
         isFavorite?: boolean;
         usedInProfile?: boolean;
-    }): Promise<{
-        id: string;
-        createdAt: Date;
-        userId: string;
-        url: string;
-        type: import(".prisma/client").$Enums.MediaType;
-        isFavorite: boolean;
-        usedInProfile: boolean;
-        width: number | null;
-        height: number | null;
-        duration: number | null;
-    }>;
+    }): Promise<any>;
     static getFileInfo(filename: string): Promise<string>;
     static cleanupOldFiles(olderThanDays?: number): Promise<{
         cleaned: number;
     }>;
     static getUploadStats(userId?: string): Promise<{
-        total: number;
-        byType: Record<string, number>;
-        recentUploads: number;
+        total: any;
+        byType: any;
+        recentUploads: any;
     }>;
     /**
      * Start a chunked upload session for large files
@@ -117,7 +69,7 @@ export declare class MediaService {
     /**
      * Complete chunked upload and assemble file
      */
-    static completeChunkedUpload(sessionId: string, uploadType?: 'image' | 'video' | 'audio' | 'document'): Promise<UploadResult>;
+    static completeChunkedUpload(sessionId: string, uploadType?: "image" | "video" | "audio" | "document"): Promise<UploadResult>;
     /**
      * Get upload progress for a session
      */
@@ -133,7 +85,7 @@ export declare class MediaService {
     /**
      * Generate thumbnail for images and videos
      */
-    static generateThumbnail(mediaId: string, type: MediaType): Promise<string | null>;
+    static generateThumbnail(mediaId: string, type: string): Promise<string | null>;
 }
 export {};
 //# sourceMappingURL=media.service.d.ts.map

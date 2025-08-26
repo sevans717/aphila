@@ -6,40 +6,13 @@ export interface CreateNotificationInput {
     data?: Record<string, any>;
 }
 export declare class NotificationService {
-    static create(input: CreateNotificationInput): Promise<{
-        id: string;
-        createdAt: Date;
-        userId: string;
-        isRead: boolean;
-        type: string;
-        data: import("@prisma/client/runtime/library").JsonValue | null;
-        title: string;
-        body: string;
-    }>;
-    static bulkCreate(notifications: CreateNotificationInput[]): Promise<{
-        id: string;
-        createdAt: Date;
-        userId: string;
-        isRead: boolean;
-        type: string;
-        data: import("@prisma/client/runtime/library").JsonValue | null;
-        title: string;
-        body: string;
-    }[]>;
+    static create(input: CreateNotificationInput): Promise<any>;
+    static bulkCreate(notifications: CreateNotificationInput[]): Promise<any>;
     static list(userId: string, options?: {
         limit?: number;
         cursor?: string;
     }): Promise<{
-        items: {
-            id: string;
-            createdAt: Date;
-            userId: string;
-            isRead: boolean;
-            type: string;
-            data: import("@prisma/client/runtime/library").JsonValue | null;
-            title: string;
-            body: string;
-        }[];
+        items: any;
         nextCursor: string | undefined;
     }>;
     static markRead(userId: string, ids: string[]): Promise<{

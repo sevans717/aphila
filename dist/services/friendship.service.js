@@ -1,12 +1,11 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FriendshipService = void 0;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../lib/prisma");
 class FriendshipService {
     static async sendFriendRequest(requesterId, addresseeId) {
         // Check if friendship already exists
-        const existing = await prisma.friendship.findFirst({
+        const existing = await prisma_1.prisma.friendship.findFirst({
             where: {
                 OR: [
                     { requesterId, addresseeId },
@@ -15,13 +14,13 @@ class FriendshipService {
             },
         });
         if (existing) {
-            throw new Error('Friendship already exists or pending');
+            throw new Error("Friendship already exists or pending");
         }
-        return await prisma.friendship.create({
+        return await prisma_1.prisma.friendship.create({
             data: {
                 requesterId,
                 addresseeId,
-                status: 'PENDING',
+                status: "PENDING",
             },
             include: {
                 requester: {
@@ -48,16 +47,16 @@ class FriendshipService {
         });
     }
     static async respondToFriendRequest(friendshipId, userId, accept) {
-        const friendship = await prisma.friendship.findUnique({
+        const friendship = await prisma_1.prisma.friendship.findUnique({
             where: { id: friendshipId },
         });
         if (!friendship || friendship.addresseeId !== userId) {
-            throw new Error('Invalid friendship request');
+            throw new Error("Invalid friendship request");
         }
-        return await prisma.friendship.update({
+        return await prisma_1.prisma.friendship.update({
             where: { id: friendshipId },
             data: {
-                status: accept ? 'ACCEPTED' : 'REJECTED',
+                status: accept ? "ACCEPTED" : "REJECTED",
                 respondedAt: new Date(),
             },
             include: {
@@ -85,11 +84,11 @@ class FriendshipService {
         });
     }
     static async getFriends(userId) {
-        return await prisma.friendship.findMany({
+        return await prisma_1.prisma.friendship.findMany({
             where: {
                 OR: [
-                    { requesterId: userId, status: 'ACCEPTED' },
-                    { addresseeId: userId, status: 'ACCEPTED' },
+                    { requesterId: userId, status: "ACCEPTED" },
+                    { addresseeId: userId, status: "ACCEPTED" },
                 ],
             },
             include: {
@@ -131,10 +130,10 @@ class FriendshipService {
         });
     }
     static async getPendingRequests(userId) {
-        return await prisma.friendship.findMany({
+        return await prisma_1.prisma.friendship.findMany({
             where: {
                 addresseeId: userId,
-                status: 'PENDING',
+                status: "PENDING",
             },
             include: {
                 requester: {

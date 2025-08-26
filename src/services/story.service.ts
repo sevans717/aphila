@@ -1,5 +1,5 @@
-import { prisma } from '../lib/prisma';
-import { logger } from '../utils/logger';
+import { prisma } from "../lib/prisma";
+import { logger } from "../utils/logger";
 
 export interface CreateStoryData {
   userId: string;
@@ -29,7 +29,7 @@ export interface StoryData {
   mediaId: string;
   caption?: string;
   duration?: number;
-  privacy?: 'public' | 'friends' | 'close_friends' | 'private';
+  privacy?: "public" | "friends" | "close_friends" | "private";
   allowReplies?: boolean;
   allowSharing?: boolean;
   showViewers?: boolean;
@@ -45,7 +45,7 @@ export interface StoryData {
 
 export interface UpdateStoryData {
   caption?: string;
-  privacy?: 'public' | 'friends' | 'close_friends' | 'private';
+  privacy?: "public" | "friends" | "close_friends" | "private";
   allowReplies?: boolean;
   allowSharing?: boolean;
   showViewers?: boolean;
@@ -75,7 +75,7 @@ export interface StoryReaction {
   id: string;
   userId: string;
   storyId: string;
-  reactionType: 'like' | 'love' | 'laugh' | 'wow' | 'fire' | 'clap';
+  reactionType: "like" | "love" | "laugh" | "wow" | "fire" | "clap";
   timestamp: Date;
 }
 
@@ -85,7 +85,7 @@ export interface StoryReply {
   userId: string;
   content: string;
   mediaUrl?: string;
-  replyType: 'text' | 'media' | 'reaction';
+  replyType: "text" | "media" | "reaction";
   timestamp: Date;
   isRead: boolean;
 }
@@ -138,7 +138,7 @@ export interface StoryHighlight {
 
 export interface StorySettings {
   userId: string;
-  defaultPrivacy: 'public' | 'friends' | 'close_friends';
+  defaultPrivacy: "public" | "friends" | "close_friends";
   allowReplies: boolean;
   allowSharing: boolean;
   showViewers: boolean;
@@ -154,7 +154,7 @@ export interface StoryTemplate {
   name: string;
   preview: string;
   elements: Array<{
-    type: 'text' | 'sticker' | 'filter' | 'background';
+    type: "text" | "sticker" | "filter" | "background";
     data: Record<string, any>;
     position: {
       x: number;
@@ -217,7 +217,7 @@ export interface StoryFilter {
   id: string;
   name: string;
   previewUrl: string;
-  category: 'beauty' | 'funny' | 'artistic' | 'seasonal';
+  category: "beauty" | "funny" | "artistic" | "seasonal";
   isPremium: boolean;
   usageCount: number;
   rating: number;
@@ -227,7 +227,7 @@ export interface StorySticker {
   id: string;
   name: string;
   imageUrl: string;
-  category: 'emoji' | 'location' | 'mention' | 'poll' | 'question' | 'music';
+  category: "emoji" | "location" | "mention" | "poll" | "question" | "music";
   data?: Record<string, any>;
   isAnimated: boolean;
   isPremium: boolean;
@@ -282,26 +282,26 @@ export class StoryService {
               profile: {
                 select: {
                   displayName: true,
-                }
-              }
-            }
+                },
+              },
+            },
           },
           media: {
             select: {
               id: true,
               url: true,
               type: true,
-            }
+            },
           },
           _count: {
             select: {
-              views: true
-            }
-          }
-        }
+              views: true,
+            },
+          },
+        },
       });
 
-      logger.info('Story created', { storyId: story.id, userId, mediaId });
+      logger.info("Story created", { storyId: story.id, userId, mediaId });
 
       return {
         id: story.id,
@@ -311,13 +311,13 @@ export class StoryService {
           id: story.user.id,
           profile: {
             displayName: story.user.profile!.displayName,
-          }
+          },
         },
         media: story.media,
-        viewsCount: story._count.views
+        viewsCount: story._count.views,
       };
     } catch (error) {
-      logger.error('Error creating story', { error, data });
+      logger.error("Error creating story", { error, data });
       throw error;
     }
   }
@@ -329,9 +329,9 @@ export class StoryService {
       const stories = await prisma.story.findMany({
         where: {
           expiresAt: {
-            gt: now
+            gt: now,
           },
-          ...(userId && { userId })
+          ...(userId && { userId }),
         },
         include: {
           user: {
@@ -339,27 +339,27 @@ export class StoryService {
               profile: {
                 select: {
                   displayName: true,
-                }
-              }
-            }
+                },
+              },
+            },
           },
           media: {
             select: {
               id: true,
               url: true,
               type: true,
-            }
+            },
           },
           _count: {
             select: {
-              views: true
-            }
-          }
+              views: true,
+            },
+          },
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { createdAt: "desc" },
       });
 
-      return stories.map(story => ({
+      return stories.map((story) => ({
         id: story.id,
         createdAt: story.createdAt,
         expiresAt: story.expiresAt,
@@ -367,13 +367,13 @@ export class StoryService {
           id: story.user.id,
           profile: {
             displayName: story.user.profile!.displayName,
-          }
+          },
         },
         media: story.media,
-        viewsCount: story._count.views
+        viewsCount: story._count.views,
       }));
     } catch (error) {
-      logger.error('Error getting active stories', { error, userId });
+      logger.error("Error getting active stories", { error, userId });
       throw error;
     }
   }
@@ -383,15 +383,15 @@ export class StoryService {
       // Check if story exists and is active
       const story = await prisma.story.findUnique({
         where: { id: storyId },
-        select: { expiresAt: true, userId: true }
+        select: { expiresAt: true, userId: true },
       });
 
       if (!story) {
-        throw new Error('Story not found');
+        throw new Error("Story not found");
       }
 
       if (story.expiresAt < new Date()) {
-        throw new Error('Story has expired');
+        throw new Error("Story has expired");
       }
 
       // Don't record views from the story author
@@ -404,9 +404,9 @@ export class StoryService {
         where: {
           storyId_viewerId: {
             storyId: storyId,
-            viewerId: viewerId
-          }
-        }
+            viewerId: viewerId,
+          },
+        },
       });
 
       if (!existingView) {
@@ -414,13 +414,13 @@ export class StoryService {
           data: {
             storyId: storyId,
             viewerId: viewerId,
-          }
+          },
         });
 
-        logger.info('Story viewed', { storyId, viewerId });
+        logger.info("Story viewed", { storyId, viewerId });
       }
     } catch (error) {
-      logger.error('Error viewing story', { error, storyId, viewerId });
+      logger.error("Error viewing story", { error, storyId, viewerId });
       throw error;
     }
   }
@@ -429,29 +429,32 @@ export class StoryService {
     try {
       const story = await prisma.story.findUnique({
         where: { id: storyId },
-        select: { userId: true }
+        select: { userId: true },
       });
 
       if (!story) {
-        throw new Error('Story not found');
+        throw new Error("Story not found");
       }
 
       if (story.userId !== userId) {
-        throw new Error('Unauthorized to delete this story');
+        throw new Error("Unauthorized to delete this story");
       }
 
       await prisma.story.delete({
-        where: { id: storyId }
+        where: { id: storyId },
       });
 
-      logger.info('Story deleted', { storyId, userId });
+      logger.info("Story deleted", { storyId, userId });
     } catch (error) {
-      logger.error('Error deleting story', { error, storyId, userId });
+      logger.error("Error deleting story", { error, storyId, userId });
       throw error;
     }
   }
 
-  static async getStoryById(storyId: string, viewerId: string): Promise<StoryWithDetails | null> {
+  static async getStoryById(
+    storyId: string,
+    viewerId: string
+  ): Promise<StoryWithDetails | null> {
     try {
       const story = await prisma.story.findUnique({
         where: { id: storyId },
@@ -461,23 +464,23 @@ export class StoryService {
               profile: {
                 select: {
                   displayName: true,
-                }
-              }
-            }
+                },
+              },
+            },
           },
           media: {
             select: {
               id: true,
               url: true,
               type: true,
-            }
+            },
           },
           _count: {
             select: {
-              views: true
-            }
-          }
-        }
+              views: true,
+            },
+          },
+        },
       });
 
       if (!story) {
@@ -497,30 +500,34 @@ export class StoryService {
           id: story.user.id,
           profile: {
             displayName: story.user.profile!.displayName,
-          }
+          },
         },
         media: story.media,
-        viewsCount: story._count.views
+        viewsCount: story._count.views,
       };
     } catch (error) {
-      logger.error('Error getting story by id', { error, storyId, viewerId });
+      logger.error("Error getting story by id", { error, storyId, viewerId });
       throw error;
     }
   }
 
-  static async updateStorySettings(storyId: string, userId: string, data: any): Promise<StoryWithDetails> {
+  static async updateStorySettings(
+    storyId: string,
+    userId: string,
+    data: any
+  ): Promise<StoryWithDetails> {
     try {
       const story = await prisma.story.findUnique({
         where: { id: storyId },
-        select: { userId: true }
+        select: { userId: true },
       });
 
       if (!story) {
-        throw new Error('Story not found');
+        throw new Error("Story not found");
       }
 
       if (story.userId !== userId) {
-        throw new Error('Unauthorized to update this story');
+        throw new Error("Unauthorized to update this story");
       }
 
       const updatedStory = await prisma.story.update({
@@ -532,23 +539,23 @@ export class StoryService {
               profile: {
                 select: {
                   displayName: true,
-                }
-              }
-            }
+                },
+              },
+            },
           },
           media: {
             select: {
               id: true,
               url: true,
               type: true,
-            }
+            },
           },
           _count: {
             select: {
-              views: true
-            }
-          }
-        }
+              views: true,
+            },
+          },
+        },
       });
 
       return {
@@ -559,18 +566,22 @@ export class StoryService {
           id: updatedStory.user.id,
           profile: {
             displayName: updatedStory.user.profile!.displayName,
-          }
+          },
         },
         media: updatedStory.media,
-        viewsCount: updatedStory._count.views
+        viewsCount: updatedStory._count.views,
       };
     } catch (error) {
-      logger.error('Error updating story settings', { error, storyId, userId });
+      logger.error("Error updating story settings", { error, storyId, userId });
       throw error;
     }
   }
 
-  static async getStoriesFeed(userId: string, limit: number = 20, offset: number = 0): Promise<{
+  static async getStoriesFeed(
+    userId: string,
+    limit: number = 20,
+    offset: number = 0
+  ): Promise<{
     stories: StoryWithDetails[];
     total: number;
   }> {
@@ -581,8 +592,8 @@ export class StoryService {
         prisma.story.findMany({
           where: {
             expiresAt: {
-              gt: now
-            }
+              gt: now,
+            },
           },
           include: {
             user: {
@@ -590,38 +601,38 @@ export class StoryService {
                 profile: {
                   select: {
                     displayName: true,
-                  }
-                }
-              }
+                  },
+                },
+              },
             },
             media: {
               select: {
                 id: true,
                 url: true,
                 type: true,
-              }
+              },
             },
             _count: {
               select: {
-                views: true
-              }
-            }
+                views: true,
+              },
+            },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
           skip: offset,
-          take: limit
+          take: limit,
         }),
         prisma.story.count({
           where: {
             expiresAt: {
-              gt: now
-            }
-          }
-        })
+              gt: now,
+            },
+          },
+        }),
       ]);
 
       return {
-        stories: stories.map(story => ({
+        stories: stories.map((story) => ({
           id: story.id,
           createdAt: story.createdAt,
           expiresAt: story.expiresAt,
@@ -629,31 +640,35 @@ export class StoryService {
             id: story.user.id,
             profile: {
               displayName: story.user.profile!.displayName,
-            }
+            },
           },
           media: story.media,
-          viewsCount: story._count.views
+          viewsCount: story._count?.views ?? 0,
         })),
-        total
+        total,
       };
     } catch (error) {
-      logger.error('Error getting stories feed', { error, userId });
+      logger.error("Error getting stories feed", { error, userId });
       throw error;
     }
   }
 
-  static async getUserStories(targetUserId: string, viewerId?: string, includeExpired: boolean = false): Promise<{
+  static async getUserStories(
+    targetUserId: string,
+    viewerId?: string,
+    includeExpired: boolean = false
+  ): Promise<{
     stories: StoryWithDetails[];
     total: number;
   }> {
     try {
       const where: any = {
-        userId: targetUserId
+        userId: targetUserId,
       };
 
       if (!includeExpired) {
         where.expiresAt = {
-          gt: new Date()
+          gt: new Date(),
         };
       }
 
@@ -666,32 +681,32 @@ export class StoryService {
                 profile: {
                   select: {
                     displayName: true,
-                  }
-                }
-              }
+                  },
+                },
+              },
             },
             media: {
               select: {
                 id: true,
                 url: true,
                 type: true,
-              }
+              },
             },
             _count: {
               select: {
-                views: true
-              }
-            }
+                views: true,
+              },
+            },
           },
-          orderBy: { createdAt: 'desc' }
+          orderBy: { createdAt: "desc" },
         }),
         prisma.story.count({
-          where
-        })
+          where,
+        }),
       ]);
 
       return {
-        stories: stories.map(story => ({
+        stories: stories.map((story) => ({
           id: story.id,
           createdAt: story.createdAt,
           expiresAt: story.expiresAt,
@@ -699,15 +714,19 @@ export class StoryService {
             id: story.user.id,
             profile: {
               displayName: story.user.profile!.displayName,
-            }
+            },
           },
           media: story.media,
-          viewsCount: story._count.views
+          viewsCount: story._count?.views ?? 0,
         })),
-        total
+        total,
       };
     } catch (error) {
-      logger.error('Error getting user stories', { error, targetUserId, viewerId });
+      logger.error("Error getting user stories", {
+        error,
+        targetUserId,
+        viewerId,
+      });
       throw error;
     }
   }
@@ -716,12 +735,17 @@ export class StoryService {
     try {
       await this.viewStory(storyId, viewerId);
     } catch (error) {
-      logger.error('Error tracking story view', { error, storyId, viewerId });
+      logger.error("Error tracking story view", { error, storyId, viewerId });
       throw error;
     }
   }
 
-  static async getStoryViewers(storyId: string, ownerId: string, limit: number = 50, offset: number = 0): Promise<{
+  static async getStoryViewers(
+    storyId: string,
+    ownerId: string,
+    limit: number = 50,
+    offset: number = 0
+  ): Promise<{
     viewers: Array<{
       id: string;
       user: {
@@ -742,15 +766,15 @@ export class StoryService {
       // Verify story ownership
       const story = await prisma.story.findUnique({
         where: { id: storyId },
-        select: { userId: true }
+        select: { userId: true },
       });
 
       if (!story) {
-        throw new Error('Story not found');
+        throw new Error("Story not found");
       }
 
       if (story.userId !== ownerId) {
-        throw new Error('Unauthorized to view story viewers');
+        throw new Error("Unauthorized to view story viewers");
       }
 
       const [viewers, total] = await Promise.all([
@@ -762,29 +786,29 @@ export class StoryService {
                 profile: {
                   select: {
                     displayName: true,
-                  }
+                  },
                 },
                 photos: {
                   where: { isPrimary: true },
                   select: {
                     url: true,
                     isPrimary: true,
-                  }
-                }
-              }
-            }
+                  },
+                },
+              },
+            },
           },
-          orderBy: { viewedAt: 'desc' },
+          orderBy: { viewedAt: "desc" },
           skip: offset,
-          take: limit
+          take: limit,
         }),
         prisma.storyView.count({
-          where: { storyId }
-        })
+          where: { storyId },
+        }),
       ]);
 
       return {
-        viewers: viewers.map(view => ({
+        viewers: viewers.map((view) => ({
           id: view.id,
           user: {
             id: view.viewer.id,
@@ -795,15 +819,18 @@ export class StoryService {
           },
           viewedAt: view.viewedAt,
         })),
-        total
+        total,
       };
     } catch (error) {
-      logger.error('Error getting story viewers', { error, storyId, ownerId });
+      logger.error("Error getting story viewers", { error, storyId, ownerId });
       throw error;
     }
   }
 
-  static async getStoryStats(storyId: string, userId: string): Promise<{
+  static async getStoryStats(
+    storyId: string,
+    userId: string
+  ): Promise<{
     viewsCount: number;
     reachCount: number;
     engagementRate: number;
@@ -821,20 +848,20 @@ export class StoryService {
       // Verify story ownership
       const story = await prisma.story.findUnique({
         where: { id: storyId },
-        select: { userId: true }
+        select: { userId: true },
       });
 
       if (!story) {
-        throw new Error('Story not found');
+        throw new Error("Story not found");
       }
 
       if (story.userId !== userId) {
-        throw new Error('Unauthorized to view story stats');
+        throw new Error("Unauthorized to view story stats");
       }
 
       const [viewsCount, topViewers] = await Promise.all([
         prisma.storyView.count({
-          where: { storyId }
+          where: { storyId },
         }),
         prisma.storyView.findMany({
           where: { storyId },
@@ -844,32 +871,255 @@ export class StoryService {
                 profile: {
                   select: {
                     displayName: true,
-                  }
-                }
-              }
-            }
+                  },
+                },
+              },
+            },
           },
-          orderBy: { viewedAt: 'asc' },
-          take: 10
-        })
+          orderBy: { viewedAt: "asc" },
+          take: 10,
+        }),
       ]);
 
       return {
         viewsCount,
         reachCount: viewsCount, // For now, reach = views
         engagementRate: 0, // Would need to calculate based on interactions
-        topViewers: topViewers.map(view => ({
+        topViewers: topViewers.map((view) => ({
           user: {
             id: view.viewer.id,
             profile: {
               displayName: view.viewer.profile!.displayName,
-            }
+            },
           },
           viewedAt: view.viewedAt,
-        }))
+        })),
       };
     } catch (error) {
-      logger.error('Error getting story stats', { error, storyId, userId });
+      logger.error("Error getting story stats", { error, storyId, userId });
+      throw error;
+    }
+  }
+
+  // New: Get aggregated analytics overview for a timeframe
+  static async getAnalyticsOverview(
+    startDate?: Date | string,
+    endDate?: Date | string
+  ) {
+    try {
+      const end = endDate ? new Date(endDate) : new Date();
+      const start = startDate
+        ? new Date(startDate)
+        : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+      const [totalStories, totalViews, avgViewDurationRes, topStories] =
+        await Promise.all([
+          prisma.story.count({
+            where: { createdAt: { gte: start, lte: end } },
+          }),
+          prisma.storyView.count({
+            where: { viewedAt: { gte: start, lte: end } },
+          }),
+          prisma.contentView.aggregate({
+            _avg: { duration: true },
+            where: {
+              storyId: { not: null },
+              viewedAt: { gte: start, lte: end },
+            },
+          }),
+          prisma.story.findMany({
+            where: { createdAt: { gte: start, lte: end } },
+            include: {
+              user: {
+                include: {
+                  profile: {
+                    select: {
+                      displayName: true,
+                      latitude: true,
+                      longitude: true,
+                    },
+                  },
+                },
+              },
+              media: { select: { id: true, url: true, type: true } },
+              _count: { select: { views: true } },
+            },
+          }),
+        ]);
+
+      const avgViewDuration = avgViewDurationRes._avg.duration ?? 0;
+
+      // Sort topStories by views count (safely using _count) in JS and take top 10
+      const topSorted = (topStories as any[])
+        .map((s) => ({
+          id: s.id,
+          media: s.media,
+          user: { id: s.user.id, displayName: s.user.profile?.displayName },
+          views: s._count?.views ?? 0,
+        }))
+        .sort((a, b) => b.views - a.views)
+        .slice(0, 10);
+
+      return {
+        timeframe: { start: start.toISOString(), end: end.toISOString() },
+        totalStories,
+        totalViews,
+        totalReplies: 0,
+        avgViewDuration,
+        topStories: topSorted,
+      };
+    } catch (error) {
+      logger.error("Error computing analytics overview", {
+        error,
+        startDate,
+        endDate,
+      });
+      throw error;
+    }
+  }
+
+  // New: Mark a story as highlight (DB-backed flag)
+  static async addToHighlights(
+    storyId: string,
+    userId: string,
+    highlightName?: string,
+    coverImage?: string
+  ) {
+    try {
+      const story = await prisma.story.findUnique({ where: { id: storyId } });
+      if (!story) throw new Error("Story not found");
+      if (story.userId !== userId)
+        throw new Error("Unauthorized to highlight this story");
+
+      const updated = await prisma.story.update({
+        where: { id: storyId },
+        data: { isHighlight: true },
+      });
+
+      await prisma.notification
+        .create({
+          data: {
+            userId,
+            type: "story_highlight",
+            title: "Story added to highlights",
+            body: highlightName
+              ? `Added to highlight: ${highlightName}`
+              : "Added to highlights",
+            data: { storyId, highlightName, coverImage },
+          },
+        })
+        .catch((err) =>
+          logger.warn("Failed to create highlight notification", err)
+        );
+
+      return updated;
+    } catch (error) {
+      logger.error("Error adding story to highlights", {
+        error,
+        storyId,
+        userId,
+      });
+      throw error;
+    }
+  }
+
+  // New: Discover nearby stories based on latitude/longitude and radius (km)
+  static async getNearbyStories(
+    latitude: number,
+    longitude: number,
+    radiusKm: number = 10,
+    limit: number = 20,
+    offset: number = 0
+  ) {
+    try {
+      const latDelta = radiusKm / 111;
+      const lonDelta =
+        radiusKm / (111 * Math.cos((latitude * Math.PI) / 180) || 1);
+
+      const minLat = latitude - latDelta;
+      const maxLat = latitude + latDelta;
+      const minLon = longitude - lonDelta;
+      const maxLon = longitude + lonDelta;
+
+      const now = new Date();
+
+      const stories = await prisma.story.findMany({
+        where: {
+          expiresAt: { gt: now },
+          user: {
+            profile: {
+              latitude: { gte: minLat, lte: maxLat },
+              longitude: { gte: minLon, lte: maxLon },
+            },
+          },
+        },
+        include: {
+          user: {
+            include: {
+              profile: {
+                select: { displayName: true, latitude: true, longitude: true },
+              },
+            },
+          },
+          media: { select: { id: true, url: true, type: true } },
+          _count: { select: { views: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        skip: offset,
+        take: limit,
+      });
+
+      const haversine = (
+        lat1: number,
+        lon1: number,
+        lat2: number,
+        lon2: number
+      ) => {
+        const R = 6371;
+        const dLat = ((lat2 - lat1) * Math.PI) / 180;
+        const dLon = ((lon2 - lon1) * Math.PI) / 180;
+        const a =
+          Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+          Math.cos((lat1 * Math.PI) / 180) *
+            Math.cos((lat2 * Math.PI) / 180) *
+            Math.sin(dLon / 2) *
+            Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+      };
+
+      const filtered = stories
+        .map((s) => {
+          const lat = s.user.profile?.latitude ?? 0;
+          const lon = s.user.profile?.longitude ?? 0;
+          const distance = haversine(latitude, longitude, lat, lon);
+          return { story: s, distance };
+        })
+        .filter((x) => x.distance <= radiusKm)
+        .sort((a, b) => a.distance - b.distance);
+
+      return {
+        stories: filtered.map((f) => ({
+          id: f.story.id,
+          createdAt: f.story.createdAt,
+          expiresAt: f.story.expiresAt,
+          distanceKm: Number(f.distance.toFixed(2)),
+          user: {
+            id: f.story.userId,
+            displayName: f.story.user.profile?.displayName,
+          },
+          media: f.story.media,
+          views: f.story._count.views,
+        })),
+        total: filtered.length,
+      };
+    } catch (error) {
+      logger.error("Error fetching nearby stories", {
+        error,
+        latitude,
+        longitude,
+        radiusKm,
+      });
       throw error;
     }
   }
@@ -881,16 +1131,16 @@ export class StoryService {
       const result = await prisma.story.deleteMany({
         where: {
           expiresAt: {
-            lt: now
-          }
-        }
+            lt: now,
+          },
+        },
       });
 
-      logger.info('Expired stories cleaned up', { deletedCount: result.count });
+      logger.info("Expired stories cleaned up", { deletedCount: result.count });
 
       return { deletedCount: result.count };
     } catch (error) {
-      logger.error('Error cleaning up expired stories', { error });
+      logger.error("Error cleaning up expired stories", { error });
       throw error;
     }
   }

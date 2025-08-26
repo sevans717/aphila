@@ -1,12 +1,11 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { PrismaClient } from "@prisma/client";
+import { prisma } from "../lib/prisma";
 
 export class CommunityService {
   static async getAllCommunities(categoryId?: string) {
     return await prisma.community.findMany({
       where: {
-        visibility: 'PUBLIC',
+        visibility: "PUBLIC",
         ...(categoryId && { categoryId }),
       },
       include: {
@@ -33,7 +32,7 @@ export class CommunityService {
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
   }
 
@@ -79,7 +78,7 @@ export class CommunityService {
               },
             },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
           take: 50,
         },
       },
@@ -89,7 +88,7 @@ export class CommunityService {
   static async createCommunity(data: {
     name: string;
     description?: string;
-    visibility: 'PUBLIC' | 'PRIVATE' | 'SECRET';
+    visibility: "PUBLIC" | "PRIVATE" | "SECRET";
     ownerId: string;
     categoryId?: string;
   }) {
@@ -122,7 +121,7 @@ export class CommunityService {
       create: {
         userId,
         communityId,
-        role: 'MEMBER' as const,
+        role: "MEMBER" as const,
       },
     });
   }
@@ -147,7 +146,7 @@ export class CommunityService {
     return await prisma.communityMessage.create({
       data: {
         ...data,
-        messageType: data.messageType || 'text',
+        messageType: data.messageType || "text",
       },
       include: {
         sender: {

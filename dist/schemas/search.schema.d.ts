@@ -3,10 +3,10 @@ export declare const searchQuerySchema: z.ZodObject<{
     query: z.ZodObject<{
         q: z.ZodString;
         type: z.ZodDefault<z.ZodEnum<{
-            posts: "posts";
-            communities: "communities";
-            users: "users";
             all: "all";
+            posts: "posts";
+            users: "users";
+            communities: "communities";
         }>>;
         limit: z.ZodDefault<z.ZodPipe<z.ZodPipe<z.ZodString, z.ZodTransform<number, string>>, z.ZodNumber>>;
         offset: z.ZodDefault<z.ZodPipe<z.ZodPipe<z.ZodString, z.ZodTransform<number, string>>, z.ZodNumber>>;

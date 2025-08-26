@@ -1,27 +1,26 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MessagingService = void 0;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../lib/prisma");
 class MessagingService {
     // Send a message in a match
     static async sendMessage(data) {
-        const { senderId, receiverId, content, messageType = 'text' } = data;
+        const { senderId, receiverId, content, messageType = "text" } = data;
         // Verify match exists and is active
-        const match = await prisma.match.findFirst({
+        const match = await prisma_1.prisma.match.findFirst({
             where: {
                 OR: [
                     { initiatorId: senderId, receiverId },
                     { initiatorId: receiverId, receiverId: senderId },
                 ],
-                status: 'ACTIVE',
+                status: "ACTIVE",
             },
         });
         if (!match) {
-            throw new Error('No active match found between users');
+            throw new Error("No active match found between users");
         }
         // Create message
-        const message = await prisma.message.create({
+        const message = await prisma_1.prisma.message.create({
             data: {
                 senderId,
                 receiverId,
@@ -45,18 +44,18 @@ class MessagingService {
             },
         });
         // Update match's last activity
-        await prisma.match.update({
+        await prisma_1.prisma.match.update({
             where: { id: match.id },
             data: { updatedAt: new Date() },
         });
         // Create notification for receiver
         // @ts-ignore - notification type field might not exist in schema
-        await prisma.notification.create({
+        await prisma_1.prisma.notification.create({
             data: {
                 userId: receiverId,
-                type: 'message',
+                type: "message",
                 title: `New message from ${message.sender.profile?.displayName}`,
-                body: messageType === 'text' ? content : `Sent a ${messageType}`,
+                body: messageType === "text" ? content : `Sent a ${messageType}`,
                 data: {
                     matchId: match.id,
                     messageId: message.id,
@@ -71,7 +70,7 @@ class MessagingService {
         const { matchId, limit = 50, before } = filters;
         const whereClause = { matchId };
         if (before) {
-            const beforeMessage = await prisma.message.findUnique({
+            const beforeMessage = await prisma_1.prisma.message.findUnique({
                 where: { id: before },
                 select: { createdAt: true },
             });
@@ -79,7 +78,7 @@ class MessagingService {
                 whereClause.createdAt = { lt: beforeMessage.createdAt };
             }
         }
-        const messages = await prisma.message.findMany({
+        const messages = await prisma_1.prisma.message.findMany({
             where: whereClause,
             include: {
                 sender: {
@@ -91,14 +90,14 @@ class MessagingService {
                     },
                 },
             },
-            orderBy: { createdAt: 'desc' },
+            orderBy: { createdAt: "desc" },
             take: limit,
         });
         return messages.reverse(); // Return in chronological order
     }
     // Mark messages as read
     static async markMessagesAsRead(matchId, userId) {
-        await prisma.message.updateMany({
+        await prisma_1.prisma.message.updateMany({
             where: {
                 matchId,
                 receiverId: userId,
@@ -112,7 +111,7 @@ class MessagingService {
     }
     // Get unread message count
     static async getUnreadCount(userId) {
-        const count = await prisma.message.count({
+        const count = await prisma_1.prisma.message.count({
             where: {
                 receiverId: userId,
                 readAt: null,
@@ -122,32 +121,29 @@ class MessagingService {
     }
     // Delete message (soft delete)
     static async deleteMessage(messageId, userId) {
-        const message = await prisma.message.findUnique({
+        const message = await prisma_1.prisma.message.findUnique({
             where: { id: messageId },
         });
         if (!message) {
-            throw new Error('Message not found');
+            throw new Error("Message not found");
         }
         if (message.senderId !== userId) {
-            throw new Error('Can only delete your own messages');
+            throw new Error("Can only delete your own messages");
         }
-        await prisma.message.update({
+        await prisma_1.prisma.message.update({
             where: { id: messageId },
             data: {
-                content: 'This message was deleted',
+                content: "This message was deleted",
             },
         });
         return { success: true };
     }
     // Get match details with recent messages
     static async getMatchDetails(matchId, userId) {
-        const match = await prisma.match.findFirst({
+        const match = await prisma_1.prisma.match.findFirst({
             where: {
                 id: matchId,
-                OR: [
-                    { initiatorId: userId },
-                    { receiverId: userId },
-                ],
+                OR: [{ initiatorId: userId }, { receiverId: userId }],
             },
             include: {
                 initiator: {
@@ -181,7 +177,7 @@ class MessagingService {
                     },
                 },
                 messages: {
-                    orderBy: { createdAt: 'desc' },
+                    orderBy: { createdAt: "desc" },
                     take: 20,
                     include: {
                         sender: {
@@ -197,7 +193,7 @@ class MessagingService {
             },
         });
         if (!match) {
-            throw new Error('Match not found');
+            throw new Error("Match not found");
         }
         const otherUser = match.initiatorId === userId ? match.receiver : match.initiator;
         return {
@@ -208,16 +204,16 @@ class MessagingService {
     }
     // Report a message
     static async reportMessage(messageId, reporterId, reason) {
-        const message = await prisma.message.findUnique({
+        const message = await prisma_1.prisma.message.findUnique({
             where: { id: messageId },
         });
         if (!message) {
-            throw new Error('Message not found');
+            throw new Error("Message not found");
         }
         if (message.senderId === reporterId) {
-            throw new Error('Cannot report your own message');
+            throw new Error("Cannot report your own message");
         }
-        await prisma.report.create({
+        await prisma_1.prisma.report.create({
             data: {
                 reporterId,
                 reportedId: message.senderId,

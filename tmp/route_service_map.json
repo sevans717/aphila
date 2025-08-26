@@ -1,0 +1,20 @@
+{
+  "media.routes.ts": [
+    "MediaService: uploadProfilePhoto, uploadFile, getUserMedia, updateMediaMetadata, deleteMedia, getMediaById, startChunkedUpload, uploadChunk, completeChunkedUpload, getUploadProgress, cancelUploadSession, deleteFile"
+  ],
+  "mobile.routes.ts": [
+    "MediaService: uploadProfilePhoto, uploadFile, getUserMedia, updateMediaMetadata, deleteMedia, getMediaById"
+  ],
+  "subscription.routes.ts": [
+    "SubscriptionService: getPlans, getUserSubscription, createSubscription, cancelSubscription, getUsage, useBoost"
+  ],
+  "messaging.routes.ts": [
+    "MessagingService: sendMessage, getMatchMessages, markMessagesAsRead, getUnreadCount, deleteMessage, getMatchDetails, reportMessage"
+  ],
+  "realtime.routes.ts": [
+    "WebsocketService: multiple realtime helpers accessed via global webSocketService"
+  ],
+  "stories.routes.ts": [
+    "StoryService: createStory, getStoryById, updateStorySettings, deleteStory, getStoriesFeed, getUserStories, trackView, getStoryViewers, getStoryStats, getAnalyticsOverview, addToHighlights, getNearbyStories, cleanupExpiredStories"
+  ]
+}

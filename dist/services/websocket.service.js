@@ -4,13 +4,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.WebSocketService = void 0;
-const client_1 = require("@prisma/client");
+const prisma_1 = require("../lib/prisma");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const socket_io_1 = require("socket.io");
 const logger_1 = require("../utils/logger");
-const prisma = new client_1.PrismaClient();
 class WebSocketService {
-    io;
+    io = null;
     userSockets = new Map(); // userId -> socketId
     presence = new Map(); // userId -> presence
     messageQueues = new Map(); // userId -> queue
@@ -27,12 +26,12 @@ class WebSocketService {
                 pingTimeout: 60000, // 60 seconds
                 pingInterval: 25000, // 25 seconds
                 connectTimeout: 45000, // 45 seconds
-                transports: ['websocket', 'polling'], // Fallback support
+                transports: ["websocket", "polling"], // Fallback support
             });
         }
         catch (err) {
-            logger_1.logger.error('Socket.IO initialization failed', { err });
-            this.io = undefined;
+            logger_1.logger.error("Socket.IO initialization failed", { err });
+            this.io = null;
             return;
         }
         this.setupAuth();
@@ -41,16 +40,24 @@ class WebSocketService {
         this.setupMessageQueue();
     }
     setupAuth() {
-        this.io.use(async (socket, next) => {
+        const io = this.io;
+        if (!io)
+            return;
+        io.use(async (socket, next) => {
             try {
-                const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(' ')[1];
+                const token = socket.handshake.auth.token ||
+                    socket.handshake.headers.authorization?.split(" ")[1];
                 if (!token) {
-                    throw new Error('No token provided');
+                    throw new Error("No token provided");
                 }
                 const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
+                const decodedUserId = decoded?.id || decoded?.userId;
+                if (!decodedUserId) {
+                    throw new Error("Invalid token payload");
+                }
                 // Get user from database
-                const user = await prisma.user.findUnique({
-                    where: { id: decoded.id },
+                const user = await prisma_1.prisma.user.findUnique({
+                    where: { id: decodedUserId },
                     include: {
                         profile: {
                             select: { displayName: true },
@@ -58,19 +65,22 @@ class WebSocketService {
                     },
                 });
                 if (!user || !user.isActive) {
-                    throw new Error('User not found or inactive');
+                    throw new Error("User not found or inactive");
                 }
                 socket.userId = user.id;
                 socket.user = user;
                 next();
             }
             catch (error) {
-                next(new Error('Authentication failed'));
+                next(new Error("Authentication failed"));
             }
         });
     }
     setupEventHandlers() {
-        this.io.on('connection', (socket) => {
+        const io = this.io;
+        if (!io)
+            return;
+        io.on("connection", (socket) => {
             console.log(`User ${socket.userId} connected`);
             // Store user socket mapping
             this.userSockets.set(socket.userId, socket.id);
@@ -79,30 +89,30 @@ class WebSocketService {
             // Join user to their personal room for direct notifications
             socket.join(`user:${socket.userId}`);
             // Handle joining match rooms
-            socket.on('join_match', (matchId) => {
+            socket.on("join_match", (matchId) => {
                 this.handleJoinMatch(socket, matchId);
             });
             // Handle leaving match rooms
-            socket.on('leave_match', (matchId) => {
+            socket.on("leave_match", (matchId) => {
                 socket.leave(`match:${matchId}`);
             });
             // Handle real-time messaging
-            socket.on('send_message', (data) => {
+            socket.on("send_message", (data) => {
                 this.handleSendMessage(socket, data);
             });
             // Handle typing indicators
-            socket.on('typing_start', (data) => {
+            socket.on("typing_start", (data) => {
                 this.handleTypingStart(socket, data);
             });
-            socket.on('typing_stop', (data) => {
+            socket.on("typing_stop", (data) => {
                 this.handleTypingStop(socket, data);
             });
             // Handle message read receipts
-            socket.on('mark_read', (data) => {
+            socket.on("mark_read", (data) => {
                 this.handleMarkRead(socket, data);
             });
             // Handle disconnect
-            socket.on('disconnect', () => {
+            socket.on("disconnect", () => {
                 console.log(`User ${socket.userId} disconnected`);
                 this.userSockets.delete(socket.userId);
                 this.updateUserOnlineStatus(socket.userId, false);
@@ -112,49 +122,48 @@ class WebSocketService {
     async handleJoinMatch(socket, matchId) {
         try {
             // Verify user is part of the match
-            const match = await prisma.match.findFirst({
+            const match = await prisma_1.prisma.match.findFirst({
                 where: {
                     id: matchId,
-                    OR: [
-                        { initiatorId: socket.userId },
-                        { receiverId: socket.userId },
-                    ],
-                    status: 'ACTIVE',
+                    OR: [{ initiatorId: socket.userId }, { receiverId: socket.userId }],
+                    status: "ACTIVE",
                 },
             });
             if (!match) {
-                socket.emit('error', { message: 'Match not found or access denied' });
+                socket.emit("error", { message: "Match not found or access denied" });
                 return;
             }
             socket.join(`match:${matchId}`);
-            socket.emit('joined_match', { matchId });
+            socket.emit("joined_match", { matchId });
         }
         catch (error) {
-            socket.emit('error', { message: 'Failed to join match' });
+            socket.emit("error", { message: "Failed to join match" });
         }
     }
     async handleSendMessage(socket, data) {
         try {
-            const { matchId, content, messageType = 'text', clientNonce } = data;
+            const { matchId, content, messageType = "text", clientNonce } = data;
             // Get match to find receiver
-            const match = await prisma.match.findFirst({
+            const match = await prisma_1.prisma.match.findFirst({
                 where: {
                     id: matchId,
-                    OR: [
-                        { initiatorId: socket.userId },
-                        { receiverId: socket.userId },
-                    ],
-                    status: 'ACTIVE',
+                    OR: [{ initiatorId: socket.userId }, { receiverId: socket.userId }],
+                    status: "ACTIVE",
                 },
             });
             if (!match) {
                 // emit specific error with clientNonce so clients can mark failed
-                socket.emit('message_error', { message: 'Match not found', clientNonce });
+                socket.emit("message_error", {
+                    message: "Match not found",
+                    clientNonce,
+                });
                 return;
             }
-            const receiverId = match.initiatorId === socket.userId ? match.receiverId : match.initiatorId;
+            const receiverId = match.initiatorId === socket.userId
+                ? match.receiverId
+                : match.initiatorId;
             // Create message in database
-            const message = await prisma.message.create({
+            const message = await prisma_1.prisma.message.create({
                 data: {
                     senderId: socket.userId,
                     receiverId,
@@ -174,18 +183,20 @@ class WebSocketService {
                 },
             });
             // Broadcast message to match room
-            this.io.to(`match:${matchId}`).emit('new_message', {
-                id: message.id,
-                senderId: message.senderId,
-                receiverId: message.receiverId,
-                content: message.content,
-                messageType: message.messageType,
-                createdAt: message.createdAt,
-                sender: message.sender,
-                clientNonce,
-            });
+            const io = this.io;
+            if (io)
+                io.to(`match:${matchId}`).emit("new_message", {
+                    id: message.id,
+                    senderId: message.senderId,
+                    receiverId: message.receiverId,
+                    content: message.content,
+                    messageType: message.messageType,
+                    createdAt: message.createdAt,
+                    sender: message.sender,
+                    clientNonce,
+                });
             // Emit delivery ack back to sender with clientNonce for reconciliation
-            socket.emit('message_ack', {
+            socket.emit("message_ack", {
                 messageId: message.id,
                 clientNonce,
                 deliveredAt: new Date(),
@@ -195,7 +206,7 @@ class WebSocketService {
             if (!receiverSocketId) {
                 await this.sendPushNotification(receiverId, {
                     title: `New message from ${message.sender.profile?.displayName}`,
-                    body: messageType === 'text' ? content : `Sent a ${messageType}`,
+                    body: messageType === "text" ? content : `Sent a ${messageType}`,
                     data: { matchId, messageId: message.id },
                 });
             }
@@ -203,17 +214,20 @@ class WebSocketService {
         catch (error) {
             // emit specific error with clientNonce so clients can mark failed
             const clientNonce = data?.clientNonce;
-            socket.emit('message_error', { message: 'Failed to send message', clientNonce });
+            socket.emit("message_error", {
+                message: "Failed to send message",
+                clientNonce,
+            });
         }
     }
     handleTypingStart(socket, data) {
-        socket.to(`match:${data.matchId}`).emit('user_typing', {
+        socket.to(`match:${data.matchId}`).emit("user_typing", {
             userId: socket.userId,
             matchId: data.matchId,
         });
     }
     handleTypingStop(socket, data) {
-        socket.to(`match:${data.matchId}`).emit('user_stopped_typing', {
+        socket.to(`match:${data.matchId}`).emit("user_stopped_typing", {
             userId: socket.userId,
             matchId: data.matchId,
         });
@@ -221,7 +235,7 @@ class WebSocketService {
     async handleMarkRead(socket, data) {
         try {
             // Collect unread message ids first for per-message read receipts
-            const unread = await prisma.message.findMany({
+            const unread = await prisma_1.prisma.message.findMany({
                 where: {
                     matchId: data.matchId,
                     receiverId: socket.userId,
@@ -229,7 +243,7 @@ class WebSocketService {
                 },
                 select: { id: true },
             });
-            await prisma.message.updateMany({
+            await prisma_1.prisma.message.updateMany({
                 where: {
                     matchId: data.matchId,
                     receiverId: socket.userId,
@@ -240,20 +254,20 @@ class WebSocketService {
                 },
             });
             // Notify sender about read receipt
-            socket.to(`match:${data.matchId}`).emit('messages_read', {
+            socket.to(`match:${data.matchId}`).emit("messages_read", {
                 matchId: data.matchId,
                 readBy: socket.userId,
                 readAt: new Date(),
-                messageIds: unread.map(m => m.id),
+                messageIds: unread.map((m) => m.id),
             });
         }
         catch (error) {
-            socket.emit('error', { message: 'Failed to mark messages as read' });
+            socket.emit("error", { message: "Failed to mark messages as read" });
         }
     }
     async updateUserOnlineStatus(userId, isOnline) {
         try {
-            await prisma.user.update({
+            await prisma_1.prisma.user.update({
                 where: { id: userId },
                 data: {
                 // lastSeen not in schema new Date(),
@@ -262,22 +276,28 @@ class WebSocketService {
             });
         }
         catch (error) {
-            console.error('Failed to update online status:', error);
+            console.error("Failed to update online status:", error);
         }
     }
     // Public method to send notifications to specific users
     sendNotificationToUser(userId, notification) {
-        this.io.to(`user:${userId}`).emit('notification', notification);
+        const io = this.io;
+        if (!io)
+            return;
+        io.to(`user:${userId}`).emit("notification", notification);
     }
     // Public method to send match notification
     sendMatchNotification(userId, matchData) {
-        this.io.to(`user:${userId}`).emit('new_match', matchData);
+        const io = this.io;
+        if (!io)
+            return;
+        io.to(`user:${userId}`).emit("new_match", matchData);
     }
     // Send push notification (placeholder for FCM integration)
     async sendPushNotification(userId, notification) {
         try {
             // Get user's device tokens
-            const devices = await prisma.device.findMany({
+            const devices = await prisma_1.prisma.device.findMany({
                 where: {
                     userId,
                     fcmToken: { not: null },
@@ -285,10 +305,10 @@ class WebSocketService {
             });
             // Here you would integrate with FCM (Firebase Cloud Messaging)
             // For now, we'll store as a notification in the database
-            await prisma.notification.create({
+            await prisma_1.prisma.notification.create({
                 data: {
                     userId,
-                    type: 'message',
+                    type: "message",
                     title: notification.title,
                     body: notification.body,
                     data: notification.data,
@@ -297,7 +317,7 @@ class WebSocketService {
             logger_1.logger.info(`Push notification sent to user ${userId}:`, notification);
         }
         catch (error) {
-            logger_1.logger.error('Failed to send push notification:', error);
+            logger_1.logger.error("Failed to send push notification:", error);
         }
     }
     /**
@@ -344,11 +364,12 @@ class WebSocketService {
             if (this.isUserOnline(userId) && queue.messages.length > 0) {
                 const socketId = this.userSockets.get(userId);
                 if (socketId) {
-                    const socket = this.io.sockets.sockets.get(socketId);
+                    const io = this.io;
+                    const socket = io?.sockets.sockets.get(socketId);
                     if (socket) {
                         // Send queued messages
-                        queue.messages.forEach(message => {
-                            socket.emit('message', message);
+                        queue.messages.forEach((message) => {
+                            socket.emit("message", message);
                         });
                         // Clear the queue
                         queue.messages = [];
@@ -383,7 +404,8 @@ class WebSocketService {
     sendMessageWithFallback(userId, event, data) {
         const socketId = this.userSockets.get(userId);
         if (socketId) {
-            const socket = this.io.sockets.sockets.get(socketId);
+            const io = this.io;
+            const socket = io?.sockets.sockets.get(socketId);
             if (socket && socket.connected) {
                 socket.emit(event, data);
                 return true;
@@ -433,19 +455,28 @@ class WebSocketService {
      * Broadcast to all users in a community
      */
     broadcastToCommunity(communityId, event, data) {
-        this.io.to(`community:${communityId}`).emit(event, data);
+        const io = this.io;
+        if (!io)
+            return;
+        io.to(`community:${communityId}`).emit(event, data);
     }
     /**
      * Broadcast to all online users
      */
     broadcastToAll(event, data) {
-        this.io.emit(event, data);
+        const io = this.io;
+        if (!io)
+            return;
+        io.emit(event, data);
     }
     /**
      * Close the WebSocket service
      */
     close() {
-        this.io.close();
+        const io = this.io;
+        if (!io)
+            return;
+        io.close();
     }
     // Get Socket.IO instance for external use
     getIO() {

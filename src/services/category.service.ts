@@ -1,6 +1,5 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { PrismaClient } from "@prisma/client";
+import { prisma } from "../lib/prisma";
 
 export class CategoryService {
   static async getAllCategories() {
@@ -14,7 +13,7 @@ export class CategoryService {
           },
         },
       },
-      orderBy: { name: 'asc' },
+      orderBy: { name: "asc" },
     });
   }
 
@@ -37,7 +36,7 @@ export class CategoryService {
           },
         },
         communities: {
-          where: { visibility: 'PUBLIC' },
+          where: { visibility: "PUBLIC" },
           include: {
             _count: {
               select: {
@@ -62,7 +61,7 @@ export class CategoryService {
       create: {
         userId,
         categoryId,
-        role: 'MEMBER' as const,
+        role: "MEMBER" as const,
       },
     });
   }

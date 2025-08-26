@@ -1,4 +1,3 @@
-import { PrismaClient } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import AWS from "aws-sdk";
 import { promises as fs } from "fs";
@@ -144,13 +143,25 @@ export class MediaService {
 
       logger.info(`File uploaded successfully: ${filename}`);
 
+      // Persist media asset in database and return actual DB id
+      const media = await prisma.mediaAsset.create({
+        data: {
+          userId,
+          url,
+          type: mediaType as any,
+          width: metadata.width ?? undefined,
+          height: metadata.height ?? undefined,
+          duration: metadata.duration ?? undefined,
+        },
+      });
+
       return {
-        id: uuidv4(), // Will be replaced with actual DB ID
-        url,
-        type: mediaType,
-        width: metadata.width,
-        height: metadata.height,
-        duration: metadata.duration,
+        id: media.id,
+        url: media.url,
+        type: media.type,
+        width: media.width ?? undefined,
+        height: media.height ?? undefined,
+        duration: media.duration ?? undefined,
         size: file.size,
         mimeType: file.mimetype,
       };

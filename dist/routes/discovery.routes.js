@@ -4,8 +4,8 @@ const express_1 = require("express");
 const zod_1 = require("zod");
 const auth_1 = require("../middleware/auth");
 const validation_1 = require("../middleware/validation");
-const discovery_service_1 = require("../services/discovery.service");
 const community_service_1 = require("../services/community.service");
+const discovery_service_1 = require("../services/discovery.service");
 const router = (0, express_1.Router)();
 // Validation schemas
 const discoverQuerySchema = zod_1.z.object({

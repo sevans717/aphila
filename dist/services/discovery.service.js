@@ -1,8 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DiscoveryService = void 0;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../lib/prisma");
 class DiscoveryService {
     // Calculate distance between two points using Haversine formula
     static calculateDistance(lat1, lon1, lat2, lon2) {
@@ -21,20 +20,20 @@ class DiscoveryService {
     static async discoverUsers(filters) {
         const { userId, latitude, longitude, maxDistance = 50, minAge = 18, maxAge = 65, orientation, interests = [], limit = 20, } = filters;
         // Get user's own profile for filtering logic
-        const userProfile = await prisma.profile.findUnique({
+        const userProfile = await prisma_1.prisma.profile.findUnique({
             where: { userId },
             include: { user: { include: { interests: true } } },
         });
         if (!userProfile) {
-            throw new Error('User profile not found');
+            throw new Error("User profile not found");
         }
         // Get users who have already been liked/passed/blocked
         const [likedUsers, blockedUsers] = await Promise.all([
-            prisma.like.findMany({
+            prisma_1.prisma.like.findMany({
                 where: { likerId: userId },
                 select: { likedId: true },
             }),
-            prisma.block.findMany({
+            prisma_1.prisma.block.findMany({
                 where: {
                     OR: [{ blockerId: userId }, { blockedId: userId }],
                 },
@@ -44,7 +43,7 @@ class DiscoveryService {
         const excludedUserIds = [
             userId,
             ...likedUsers.map((l) => l.likedId),
-            ...blockedUsers.map((b) => (b.blockerId === userId ? b.blockedId : b.blockerId)),
+            ...blockedUsers.map((b) => b.blockerId === userId ? b.blockedId : b.blockerId),
         ];
         // Calculate age range from birthdate
         const now = new Date();
@@ -65,7 +64,7 @@ class DiscoveryService {
             whereClause.orientation = orientation;
         }
         // Get potential matches
-        let potentialMatches = await prisma.profile.findMany({
+        let potentialMatches = await prisma_1.prisma.profile.findMany({
             where: whereClause,
             include: {
                 user: {
@@ -103,7 +102,8 @@ class DiscoveryService {
             const userInterestIds = userProfile.user.interests.map((i) => i.id);
             const matchInterestIds = match.user.interests.map((i) => i.id);
             const commonInterests = userInterestIds.filter((id) => matchInterestIds.includes(id));
-            score += (commonInterests.length / Math.max(userInterestIds.length, 1)) * 100;
+            score +=
+                (commonInterests.length / Math.max(userInterestIds.length, 1)) * 100;
             // Distance bonus (0-50 points, closer = better)
             if (latitude && longitude && match.latitude && match.longitude) {
                 const distance = this.calculateDistance(latitude, longitude, match.latitude, match.longitude);
@@ -133,10 +133,10 @@ class DiscoveryService {
         const { swiperId, swipedId, isLike, isSuper = false } = action;
         if (!isLike) {
             // For passes, we just record that they've been shown (no DB record needed)
-            return { type: 'pass', message: 'User passed' };
+            return { type: "pass", message: "User passed" };
         }
         // Create like record
-        const like = await prisma.like.create({
+        const like = await prisma_1.prisma.like.create({
             data: {
                 likerId: swiperId,
                 likedId: swipedId,
@@ -144,7 +144,7 @@ class DiscoveryService {
             },
         });
         // Check if there's a mutual like (match)
-        const mutualLike = await prisma.like.findFirst({
+        const mutualLike = await prisma_1.prisma.like.findFirst({
             where: {
                 likerId: swipedId,
                 likedId: swiperId,
@@ -152,11 +152,11 @@ class DiscoveryService {
         });
         if (mutualLike) {
             // Create match
-            const match = await prisma.match.create({
+            const match = await prisma_1.prisma.match.create({
                 data: {
                     initiatorId: swiperId,
                     receiverId: swipedId,
-                    status: 'ACTIVE',
+                    status: "ACTIVE",
                 },
                 include: {
                     initiator: {
@@ -176,59 +176,56 @@ class DiscoveryService {
                 },
             });
             // Create notifications for both users
-            await prisma.notification.createMany({
+            await prisma_1.prisma.notification.createMany({
                 data: [
                     {
                         userId: swiperId,
-                        type: 'match',
-                        title: 'New Match! 🎉',
+                        type: "match",
+                        title: "New Match! 🎉",
                         body: `You matched with ${match.receiver.profile?.displayName}!`,
                         data: { matchId: match.id, userId: swipedId },
                     },
                     {
                         userId: swipedId,
-                        type: 'match',
-                        title: 'New Match! 🎉',
+                        type: "match",
+                        title: "New Match! 🎉",
                         body: `You matched with ${match.initiator.profile?.displayName}!`,
                         data: { matchId: match.id, userId: swiperId },
                     },
                 ],
             });
             return {
-                type: 'match',
-                message: 'It\'s a match!',
+                type: "match",
+                message: "It's a match!",
                 match,
                 isSuper,
             };
         }
         // Create notification for like (if not super like, keep it low-key)
         if (isSuper) {
-            await prisma.notification.create({
+            await prisma_1.prisma.notification.create({
                 data: {
                     userId: swipedId,
-                    type: 'super_like',
-                    title: 'Someone Super Liked You! ⭐',
-                    body: 'Someone really likes your profile!',
+                    type: "super_like",
+                    title: "Someone Super Liked You! ⭐",
+                    body: "Someone really likes your profile!",
                     data: { likeId: like.id, userId: swiperId },
                 },
             });
         }
         return {
-            type: 'like',
-            message: isSuper ? 'Super like sent!' : 'Like sent!',
+            type: "like",
+            message: isSuper ? "Super like sent!" : "Like sent!",
             like,
             isSuper,
         };
     }
     // Get user's matches
     static async getUserMatches(userId) {
-        return await prisma.match.findMany({
+        return await prisma_1.prisma.match.findMany({
             where: {
-                OR: [
-                    { initiatorId: userId },
-                    { receiverId: userId },
-                ],
-                status: 'ACTIVE',
+                OR: [{ initiatorId: userId }, { receiverId: userId }],
+                status: "ACTIVE",
             },
             include: {
                 initiator: {
@@ -263,7 +260,7 @@ class DiscoveryService {
                 },
                 messages: {
                     take: 1,
-                    orderBy: { createdAt: 'desc' },
+                    orderBy: { createdAt: "desc" },
                     select: {
                         content: true,
                         createdAt: true,
@@ -271,12 +268,12 @@ class DiscoveryService {
                     },
                 },
             },
-            orderBy: { updatedAt: 'desc' },
+            orderBy: { updatedAt: "desc" },
         });
     }
     // Get likes received by user
     static async getReceivedLikes(userId) {
-        return await prisma.like.findMany({
+        return await prisma_1.prisma.like.findMany({
             where: { likedId: userId },
             include: {
                 liker: {
@@ -295,7 +292,7 @@ class DiscoveryService {
                     },
                 },
             },
-            orderBy: { createdAt: 'desc' },
+            orderBy: { createdAt: "desc" },
         });
     }
 }

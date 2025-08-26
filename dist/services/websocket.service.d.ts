@@ -1,8 +1,8 @@
-import { Server as HTTPServer } from 'http';
-import { Server as SocketIOServer } from 'socket.io';
+import { Server as HTTPServer } from "http";
+import { Server as SocketIOServer } from "socket.io";
 interface PresenceInfo {
     userId: string;
-    status: 'online' | 'away' | 'offline';
+    status: "online" | "away" | "offline";
     lastSeen: Date;
     deviceInfo?: {
         platform: string;
@@ -59,7 +59,7 @@ export declare class WebSocketService {
     /**
      * Set user presence
      */
-    setUserPresence(userId: string, status: 'online' | 'away' | 'offline', deviceInfo?: any): void;
+    setUserPresence(userId: string, status: "online" | "away" | "offline", deviceInfo?: any): void;
     /**
      * Get all online users
      */
@@ -84,7 +84,7 @@ export declare class WebSocketService {
      * Close the WebSocket service
      */
     close(): void;
-    getIO(): SocketIOServer<import("socket.io").DefaultEventsMap, import("socket.io").DefaultEventsMap, import("socket.io").DefaultEventsMap, any> | undefined;
+    getIO(): SocketIOServer<import("socket.io").DefaultEventsMap, import("socket.io").DefaultEventsMap, import("socket.io").DefaultEventsMap, any> | null;
     isUserOnline(userId: string): boolean;
     getOnlineUsersCount(): number;
 }

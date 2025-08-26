@@ -1,13 +1,13 @@
+import { PrismaClient } from "@prisma/client";
+import { prisma } from "../lib/prisma";
 
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+// using shared singleton `prisma` from src/lib/prisma
 
 interface CreateMessageData {
   senderId: string;
   receiverId: string;
   content: string;
-  messageType?: 'text' | 'image' | 'gif' | 'emoji';
+  messageType?: "text" | "image" | "gif" | "emoji";
 }
 
 interface MessageFilters {
@@ -19,7 +19,7 @@ interface MessageFilters {
 export class MessagingService {
   // Send a message in a match
   static async sendMessage(data: CreateMessageData) {
-    const { senderId, receiverId, content, messageType = 'text' } = data;
+    const { senderId, receiverId, content, messageType = "text" } = data;
 
     // Verify match exists and is active
     const match = await prisma.match.findFirst({
@@ -28,12 +28,12 @@ export class MessagingService {
           { initiatorId: senderId, receiverId },
           { initiatorId: receiverId, receiverId: senderId },
         ],
-        status: 'ACTIVE',
+        status: "ACTIVE",
       },
     });
 
     if (!match) {
-      throw new Error('No active match found between users');
+      throw new Error("No active match found between users");
     }
 
     // Create message
@@ -72,9 +72,9 @@ export class MessagingService {
     await prisma.notification.create({
       data: {
         userId: receiverId,
-        type: 'message',
+        type: "message",
         title: `New message from ${message.sender.profile?.displayName}`,
-        body: messageType === 'text' ? content : `Sent a ${messageType}`,
+        body: messageType === "text" ? content : `Sent a ${messageType}`,
         data: {
           matchId: match.id,
           messageId: message.id,
@@ -91,7 +91,7 @@ export class MessagingService {
     const { matchId, limit = 50, before } = filters;
 
     const whereClause: any = { matchId };
-    
+
     if (before) {
       const beforeMessage = await prisma.message.findUnique({
         where: { id: before },
@@ -114,7 +114,7 @@ export class MessagingService {
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
       take: limit,
     });
 
@@ -156,17 +156,17 @@ export class MessagingService {
     });
 
     if (!message) {
-      throw new Error('Message not found');
+      throw new Error("Message not found");
     }
 
     if (message.senderId !== userId) {
-      throw new Error('Can only delete your own messages');
+      throw new Error("Can only delete your own messages");
     }
 
     await prisma.message.update({
       where: { id: messageId },
       data: {
-        content: 'This message was deleted',
+        content: "This message was deleted",
       },
     });
 
@@ -178,10 +178,7 @@ export class MessagingService {
     const match = await prisma.match.findFirst({
       where: {
         id: matchId,
-        OR: [
-          { initiatorId: userId },
-          { receiverId: userId },
-        ],
+        OR: [{ initiatorId: userId }, { receiverId: userId }],
       },
       include: {
         initiator: {
@@ -215,7 +212,7 @@ export class MessagingService {
           },
         },
         messages: {
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
           take: 20,
           include: {
             sender: {
@@ -232,11 +229,12 @@ export class MessagingService {
     });
 
     if (!match) {
-      throw new Error('Match not found');
+      throw new Error("Match not found");
     }
 
-    const otherUser = match.initiatorId === userId ? match.receiver : match.initiator;
-    
+    const otherUser =
+      match.initiatorId === userId ? match.receiver : match.initiator;
+
     return {
       ...match,
       otherUser,
@@ -245,17 +243,21 @@ export class MessagingService {
   }
 
   // Report a message
-  static async reportMessage(messageId: string, reporterId: string, reason: string) {
+  static async reportMessage(
+    messageId: string,
+    reporterId: string,
+    reason: string
+  ) {
     const message = await prisma.message.findUnique({
       where: { id: messageId },
     });
 
     if (!message) {
-      throw new Error('Message not found');
+      throw new Error("Message not found");
     }
 
     if (message.senderId === reporterId) {
-      throw new Error('Cannot report your own message');
+      throw new Error("Cannot report your own message");
     }
 
     await prisma.report.create({

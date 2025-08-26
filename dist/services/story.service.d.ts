@@ -24,7 +24,7 @@ export interface StoryData {
     mediaId: string;
     caption?: string;
     duration?: number;
-    privacy?: 'public' | 'friends' | 'close_friends' | 'private';
+    privacy?: "public" | "friends" | "close_friends" | "private";
     allowReplies?: boolean;
     allowSharing?: boolean;
     showViewers?: boolean;
@@ -39,7 +39,7 @@ export interface StoryData {
 }
 export interface UpdateStoryData {
     caption?: string;
-    privacy?: 'public' | 'friends' | 'close_friends' | 'private';
+    privacy?: "public" | "friends" | "close_friends" | "private";
     allowReplies?: boolean;
     allowSharing?: boolean;
     showViewers?: boolean;
@@ -67,7 +67,7 @@ export interface StoryReaction {
     id: string;
     userId: string;
     storyId: string;
-    reactionType: 'like' | 'love' | 'laugh' | 'wow' | 'fire' | 'clap';
+    reactionType: "like" | "love" | "laugh" | "wow" | "fire" | "clap";
     timestamp: Date;
 }
 export interface StoryReply {
@@ -76,7 +76,7 @@ export interface StoryReply {
     userId: string;
     content: string;
     mediaUrl?: string;
-    replyType: 'text' | 'media' | 'reaction';
+    replyType: "text" | "media" | "reaction";
     timestamp: Date;
     isRead: boolean;
 }
@@ -126,7 +126,7 @@ export interface StoryHighlight {
 }
 export interface StorySettings {
     userId: string;
-    defaultPrivacy: 'public' | 'friends' | 'close_friends';
+    defaultPrivacy: "public" | "friends" | "close_friends";
     allowReplies: boolean;
     allowSharing: boolean;
     showViewers: boolean;
@@ -141,7 +141,7 @@ export interface StoryTemplate {
     name: string;
     preview: string;
     elements: Array<{
-        type: 'text' | 'sticker' | 'filter' | 'background';
+        type: "text" | "sticker" | "filter" | "background";
         data: Record<string, any>;
         position: {
             x: number;
@@ -200,7 +200,7 @@ export interface StoryFilter {
     id: string;
     name: string;
     previewUrl: string;
-    category: 'beauty' | 'funny' | 'artistic' | 'seasonal';
+    category: "beauty" | "funny" | "artistic" | "seasonal";
     isPremium: boolean;
     usageCount: number;
     rating: number;
@@ -209,7 +209,7 @@ export interface StorySticker {
     id: string;
     name: string;
     imageUrl: string;
-    category: 'emoji' | 'location' | 'mention' | 'poll' | 'question' | 'music';
+    category: "emoji" | "location" | "mention" | "poll" | "question" | "music";
     data?: Record<string, any>;
     isAnimated: boolean;
     isPremium: boolean;
@@ -287,6 +287,30 @@ export declare class StoryService {
             };
             viewedAt: Date;
         }>;
+    }>;
+    static getAnalyticsOverview(startDate?: Date | string, endDate?: Date | string): Promise<{
+        timeframe: {
+            start: string;
+            end: string;
+        };
+        totalStories: any;
+        totalViews: any;
+        totalReplies: number;
+        avgViewDuration: any;
+        topStories: {
+            id: any;
+            media: any;
+            user: {
+                id: any;
+                displayName: any;
+            };
+            views: any;
+        }[];
+    }>;
+    static addToHighlights(storyId: string, userId: string, highlightName?: string, coverImage?: string): Promise<any>;
+    static getNearbyStories(latitude: number, longitude: number, radiusKm?: number, limit?: number, offset?: number): Promise<{
+        stories: any;
+        total: any;
     }>;
     static cleanupExpiredStories(): Promise<{
         deletedCount: number;

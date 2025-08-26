@@ -1,11 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CategoryService = void 0;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../lib/prisma");
 class CategoryService {
     static async getAllCategories() {
-        return await prisma.category.findMany({
+        return await prisma_1.prisma.category.findMany({
             where: { isActive: true },
             include: {
                 _count: {
@@ -15,11 +14,11 @@ class CategoryService {
                     },
                 },
             },
-            orderBy: { name: 'asc' },
+            orderBy: { name: "asc" },
         });
     }
     static async getCategoryBySlug(slug) {
-        return await prisma.category.findUnique({
+        return await prisma_1.prisma.category.findUnique({
             where: { slug },
             include: {
                 memberships: {
@@ -37,7 +36,7 @@ class CategoryService {
                     },
                 },
                 communities: {
-                    where: { visibility: 'PUBLIC' },
+                    where: { visibility: "PUBLIC" },
                     include: {
                         _count: {
                             select: {
@@ -50,7 +49,7 @@ class CategoryService {
         });
     }
     static async joinCategory(userId, categoryId) {
-        return await prisma.categoryMembership.upsert({
+        return await prisma_1.prisma.categoryMembership.upsert({
             where: {
                 userId_categoryId: {
                     userId,
@@ -61,12 +60,12 @@ class CategoryService {
             create: {
                 userId,
                 categoryId,
-                role: 'MEMBER',
+                role: "MEMBER",
             },
         });
     }
     static async leaveCategory(userId, categoryId) {
-        return await prisma.categoryMembership.delete({
+        return await prisma_1.prisma.categoryMembership.delete({
             where: {
                 userId_categoryId: {
                     userId,
@@ -76,7 +75,7 @@ class CategoryService {
         });
     }
     static async getUserCategories(userId) {
-        return await prisma.categoryMembership.findMany({
+        return await prisma_1.prisma.categoryMembership.findMany({
             where: { userId },
             include: {
                 category: true,

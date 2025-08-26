@@ -1,6 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from "@prisma/client";
+import { prisma } from "../lib/prisma";
 
-const prisma = new PrismaClient();
+// using shared singleton `prisma` from src/lib/prisma
 
 interface ModerationResult {
   isApproved: boolean;
@@ -37,7 +38,7 @@ export class ModerationService {
     // Check against inappropriate patterns
     for (const pattern of INAPPROPRIATE_PATTERNS) {
       if (pattern.test(content)) {
-        flags.push('inappropriate_content');
+        flags.push("inappropriate_content");
         confidence += 0.3;
       }
     }
@@ -45,19 +46,19 @@ export class ModerationService {
     // Check for excessive caps
     const capsRatio = (content.match(/[A-Z]/g) || []).length / content.length;
     if (capsRatio > 0.7 && content.length > 10) {
-      flags.push('excessive_caps');
+      flags.push("excessive_caps");
       confidence += 0.2;
     }
 
     // Check for spam patterns
     if (this.isSpamLike(content)) {
-      flags.push('spam');
+      flags.push("spam");
       confidence += 0.5;
     }
 
     // Check for external contact info
     if (this.hasContactInfo(content)) {
-      flags.push('external_contact');
+      flags.push("external_contact");
       confidence += 0.4;
     }
 
@@ -67,7 +68,9 @@ export class ModerationService {
       isApproved,
       confidence: Math.min(confidence, 1),
       flags,
-      reason: !isApproved ? `Content flagged for: ${flags.join(', ')}` : undefined,
+      reason: !isApproved
+        ? `Content flagged for: ${flags.join(", ")}`
+        : undefined,
     };
   }
 
@@ -75,13 +78,13 @@ export class ModerationService {
   private static isSpamLike(content: string): boolean {
     // Repeated characters
     if (/(.)\1{4,}/.test(content)) return true;
-    
+
     // Multiple exclamation marks
     if ((content.match(/!/g) || []).length > 5) return true;
-    
+
     // Multiple question marks
     if ((content.match(/\?/g) || []).length > 3) return true;
-    
+
     // Too many emojis
     const emojiCount = (content.match(/[\u{1F600}-\u{1F6FF}]/gu) || []).length;
     if (emojiCount > content.length * 0.3) return true;
@@ -97,7 +100,7 @@ export class ModerationService {
       /\b(?:snap|ig|insta|kik|telegram):\s*\w+/i, // Social handles
     ];
 
-    return patterns.some(pattern => pattern.test(content));
+    return patterns.some((pattern) => pattern.test(content));
   }
 
   // Create a report
@@ -106,7 +109,7 @@ export class ModerationService {
 
     // Prevent self-reporting
     if (reporterId === reportedId) {
-      throw new Error('Cannot report yourself');
+      throw new Error("Cannot report yourself");
     }
 
     // Check if user already reported this content/user recently
@@ -121,7 +124,7 @@ export class ModerationService {
     });
 
     if (existingReport) {
-      throw new Error('You have already reported this content recently');
+      throw new Error("You have already reported this content recently");
     }
 
     // Create the report
@@ -130,7 +133,7 @@ export class ModerationService {
         reporterId,
         reportedId,
         reason,
-        status: 'pending',
+        status: "pending",
       },
       include: {
         reporter: {
@@ -169,7 +172,7 @@ export class ModerationService {
       // Temporary suspension
       await prisma.user.update({
         where: { id: userId },
-        data: { 
+        data: {
           // // @ts-ignore
           // isSuspended not in schema true,
           // // @ts-ignore
@@ -181,17 +184,17 @@ export class ModerationService {
       await prisma.notification.create({
         data: {
           userId,
-          type: 'account',
-          title: 'Account Temporarily Suspended',
-          body: 'Your account has been temporarily suspended due to multiple reports',
-          data: { action: 'suspended', duration: '24h' },
+          type: "account",
+          title: "Account Temporarily Suspended",
+          body: "Your account has been temporarily suspended due to multiple reports",
+          data: { action: "suspended", duration: "24h" },
         },
       });
     } else if (recentReports >= 10) {
       // Permanent ban
       await prisma.user.update({
         where: { id: userId },
-        data: { 
+        data: {
           isActive: false,
           // // @ts-ignore
           // isSuspended not in schema true,
@@ -202,10 +205,10 @@ export class ModerationService {
       await prisma.notification.create({
         data: {
           userId,
-          type: 'account',
-          title: 'Account Suspended',
-          body: 'Your account has been suspended due to violations of our community guidelines',
-          data: { action: 'banned' },
+          type: "account",
+          title: "Account Suspended",
+          body: "Your account has been suspended due to violations of our community guidelines",
+          data: { action: "banned" },
         },
       });
     }
@@ -213,8 +216,8 @@ export class ModerationService {
 
   // Get reports for admin review
   static async getReports(filters: {
-    status?: 'pending' | 'reviewed' | 'resolved';
-    type?: 'profile' | 'message' | 'photo' | 'behavior';
+    status?: "pending" | "reviewed" | "resolved";
+    type?: "profile" | "message" | "photo" | "behavior";
     limit?: number;
     page?: number;
   }) {
@@ -246,7 +249,7 @@ export class ModerationService {
             },
           },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: { createdAt: "desc" },
         skip,
         take: limit,
       }),
@@ -266,9 +269,9 @@ export class ModerationService {
 
   // Update report status (admin action)
   static async updateReportStatus(
-    reportId: string, 
-    status: 'reviewed' | 'resolved',
-    action?: 'warn' | 'suspend' | 'ban' | 'dismiss',
+    reportId: string,
+    status: "reviewed" | "resolved",
+    action?: "warn" | "suspend" | "ban" | "dismiss",
     adminNotes?: string
   ) {
     const report = await prisma.report.findUnique({
@@ -276,7 +279,7 @@ export class ModerationService {
     });
 
     if (!report) {
-      throw new Error('Report not found');
+      throw new Error("Report not found");
     }
 
     // Update report
@@ -291,7 +294,7 @@ export class ModerationService {
     });
 
     // Take action if specified
-    if (action && action !== 'dismiss') {
+    if (action && action !== "dismiss") {
       await this.takeActionOnUser(report.reportedId, action);
     }
 
@@ -299,22 +302,25 @@ export class ModerationService {
   }
 
   // Take action on a user
-  private static async takeActionOnUser(userId: string, action: 'warn' | 'suspend' | 'ban') {
+  private static async takeActionOnUser(
+    userId: string,
+    action: "warn" | "suspend" | "ban"
+  ) {
     switch (action) {
-      case 'warn':
+      case "warn":
         // @ts-ignore - notification type field might not exist in schema
         await prisma.notification.create({
           data: {
             userId,
-            type: 'account',
-            title: 'Community Guidelines Warning',
-            body: 'Please review our community guidelines to ensure your content complies',
-            data: { action: 'warning' },
+            type: "account",
+            title: "Community Guidelines Warning",
+            body: "Please review our community guidelines to ensure your content complies",
+            data: { action: "warning" },
           },
         });
         break;
 
-      case 'suspend':
+      case "suspend":
         await prisma.user.update({
           where: { id: userId },
           data: {
@@ -329,15 +335,15 @@ export class ModerationService {
         await prisma.notification.create({
           data: {
             userId,
-            type: 'account',
-            title: 'Account Suspended',
-            body: 'Your account has been suspended for 7 days due to community guideline violations',
-            data: { action: 'suspended', duration: '7d' },
+            type: "account",
+            title: "Account Suspended",
+            body: "Your account has been suspended for 7 days due to community guideline violations",
+            data: { action: "suspended", duration: "7d" },
           },
         });
         break;
 
-      case 'ban':
+      case "ban":
         await prisma.user.update({
           where: { id: userId },
           data: {
@@ -351,10 +357,10 @@ export class ModerationService {
         await prisma.notification.create({
           data: {
             userId,
-            type: 'account',
-            title: 'Account Banned',
-            body: 'Your account has been permanently banned due to severe violations',
-            data: { action: 'banned' },
+            type: "account",
+            title: "Account Banned",
+            body: "Your account has been permanently banned due to severe violations",
+            data: { action: "banned" },
           },
         });
         break;
@@ -377,7 +383,7 @@ export class ModerationService {
     if (!user || !user.isActive) return true;
     // @ts-ignore - suspension fields might not exist in schema
     if (!user.isSuspended) return false;
-    
+
     // Check if suspension has expired
     // @ts-ignore - suspension fields might not exist in schema
     if (user.suspensionEnd && new Date() > user.suspensionEnd) {
@@ -411,7 +417,7 @@ export class ModerationService {
         where: {
           userId,
           // type not in schema, using reason instead 'account',
-          title: { contains: 'Warning' },
+          title: { contains: "Warning" },
         },
       }),
     ]);

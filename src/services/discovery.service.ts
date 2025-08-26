@@ -1,6 +1,5 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { PrismaClient } from "@prisma/client";
+import { prisma } from "../lib/prisma";
 
 interface DiscoveryFilters {
   userId: string;
@@ -63,7 +62,7 @@ export class DiscoveryService {
     });
 
     if (!userProfile) {
-      throw new Error('User profile not found');
+      throw new Error("User profile not found");
     }
 
     // Get users who have already been liked/passed/blocked
@@ -83,14 +82,23 @@ export class DiscoveryService {
     const excludedUserIds = [
       userId,
       ...likedUsers.map((l: { likedId: string }) => l.likedId),
-      ...blockedUsers.map((b: { blockerId: string; blockedId: string }) => 
-        (b.blockerId === userId ? b.blockedId : b.blockerId)),
+      ...blockedUsers.map((b: { blockerId: string; blockedId: string }) =>
+        b.blockerId === userId ? b.blockedId : b.blockerId
+      ),
     ];
 
     // Calculate age range from birthdate
     const now = new Date();
-    const minBirthDate = new Date(now.getFullYear() - maxAge, now.getMonth(), now.getDate());
-    const maxBirthDate = new Date(now.getFullYear() - minAge, now.getMonth(), now.getDate());
+    const minBirthDate = new Date(
+      now.getFullYear() - maxAge,
+      now.getMonth(),
+      now.getDate()
+    );
+    const maxBirthDate = new Date(
+      now.getFullYear() - minAge,
+      now.getMonth(),
+      now.getDate()
+    );
 
     // Build where clause for discovery
     const whereClause: any = {
@@ -149,16 +157,26 @@ export class DiscoveryService {
     const scoredMatches = potentialMatches
       .map((match: any) => {
         let score = 0;
-        
+
         // Interest compatibility (0-100 points)
-        const userInterestIds = userProfile.user.interests.map((i: any) => i.id);
+        const userInterestIds = userProfile.user.interests.map(
+          (i: any) => i.id
+        );
         const matchInterestIds = match.user.interests.map((i: any) => i.id);
-        const commonInterests = userInterestIds.filter((id: string) => matchInterestIds.includes(id));
-        score += (commonInterests.length / Math.max(userInterestIds.length, 1)) * 100;
+        const commonInterests = userInterestIds.filter((id: string) =>
+          matchInterestIds.includes(id)
+        );
+        score +=
+          (commonInterests.length / Math.max(userInterestIds.length, 1)) * 100;
 
         // Distance bonus (0-50 points, closer = better)
         if (latitude && longitude && match.latitude && match.longitude) {
-          const distance = this.calculateDistance(latitude, longitude, match.latitude, match.longitude);
+          const distance = this.calculateDistance(
+            latitude,
+            longitude,
+            match.latitude,
+            match.longitude
+          );
           score += Math.max(0, 50 - distance);
         }
 
@@ -186,7 +204,7 @@ export class DiscoveryService {
 
     if (!isLike) {
       // For passes, we just record that they've been shown (no DB record needed)
-      return { type: 'pass', message: 'User passed' };
+      return { type: "pass", message: "User passed" };
     }
 
     // Create like record
@@ -212,7 +230,7 @@ export class DiscoveryService {
         data: {
           initiatorId: swiperId,
           receiverId: swipedId,
-          status: 'ACTIVE',
+          status: "ACTIVE",
         },
         include: {
           initiator: {
@@ -237,15 +255,15 @@ export class DiscoveryService {
         data: [
           {
             userId: swiperId,
-            type: 'match',
-            title: 'New Match! 🎉',
+            type: "match",
+            title: "New Match! 🎉",
             body: `You matched with ${match.receiver.profile?.displayName}!`,
             data: { matchId: match.id, userId: swipedId },
           },
           {
             userId: swipedId,
-            type: 'match',
-            title: 'New Match! 🎉',
+            type: "match",
+            title: "New Match! 🎉",
             body: `You matched with ${match.initiator.profile?.displayName}!`,
             data: { matchId: match.id, userId: swiperId },
           },
@@ -253,8 +271,8 @@ export class DiscoveryService {
       });
 
       return {
-        type: 'match',
-        message: 'It\'s a match!',
+        type: "match",
+        message: "It's a match!",
         match,
         isSuper,
       };
@@ -265,17 +283,17 @@ export class DiscoveryService {
       await prisma.notification.create({
         data: {
           userId: swipedId,
-          type: 'super_like',
-          title: 'Someone Super Liked You! ⭐',
-          body: 'Someone really likes your profile!',
+          type: "super_like",
+          title: "Someone Super Liked You! ⭐",
+          body: "Someone really likes your profile!",
           data: { likeId: like.id, userId: swiperId },
         },
       });
     }
 
     return {
-      type: 'like',
-      message: isSuper ? 'Super like sent!' : 'Like sent!',
+      type: "like",
+      message: isSuper ? "Super like sent!" : "Like sent!",
       like,
       isSuper,
     };
@@ -285,11 +303,8 @@ export class DiscoveryService {
   static async getUserMatches(userId: string) {
     return await prisma.match.findMany({
       where: {
-        OR: [
-          { initiatorId: userId },
-          { receiverId: userId },
-        ],
-        status: 'ACTIVE',
+        OR: [{ initiatorId: userId }, { receiverId: userId }],
+        status: "ACTIVE",
       },
       include: {
         initiator: {
@@ -324,7 +339,7 @@ export class DiscoveryService {
         },
         messages: {
           take: 1,
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
           select: {
             content: true,
             createdAt: true,
@@ -332,7 +347,7 @@ export class DiscoveryService {
           },
         },
       },
-      orderBy: { updatedAt: 'desc' },
+      orderBy: { updatedAt: "desc" },
     });
   }
 
@@ -357,7 +372,7 @@ export class DiscoveryService {
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
   }
 }

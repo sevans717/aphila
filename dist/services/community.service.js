@@ -1,13 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CommunityService = void 0;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../lib/prisma");
 class CommunityService {
     static async getAllCommunities(categoryId) {
-        return await prisma.community.findMany({
+        return await prisma_1.prisma.community.findMany({
             where: {
-                visibility: 'PUBLIC',
+                visibility: "PUBLIC",
                 ...(categoryId && { categoryId }),
             },
             include: {
@@ -34,11 +33,11 @@ class CommunityService {
                     },
                 },
             },
-            orderBy: { createdAt: 'desc' },
+            orderBy: { createdAt: "desc" },
         });
     }
     static async getCommunityById(id) {
-        return await prisma.community.findUnique({
+        return await prisma_1.prisma.community.findUnique({
             where: { id },
             include: {
                 owner: {
@@ -79,14 +78,14 @@ class CommunityService {
                             },
                         },
                     },
-                    orderBy: { createdAt: 'desc' },
+                    orderBy: { createdAt: "desc" },
                     take: 50,
                 },
             },
         });
     }
     static async createCommunity(data) {
-        return await prisma.community.create({
+        return await prisma_1.prisma.community.create({
             data,
             include: {
                 owner: {
@@ -103,7 +102,7 @@ class CommunityService {
         });
     }
     static async joinCommunity(userId, communityId) {
-        return await prisma.communityMembership.upsert({
+        return await prisma_1.prisma.communityMembership.upsert({
             where: {
                 userId_communityId: {
                     userId,
@@ -114,12 +113,12 @@ class CommunityService {
             create: {
                 userId,
                 communityId,
-                role: 'MEMBER',
+                role: "MEMBER",
             },
         });
     }
     static async leaveCommunity(userId, communityId) {
-        return await prisma.communityMembership.delete({
+        return await prisma_1.prisma.communityMembership.delete({
             where: {
                 userId_communityId: {
                     userId,
@@ -129,10 +128,10 @@ class CommunityService {
         });
     }
     static async sendMessage(data) {
-        return await prisma.communityMessage.create({
+        return await prisma_1.prisma.communityMessage.create({
             data: {
                 ...data,
-                messageType: data.messageType || 'text',
+                messageType: data.messageType || "text",
             },
             include: {
                 sender: {
