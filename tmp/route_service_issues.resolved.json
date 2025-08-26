@@ -1,0 +1,1009 @@
+{
+  "analytics.routes.ts": {
+    "service": "AnalyticsService",
+    "status": "scanned",
+    "methods": {
+      "POST /event": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /session/start": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /session/end": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /swipe": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /feature": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /metrics/users": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /metrics/engagement": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /metrics/platforms": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /funnel": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      }
+    }
+  },
+  "auth.ts": {
+    "service": "AuthService",
+    "status": "scanned",
+    "methods": {
+      "POST /register": {
+        "status": "scanned",
+        "handler": "validate(registerSchema",
+        "handlerToken": "validate(registerSchema",
+        "resolved": "middleware:validate"
+      },
+      "POST /login": {
+        "status": "scanned",
+        "handler": "validate(loginSchema",
+        "handlerToken": "validate(loginSchema",
+        "resolved": "middleware:validate"
+      },
+      "GET /me": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /refresh": {
+        "status": "scanned",
+        "handler": "refreshHandler",
+        "handlerToken": "refreshHandler",
+        "resolved": "import:../controllers/auth.controller",
+        "importFile": "../controllers/auth.controller",
+        "importPath": null,
+        "exports": [
+          "refreshHandler"
+        ]
+      }
+    }
+  },
+  "batch.routes.ts": {
+    "service": "BatchService",
+    "status": "scanned",
+    "methods": {
+      "POST /operations": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /sync": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /fetch": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /health": {
+        "status": "scanned",
+        "handler": "async",
+        "handlerToken": "async",
+        "resolved": "inline:anonymous"
+      }
+    }
+  },
+  "bookmarks.routes.ts": {
+    "service": "BookmarksService",
+    "status": "scanned",
+    "methods": {
+      "POST /collections": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /collections": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /posts/:postId/toggle": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /media/:mediaId/toggle": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /stats": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      }
+    }
+  },
+  "categories.routes.ts": {
+    "service": "CategoriesService",
+    "status": "scanned",
+    "methods": {
+      "GET /": {
+        "status": "scanned",
+        "handler": "async",
+        "handlerToken": "async",
+        "resolved": "inline:anonymous"
+      },
+      "GET /:slug": {
+        "status": "scanned",
+        "handler": "async",
+        "handlerToken": "async",
+        "resolved": "inline:anonymous"
+      },
+      "POST /:categoryId/join": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "DELETE /:categoryId/leave": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /user/me": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      }
+    }
+  },
+  "communities.routes.ts": {
+    "service": "CommunitiesService",
+    "status": "scanned",
+    "methods": {
+      "GET /": {
+        "status": "scanned",
+        "handler": "async",
+        "handlerToken": "async",
+        "resolved": "inline:anonymous"
+      },
+      "GET /:id": {
+        "status": "scanned",
+        "handler": "async",
+        "handlerToken": "async",
+        "resolved": "inline:anonymous"
+      },
+      "POST /": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /:id/join": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "DELETE /:id/leave": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /:id/messages": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      }
+    }
+  },
+  "config.routes.ts": {
+    "service": "ConfigService",
+    "status": "scanned",
+    "methods": {
+      "GET /features": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /version": {
+        "status": "scanned",
+        "handler": "async",
+        "handlerToken": "async",
+        "resolved": "inline:anonymous"
+      },
+      "GET /status": {
+        "status": "scanned",
+        "handler": "async",
+        "handlerToken": "async",
+        "resolved": "inline:anonymous"
+      },
+      "GET /maintenance": {
+        "status": "scanned",
+        "handler": "async",
+        "handlerToken": "async",
+        "resolved": "inline:anonymous"
+      }
+    }
+  },
+  "discovery.routes.ts": {
+    "service": "DiscoveryService",
+    "status": "scanned",
+    "methods": {
+      "GET /discover": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /swipe": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /matches": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /likes": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /communities": {
+        "status": "scanned",
+        "handler": "async",
+        "handlerToken": "async",
+        "resolved": "inline:anonymous"
+      }
+    }
+  },
+  "geospatial.routes.ts": {
+    "service": "GeospatialService",
+    "status": "scanned",
+    "methods": {
+      "POST /location": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /location": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /nearby": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /discovery": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /update-and-discover": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /in-range/:userId": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      }
+    }
+  },
+  "index.ts": {
+    "service": "IndexService",
+    "status": "scanned",
+    "methods": {
+      "GET /health": {
+        "status": "scanned",
+        "handler": "(_req",
+        "handlerToken": "(_req",
+        "resolved": "inline:anonymous"
+      },
+      "GET /me": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      }
+    }
+  },
+  "media.routes.ts": {
+    "service": "MediaService",
+    "status": "scanned",
+    "methods": {
+      "POST /chunked/start": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /chunked/upload": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /chunked/complete": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /chunked/progress/:sessionId": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "DELETE /chunked/:sessionId": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /upload": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /upload-multiple": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /:mediaId": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "DELETE /:mediaId": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "PUT /:mediaId/favorite": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      }
+    }
+  },
+  "messaging.routes.ts": {
+    "service": "MessagingService",
+    "status": "scanned",
+    "methods": {
+      "POST /send": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /match/:matchId": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "PUT /match/:matchId/read": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /unread-count": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "DELETE /message/:messageId": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /match/:matchId/details": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /message/:messageId/report": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      }
+    }
+  },
+  "mobile.routes.ts": {
+    "service": "MobileService",
+    "status": "scanned",
+    "methods": {
+      "POST /device/register": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "DELETE /device/unregister": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /notifications/preferences": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "PUT /notifications/preferences": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /media/upload": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /media": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "PUT /media/:mediaId": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "DELETE /media/:mediaId": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /media/:mediaId": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /app/config": {
+        "status": "scanned",
+        "handler": "async",
+        "handlerToken": "async",
+        "resolved": "inline:anonymous"
+      },
+      "POST /app/feedback": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      }
+    }
+  },
+  "moderation.routes.ts": {
+    "service": "ModerationService",
+    "status": "scanned",
+    "methods": {
+      "POST /report": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /reports": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "PUT /reports/:reportId": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /user/:userId/history": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /user/:userId/suspended": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      }
+    }
+  },
+  "notifications.routes.ts": {
+    "service": "NotificationsService",
+    "status": "scanned",
+    "methods": {
+      "POST /register-device": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /unregister-device": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /test": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /settings": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "PUT /settings": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /subscribe/:topic": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /unsubscribe/:topic": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /mark-read": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /mark-all-read": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      }
+    }
+  },
+  "posts.routes.ts": {
+    "service": "PostsService",
+    "status": "scanned",
+    "methods": {
+      "GET /:postId": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /feed": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "PATCH /:postId": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "DELETE /:postId": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      }
+    }
+  },
+  "realtime.routes.ts": {
+    "service": "RealtimeService",
+    "status": "scanned",
+    "methods": {
+      "POST /send-message": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /broadcast": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /presence": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /presence/:userId": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /queued-messages": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "DELETE /queued-messages": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /status": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      }
+    }
+  },
+  "search.routes.ts": {
+    "service": "SearchService",
+    "status": "scanned",
+    "methods": {
+      "GET /": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /posts": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /users": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /history": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "DELETE /history": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      }
+    }
+  },
+  "sharing.routes.ts": {
+    "service": "SharingService",
+    "status": "scanned",
+    "methods": {
+      "POST /post": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /media": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /my-shares": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "DELETE /:shareId": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      }
+    }
+  },
+  "social.routes.ts": {
+    "service": "SocialService",
+    "status": "scanned",
+    "methods": {
+      "POST /posts/:postId/comments": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /posts/:postId/comments": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /comments/:commentId/replies": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /posts/:postId/likes/toggle": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /comments/:commentId/likes/toggle": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      }
+    }
+  },
+  "stories.routes.ts": {
+    "service": "StoriesService",
+    "status": "scanned",
+    "methods": {
+      "POST /": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /:storyId": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "PUT /:storyId": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "DELETE /:storyId": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /feed/latest": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /user/:userId": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /user/:userId/active": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /:storyId/view": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /:storyId/viewers": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /:storyId/reply": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /:storyId/analytics": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /analytics/overview": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /:storyId/highlight": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /discover/trending": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /discover/nearby": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /cleanup/expired": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /stats/global": {
+        "status": "scanned",
+        "handler": "auth",
+        "handlerToken": "auth",
+        "resolved": "middleware:auth/requireAuth"
+      }
+    }
+  },
+  "subscription.routes.ts": {
+    "service": "SubscriptionService",
+    "status": "scanned",
+    "methods": {
+      "GET /plans": {
+        "status": "scanned",
+        "handler": "async",
+        "handlerToken": "async",
+        "resolved": "inline:anonymous"
+      },
+      "GET /current": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /subscribe": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /cancel": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "GET /usage": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      },
+      "POST /boost": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      }
+    }
+  },
+  "user.routes.ts": {
+    "service": "UserService",
+    "status": "scanned",
+    "methods": {
+      "PATCH /": {
+        "status": "scanned",
+        "handler": "requireAuth",
+        "handlerToken": "requireAuth",
+        "resolved": "middleware:auth/requireAuth"
+      }
+    }
+  }
+}
