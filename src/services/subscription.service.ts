@@ -1,6 +1,7 @@
 // avoid importing generated enum types directly; use strings for type-safety compatibility
 import { prisma } from "../lib/prisma";
 import { env } from "../config/env";
+import { v4 as uuidv4 } from "uuid";
 
 // using shared singleton `prisma` from src/lib/prisma
 
@@ -212,15 +213,27 @@ export class SubscriptionService {
     });
 
     // Create subscription record (you might want a separate subscriptions table)
-    await prisma.notification.create({
-      data: {
-        userId,
-        type: "subscription",
-        title: "Subscription Activated! 🎉",
-        body: `Your ${plan.name} subscription is now active`,
-        data: { planId, endDate: endDate.toISOString() },
-      },
-    });
+    const notificationData: any = {
+      userId,
+      type: "subscription",
+      title: "Subscription Activated! 🎉",
+      body: `Your ${plan.name} subscription is now active`,
+      data: { planId, endDate: endDate.toISOString() },
+    };
+
+    // If payments are disabled for dev, add a mock receipt payload
+    if (env.disablePayments) {
+      notificationData.data.mockPayment = true;
+      notificationData.data.payment = {
+        id: `mock_${uuidv4()}`,
+        amount: plan.price,
+        currency: "USD",
+        status: "succeeded",
+        createdAt: new Date().toISOString(),
+      };
+    }
+
+    await prisma.notification.create({ data: notificationData });
 
     return {
       success: true,
