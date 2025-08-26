@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth';
-import { validateBody } from '../middleware/validation';
+import { validateRequest } from '../middleware/validate';
 import { SubscriptionService } from '../services/subscription.service';
 
 const router = Router();
@@ -56,7 +56,7 @@ router.get(
 router.post(
   '/subscribe',
   requireAuth,
-  validateBody(subscribeSchema),
+  validateRequest({ body: subscribeSchema }),
   async (req: any, res: any) => {
     try {
       const userId = req.user.id;

@@ -2,12 +2,12 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_1 = require("../middleware/auth");
-const validation_1 = require("../middleware/validation");
+const validate_1 = require("../middleware/validate");
 const user_schema_1 = require("../schemas/user.schema");
 const user_service_1 = require("../services/user.service");
 const router = (0, express_1.Router)();
 // PATCH /user - update profile (requires auth)
-router.patch("/", auth_1.requireAuth, (0, validation_1.validateBody)(user_schema_1.updateProfileSchema), async (req, res) => {
+router.patch("/", auth_1.requireAuth, (0, validate_1.validateRequest)({ body: user_schema_1.updateProfileSchema }), async (req, res) => {
     try {
         const userId = req.user.id;
         const data = req.body;

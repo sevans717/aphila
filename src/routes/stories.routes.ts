@@ -223,7 +223,11 @@ router.get("/user/:userId/active", auth, async (req, res) => {
 });
 
 // Story interactions
-router.post("/:storyId/view", auth, async (req, res) => {
+router.post(
+  "/:storyId/view",
+  auth,
+  validateRequest({ params: z.object({ storyId: z.string() }) }),
+  async (req, res) => {
   try {
     const { storyId } = req.params;
     const userId = req.user!.userId;
@@ -269,7 +273,14 @@ router.get("/:storyId/viewers", auth, async (req, res) => {
   }
 });
 
-router.post("/:storyId/reply", auth, async (req, res) => {
+router.post(
+  "/:storyId/reply",
+  auth,
+  validateRequest({
+    params: z.object({ storyId: z.string() }),
+    body: z.object({ message: z.string().min(1) }),
+  }),
+  async (req, res) => {
   try {
     const { storyId } = req.params;
     const { message } = req.body;
@@ -343,7 +354,14 @@ router.get("/analytics/overview", auth, async (req, res) => {
 });
 
 // Story highlights (saved stories)
-router.post("/:storyId/highlight", auth, async (req, res) => {
+router.post(
+  "/:storyId/highlight",
+  auth,
+  validateRequest({
+    params: z.object({ storyId: z.string() }),
+    body: z.object({ highlightName: z.string().optional(), coverImage: z.string().optional() }),
+  }),
+  async (req, res) => {
   try {
     const { storyId } = req.params;
     const { highlightName, coverImage } = req.body;
@@ -444,24 +462,29 @@ router.get("/discover/nearby", auth, async (req, res) => {
 });
 
 // Utility routes
-router.post("/cleanup/expired", auth, async (req, res) => {
-  try {
-    // Only allow admin users to trigger cleanup
-    // This would typically be a scheduled job
-    const cleanupResult = await StoryService.cleanupExpiredStories();
+router.post(
+  "/cleanup/expired",
+  auth,
+  validateRequest({ body: z.object({ force: z.boolean().optional() }) }),
+  async (req, res) => {
+    try {
+      // Only allow admin users to trigger cleanup
+      // This would typically be a scheduled job
+      const cleanupResult = await StoryService.cleanupExpiredStories();
 
-    res.json({
-      success: true,
-      data: cleanupResult,
-    });
-  } catch (error) {
-    logger.error("Error cleaning up expired stories:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to cleanup expired stories",
-    });
+      res.json({
+        success: true,
+        data: cleanupResult,
+      });
+    } catch (error) {
+      logger.error("Error cleaning up expired stories:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to cleanup expired stories",
+      });
+    }
   }
-});
+);
 
 router.get("/stats/global", auth, async (req, res) => {
   try {

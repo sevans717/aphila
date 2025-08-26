@@ -180,7 +180,7 @@ router.get("/user/:userId/active", auth_1.auth, async (req, res) => {
     }
 });
 // Story interactions
-router.post("/:storyId/view", auth_1.auth, async (req, res) => {
+router.post("/:storyId/view", auth_1.auth, (0, validate_1.validateRequest)({ params: zod_1.z.object({ storyId: zod_1.z.string() }) }), async (req, res) => {
     try {
         const { storyId } = req.params;
         const userId = req.user.userId;
@@ -217,7 +217,10 @@ router.get("/:storyId/viewers", auth_1.auth, async (req, res) => {
         });
     }
 });
-router.post("/:storyId/reply", auth_1.auth, async (req, res) => {
+router.post("/:storyId/reply", auth_1.auth, (0, validate_1.validateRequest)({
+    params: zod_1.z.object({ storyId: zod_1.z.string() }),
+    body: zod_1.z.object({ message: zod_1.z.string().min(1) }),
+}), async (req, res) => {
     try {
         const { storyId } = req.params;
         const { message } = req.body;
@@ -282,7 +285,10 @@ router.get("/analytics/overview", auth_1.auth, async (req, res) => {
     }
 });
 // Story highlights (saved stories)
-router.post("/:storyId/highlight", auth_1.auth, async (req, res) => {
+router.post("/:storyId/highlight", auth_1.auth, (0, validate_1.validateRequest)({
+    params: zod_1.z.object({ storyId: zod_1.z.string() }),
+    body: zod_1.z.object({ highlightName: zod_1.z.string().optional(), coverImage: zod_1.z.string().optional() }),
+}), async (req, res) => {
     try {
         const { storyId } = req.params;
         const { highlightName, coverImage } = req.body;
@@ -361,7 +367,7 @@ router.get("/discover/nearby", auth_1.auth, async (req, res) => {
     }
 });
 // Utility routes
-router.post("/cleanup/expired", auth_1.auth, async (req, res) => {
+router.post("/cleanup/expired", auth_1.auth, (0, validate_1.validateRequest)({ body: zod_1.z.object({ force: zod_1.z.boolean().optional() }) }), async (req, res) => {
     try {
         // Only allow admin users to trigger cleanup
         // This would typically be a scheduled job

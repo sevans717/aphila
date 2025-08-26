@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/auth";
-import { validateBody } from "../middleware/validation";
+import { validateRequest } from "../middleware/validate";
 import { updateProfileSchema } from "../schemas/user.schema";
 import { updateUserProfile } from "../services/user.service";
 
@@ -10,7 +10,7 @@ const router = Router();
 router.patch(
   "/",
   requireAuth,
-  validateBody(updateProfileSchema),
+  validateRequest({ body: updateProfileSchema }),
   async (req: any, res: any) => {
     try {
       const userId = req.user.id;

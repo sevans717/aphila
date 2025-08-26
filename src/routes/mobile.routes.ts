@@ -1,21 +1,23 @@
-import { Router } from 'express';
-import { z } from 'zod';
-import { requireAuth } from '../middleware/auth';
-import { validateRequest } from '../middleware/validate';
-import { MediaService } from '../services/media.service';
-import { PushNotificationService } from '../services/push-notification.service';
+import { Router } from "express";
+import { z } from "zod";
+import { requireAuth } from "../middleware/auth";
+import { validateRequest } from "../middleware/validate";
+import { MediaService } from "../services/media.service";
+import { PushNotificationService } from "../services/push-notification.service";
 
 const router = Router();
 
 // Validation schemas
 const deviceRegistrationSchema = z.object({
   token: z.string(),
-  platform: z.enum(['ios', 'android', 'web']),
-  deviceInfo: z.object({
-    model: z.string().optional(),
-    osVersion: z.string().optional(),
-    appVersion: z.string().optional(),
-  }).optional(),
+  platform: z.enum(["ios", "android", "web"]),
+  deviceInfo: z
+    .object({
+      model: z.string().optional(),
+      osVersion: z.string().optional(),
+      appVersion: z.string().optional(),
+    })
+    .optional(),
 });
 
 const notificationPreferencesSchema = z.object({
@@ -38,7 +40,7 @@ const uploadMetadataSchema = z.object({
 
 // POST /device/register - Register device for push notifications
 router.post(
-  '/device/register',
+  "/device/register",
   requireAuth,
   validateRequest({ body: deviceRegistrationSchema }),
   async (req: any, res: any) => {
@@ -56,7 +58,7 @@ router.post(
       res.status(201).json({
         success: true,
         data: device,
-        message: 'Device registered successfully',
+        message: "Device registered successfully",
       });
     } catch (error: any) {
       res.status(400).json({
@@ -69,7 +71,7 @@ router.post(
 
 // DELETE /device/unregister - Unregister device
 router.delete(
-  '/device/unregister',
+  "/device/unregister",
   requireAuth,
   validateRequest({ body: z.object({ token: z.string() }) }),
   async (req: any, res: any) => {
@@ -81,7 +83,7 @@ router.delete(
 
       res.json({
         success: true,
-        message: 'Device unregistered successfully',
+        message: "Device unregistered successfully",
       });
     } catch (error: any) {
       res.status(400).json({
@@ -94,12 +96,13 @@ router.delete(
 
 // GET /notifications/preferences - Get notification preferences
 router.get(
-  '/notifications/preferences',
+  "/notifications/preferences",
   requireAuth,
   async (req: any, res: any) => {
     try {
       const userId = req.user.id;
-      const preferences = await PushNotificationService.getNotificationPreferences(userId);
+      const preferences =
+        await PushNotificationService.getNotificationPreferences(userId);
 
       res.json({
         success: true,
@@ -116,7 +119,7 @@ router.get(
 
 // PUT /notifications/preferences - Update notification preferences
 router.put(
-  '/notifications/preferences',
+  "/notifications/preferences",
   requireAuth,
   validateRequest({ body: notificationPreferencesSchema }),
   async (req: any, res: any) => {
@@ -124,11 +127,14 @@ router.put(
       const userId = req.user.id;
       const preferences = req.body;
 
-      await PushNotificationService.updateNotificationPreferences(userId, preferences);
+      await PushNotificationService.updateNotificationPreferences(
+        userId,
+        preferences
+      );
 
       res.json({
         success: true,
-        message: 'Notification preferences updated',
+        message: "Notification preferences updated",
       });
     } catch (error: any) {
       res.status(400).json({
@@ -141,7 +147,7 @@ router.put(
 
 // POST /media/upload - Upload media file (simplified for example)
 router.post(
-  '/media/upload',
+  "/media/upload",
   requireAuth,
   validateRequest({ body: uploadMetadataSchema }),
   async (req: any, res: any) => {
@@ -154,12 +160,12 @@ router.post(
       if (!file || !type) {
         return res.status(400).json({
           success: false,
-          error: 'File and type are required',
+          error: "File and type are required",
         });
       }
 
       let result;
-      if (type === 'photo' && isPrimary !== undefined) {
+      if (type === "photo" && isPrimary !== undefined) {
         result = await MediaService.uploadProfilePhoto(file, userId, isPrimary);
       } else {
         result = await MediaService.uploadFile(file, userId, type);
@@ -168,7 +174,7 @@ router.post(
       res.status(201).json({
         success: true,
         data: result,
-        message: 'File uploaded successfully',
+        message: "File uploaded successfully",
       });
     } catch (error: any) {
       res.status(400).json({
@@ -180,32 +186,28 @@ router.post(
 );
 
 // GET /media - Get user's media
-router.get(
-  '/media',
-  requireAuth,
-  async (req: any, res: any) => {
-    try {
-      const userId = req.user.id;
-      const { type } = req.query;
+router.get("/media", requireAuth, async (req: any, res: any) => {
+  try {
+    const userId = req.user.id;
+    const { type } = req.query;
 
-      const media = await MediaService.getUserMedia(userId, type);
+    const media = await MediaService.getUserMedia(userId, type);
 
-      res.json({
-        success: true,
-        data: media,
-      });
-    } catch (error: any) {
-      res.status(500).json({
-        success: false,
-        error: error.message,
-      });
-    }
+    res.json({
+      success: true,
+      data: media,
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
   }
-);
+});
 
 // PUT /media/:mediaId - Update media metadata
 router.put(
-  '/media/:mediaId',
+  "/media/:mediaId",
   requireAuth,
   validateRequest({ params: mediaParamsSchema, body: uploadMetadataSchema }),
   async (req: any, res: any) => {
@@ -214,12 +216,16 @@ router.put(
       const { mediaId } = req.params;
       const metadata = req.body;
 
-      const result = await MediaService.updateMediaMetadata(mediaId, userId, metadata);
+      const result = await MediaService.updateMediaMetadata(
+        mediaId,
+        userId,
+        metadata
+      );
 
       res.json({
         success: true,
         data: result,
-        message: 'Media updated successfully',
+        message: "Media updated successfully",
       });
     } catch (error: any) {
       res.status(400).json({
@@ -232,7 +238,7 @@ router.put(
 
 // DELETE /media/:mediaId - Delete media
 router.delete(
-  '/media/:mediaId',
+  "/media/:mediaId",
   requireAuth,
   validateRequest({ params: mediaParamsSchema }),
   async (req: any, res: any) => {
@@ -244,7 +250,7 @@ router.delete(
 
       res.json({
         success: true,
-        message: 'Media deleted successfully',
+        message: "Media deleted successfully",
       });
     } catch (error: any) {
       res.status(400).json({
@@ -257,7 +263,7 @@ router.delete(
 
 // GET /media/:mediaId - Get media details
 router.get(
-  '/media/:mediaId',
+  "/media/:mediaId",
   requireAuth,
   validateRequest({ params: mediaParamsSchema }),
   async (req: any, res: any) => {
@@ -268,7 +274,7 @@ router.get(
       if (!media) {
         return res.status(404).json({
           success: false,
-          error: 'Media not found',
+          error: "Media not found",
         });
       }
 
@@ -286,11 +292,11 @@ router.get(
 );
 
 // GET /app/config - Get app configuration for mobile
-router.get('/app/config', async (req: any, res: any) => {
+router.get("/app/config", async (req: any, res: any) => {
   try {
     const config = {
-      apiVersion: '1.0.0',
-      minAppVersion: '1.0.0',
+      apiVersion: "1.0.0",
+      minAppVersion: "1.0.0",
       features: {
         videoUploads: true,
         voiceMessages: true,
@@ -304,17 +310,17 @@ router.get('/app/config', async (req: any, res: any) => {
         maxFileSize: 10 * 1024 * 1024, // 10MB
       },
       subscription: {
-        plans: ['basic', 'premium', 'gold'],
+        plans: ["basic", "premium", "gold"],
         features: {
-          basic: ['5 likes per day', 'Basic matching'],
-          premium: ['Unlimited likes', 'See who liked you', 'Super likes'],
-          gold: ['Everything in Premium', 'Unlimited super likes', 'Boosts'],
+          basic: ["5 likes per day", "Basic matching"],
+          premium: ["Unlimited likes", "See who liked you", "Super likes"],
+          gold: ["Everything in Premium", "Unlimited super likes", "Boosts"],
         },
       },
       social: {
-        supportEmail: 'support@sav3.app',
-        privacyPolicyUrl: 'https://sav3.app/privacy',
-        termsOfServiceUrl: 'https://sav3.app/terms',
+        supportEmail: "support@sav3.app",
+        privacyPolicyUrl: "https://sav3.app/privacy",
+        termsOfServiceUrl: "https://sav3.app/terms",
       },
     };
 
@@ -332,25 +338,29 @@ router.get('/app/config', async (req: any, res: any) => {
 
 // POST /app/feedback - Submit app feedback
 router.post(
-  '/app/feedback',
+  "/app/feedback",
   requireAuth,
-  validateRequest({ body: z.object({
-    type: z.enum(['bug', 'feature', 'general']),
-    message: z.string().min(1),
-    rating: z.number().min(1).max(5).optional(),
-    deviceInfo: z.object({
-      platform: z.string(),
-      version: z.string(),
-      model: z.string().optional(),
-    }).optional(),
-  }) }),
+  validateRequest({
+    body: z.object({
+      type: z.enum(["bug", "feature", "general"]),
+      message: z.string().min(1),
+      rating: z.number().min(1).max(5).optional(),
+      deviceInfo: z
+        .object({
+          platform: z.string(),
+          version: z.string(),
+          model: z.string().optional(),
+        })
+        .optional(),
+    }),
+  }),
   async (req: any, res: any) => {
     try {
       const userId = req.user.id;
       const { type, message, rating, deviceInfo } = req.body;
 
       // In a real app, you'd store this in a feedback table or send to support system
-      console.log('📝 App Feedback:', {
+      console.log("📝 App Feedback:", {
         userId,
         type,
         message,
@@ -361,14 +371,14 @@ router.post(
 
       // For now, just create a notification for admins
       await PushNotificationService.sendToUser(userId, {
-        title: 'Feedback Received',
-        body: 'Thank you for your feedback! We\'ll review it and get back to you.',
-        data: { type: 'feedback_confirmation' },
+        title: "Feedback Received",
+        body: "Thank you for your feedback! We'll review it and get back to you.",
+        data: { type: "feedback_confirmation" },
       });
 
       res.status(201).json({
         success: true,
-        message: 'Feedback submitted successfully',
+        message: "Feedback submitted successfully",
       });
     } catch (error: any) {
       res.status(400).json({

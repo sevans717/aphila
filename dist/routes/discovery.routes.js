@@ -15,7 +15,10 @@ const discoverQuerySchema = zod_1.z.object({
     minAge: zod_1.z.string().transform(Number).optional(),
     maxAge: zod_1.z.string().transform(Number).optional(),
     orientation: zod_1.z.string().optional(),
-    interests: zod_1.z.string().optional().transform(str => str ? str.split(',') : []),
+    interests: zod_1.z
+        .string()
+        .optional()
+        .transform((str) => (str ? str.split(",") : [])),
     limit: zod_1.z.string().transform(Number).optional(),
 });
 const swipeSchema = zod_1.z.object({
@@ -24,7 +27,7 @@ const swipeSchema = zod_1.z.object({
     isSuper: zod_1.z.boolean().optional().default(false),
 });
 // GET /discover - Get users for discovery
-router.get('/discover', auth_1.requireAuth, (0, validate_1.validateRequest)({ query: discoverQuerySchema }), async (req, res) => {
+router.get("/discover", auth_1.requireAuth, (0, validate_1.validateRequest)({ query: discoverQuerySchema }), async (req, res) => {
     try {
         const userId = req.user.id;
         const filters = {
@@ -37,20 +40,28 @@ router.get('/discover', auth_1.requireAuth, (0, validate_1.validateRequest)({ qu
             data: users.map((user) => ({
                 id: user.userId,
                 displayName: user.displayName,
-                age: user.birthdate ? Math.floor((Date.now() - new Date(user.birthdate).getTime()) / (365.25 * 24 * 60 * 60 * 1000)) : null,
+                age: user.birthdate
+                    ? Math.floor((Date.now() - new Date(user.birthdate).getTime()) /
+                        (365.25 * 24 * 60 * 60 * 1000))
+                    : null,
                 bio: user.bio,
                 orientation: user.orientation,
-                location: user.latitude && user.longitude ? {
-                    latitude: user.latitude,
-                    longitude: user.longitude,
-                    city: user.city,
-                    country: user.country,
-                } : null,
+                location: user.latitude && user.longitude
+                    ? {
+                        latitude: user.latitude,
+                        longitude: user.longitude,
+                        city: user.city,
+                        country: user.country,
+                    }
+                    : null,
                 photos: user.user.photos,
                 interests: user.user.interests,
                 compatibilityScore: user.compatibilityScore,
                 isVerified: user.isVerified,
-                distance: req.query.latitude && req.query.longitude && user.latitude && user.longitude
+                distance: req.query.latitude &&
+                    req.query.longitude &&
+                    user.latitude &&
+                    user.longitude
                     ? Math.round(discovery_service_1.DiscoveryService.calculateDistance(parseFloat(req.query.latitude), parseFloat(req.query.longitude), user.latitude, user.longitude))
                     : null,
             })),
@@ -68,7 +79,7 @@ router.get('/discover', auth_1.requireAuth, (0, validate_1.validateRequest)({ qu
     }
 });
 // POST /swipe - Handle swipe actions
-router.post('/swipe', auth_1.requireAuth, (0, validate_1.validateRequest)({ body: swipeSchema }), async (req, res) => {
+router.post("/swipe", auth_1.requireAuth, (0, validate_1.validateRequest)({ body: swipeSchema }), async (req, res) => {
     try {
         const swiperId = req.user.id;
         const { swipedId, isLike, isSuper } = req.body;
@@ -76,7 +87,7 @@ router.post('/swipe', auth_1.requireAuth, (0, validate_1.validateRequest)({ body
         if (swiperId === swipedId) {
             return res.status(400).json({
                 success: false,
-                error: 'Cannot swipe on yourself',
+                error: "Cannot swipe on yourself",
             });
         }
         const result = await discovery_service_1.DiscoveryService.handleSwipe({
@@ -98,7 +109,7 @@ router.post('/swipe', auth_1.requireAuth, (0, validate_1.validateRequest)({ body
     }
 });
 // GET /matches - Get user's matches
-router.get('/matches', auth_1.requireAuth, async (req, res) => {
+router.get("/matches", auth_1.requireAuth, async (req, res) => {
     try {
         const userId = req.user.id;
         const matches = await discovery_service_1.DiscoveryService.getUserMatches(userId);
@@ -115,11 +126,13 @@ router.get('/matches', auth_1.requireAuth, async (req, res) => {
                         bio: otherUser.profile?.bio,
                         photo: otherUser.photos[0]?.url,
                     },
-                    lastMessage: lastMessage ? {
-                        content: lastMessage.content,
-                        sentAt: lastMessage.createdAt,
-                        isFromMe: lastMessage.senderId === userId,
-                    } : null,
+                    lastMessage: lastMessage
+                        ? {
+                            content: lastMessage.content,
+                            sentAt: lastMessage.createdAt,
+                            isFromMe: lastMessage.senderId === userId,
+                        }
+                        : null,
                     matchedAt: match.createdAt,
                     status: match.status,
                 };
@@ -134,7 +147,7 @@ router.get('/matches', auth_1.requireAuth, async (req, res) => {
     }
 });
 // GET /likes - Get likes received
-router.get('/likes', auth_1.requireAuth, async (req, res) => {
+router.get("/likes", auth_1.requireAuth, async (req, res) => {
     try {
         const userId = req.user.id;
         const likes = await discovery_service_1.DiscoveryService.getReceivedLikes(userId);
@@ -161,14 +174,19 @@ router.get('/likes', auth_1.requireAuth, async (req, res) => {
     }
 });
 // GET /communities - simple passthrough for communities listing (compatibility)
-router.get('/communities', async (req, res) => {
+router.get("/communities", async (req, res) => {
     try {
         const { categoryId } = req.query;
         const communities = await community_service_1.CommunityService.getAllCommunities(categoryId || undefined);
         res.json(communities);
     }
     catch (error) {
-        res.status(500).json({ success: false, error: error.message || 'Failed to fetch communities' });
+        res
+            .status(500)
+            .json({
+            success: false,
+            error: error.message || "Failed to fetch communities",
+        });
     }
 });
 exports.default = router;

@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const zod_1 = require("zod");
 const auth_1 = require("../middleware/auth");
-const validation_1 = require("../middleware/validation");
+const validate_1 = require("../middleware/validate");
 const subscription_service_1 = require("../services/subscription.service");
 const router = (0, express_1.Router)();
 // Validation schemas
@@ -46,7 +46,7 @@ router.get('/current', auth_1.requireAuth, async (req, res) => {
     }
 });
 // POST /subscribe - Subscribe to a plan
-router.post('/subscribe', auth_1.requireAuth, (0, validation_1.validateBody)(subscribeSchema), async (req, res) => {
+router.post('/subscribe', auth_1.requireAuth, (0, validate_1.validateRequest)({ body: subscribeSchema }), async (req, res) => {
     try {
         const userId = req.user.id;
         const { planId, paymentToken } = req.body;
