@@ -4,6 +4,7 @@ exports.AnalyticsService = void 0;
 const env_1 = require("../config/env");
 const prisma_1 = require("../lib/prisma");
 const logger_1 = require("../utils/logger");
+const error_1 = require("../utils/error");
 class AnalyticsService {
     /**
      * Track user event
@@ -229,7 +230,7 @@ class AnalyticsService {
         }
         catch (error) {
             logger_1.logger.error('Failed to get user metrics:', error);
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     /**
@@ -270,7 +271,7 @@ class AnalyticsService {
         }
         catch (error) {
             logger_1.logger.error('Failed to get engagement metrics:', error);
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     /**
@@ -280,9 +281,7 @@ class AnalyticsService {
         try {
             const devices = await prisma_1.prisma.device.groupBy({
                 by: ['platform'],
-                _count: {
-                    id: true,
-                },
+                _count: { id: true },
                 where: {
                     isActive: true,
                 },
@@ -295,7 +294,7 @@ class AnalyticsService {
         }
         catch (error) {
             logger_1.logger.error('Failed to get platform distribution:', error);
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     /**
@@ -352,7 +351,7 @@ class AnalyticsService {
         }
         catch (error) {
             logger_1.logger.error('Failed to get conversion funnel:', error);
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     /**

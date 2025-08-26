@@ -1,5 +1,6 @@
 import { prisma } from '../lib/prisma';
 import { logger } from '../utils/logger';
+import { handleServiceError } from '../utils/error';
 
 export interface BatchOperation {
   id: string;
@@ -76,7 +77,7 @@ export class BatchService {
       });
     } catch (error: any) {
       logger.error('Batch operation failed:', error);
-      throw error;
+      return handleServiceError(error) as any;
     }
 
     return results;
@@ -200,7 +201,7 @@ export class BatchService {
       };
     } catch (error: any) {
       logger.error('Sync data fetch failed:', error);
-      throw error;
+      return handleServiceError(error) as any;
     }
   }
 
@@ -254,7 +255,7 @@ export class BatchService {
       return results;
     } catch (error: any) {
       logger.error('Bulk fetch failed:', error);
-      throw error;
+      return handleServiceError(error);
     }
   }
 
@@ -346,7 +347,7 @@ export class BatchService {
       logger.info('Cache population requested for user:', userId);
     } catch (error: any) {
       logger.error('Cache population failed:', error);
-      throw error;
+      return handleServiceError(error) as any;
     }
   }
 }

@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.BatchService = void 0;
 const prisma_1 = require("../lib/prisma");
 const logger_1 = require("../utils/logger");
+const error_1 = require("../utils/error");
 class BatchService {
     /**
      * Execute multiple operations in a single transaction
@@ -48,7 +49,7 @@ class BatchService {
         }
         catch (error) {
             logger_1.logger.error('Batch operation failed:', error);
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
         return results;
     }
@@ -163,7 +164,7 @@ class BatchService {
         }
         catch (error) {
             logger_1.logger.error('Sync data fetch failed:', error);
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     /**
@@ -213,7 +214,7 @@ class BatchService {
         }
         catch (error) {
             logger_1.logger.error('Bulk fetch failed:', error);
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     // Helper methods for batch operations
@@ -301,7 +302,7 @@ class BatchService {
         }
         catch (error) {
             logger_1.logger.error('Cache population failed:', error);
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
 }

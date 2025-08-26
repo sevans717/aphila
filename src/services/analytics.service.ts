@@ -1,6 +1,7 @@
 import { env } from '../config/env';
 import { prisma } from '../lib/prisma';
 import { logger } from '../utils/logger';
+import { handleServiceError } from '../utils/error';
 
 export interface AnalyticsEvent {
   userId: string;
@@ -415,7 +416,7 @@ export class AnalyticsService {
       };
     } catch (error) {
       logger.error('Failed to get user metrics:', error);
-      throw error;
+      return handleServiceError(error) as any;
     }
   }
 
@@ -459,7 +460,7 @@ export class AnalyticsService {
       };
     } catch (error) {
       logger.error('Failed to get engagement metrics:', error);
-      throw error;
+      return handleServiceError(error) as any;
     }
   }
 
@@ -470,9 +471,7 @@ export class AnalyticsService {
     try {
       const devices = await prisma.device.groupBy({
         by: ['platform'],
-        _count: {
-          id: true,
-        },
+        _count: { id: true },
         where: {
           isActive: true,
         },
@@ -486,7 +485,7 @@ export class AnalyticsService {
       return distribution;
     } catch (error) {
       logger.error('Failed to get platform distribution:', error);
-      throw error;
+      return handleServiceError(error) as any;
     }
   }
 
@@ -549,7 +548,7 @@ export class AnalyticsService {
       };
     } catch (error) {
       logger.error('Failed to get conversion funnel:', error);
-      throw error;
+      return handleServiceError(error) as any;
     }
   }
 

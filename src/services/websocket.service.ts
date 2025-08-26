@@ -4,6 +4,7 @@ import { Server as HTTPServer } from "http";
 import jwt from "jsonwebtoken";
 import { Socket, Server as SocketIOServer } from "socket.io";
 import { logger } from "../utils/logger";
+import { handleServiceError } from "../utils/error";
 
 // using shared singleton `prisma` from src/lib/prisma
 
@@ -177,6 +178,7 @@ export class WebSocketService {
       socket.emit("joined_match", { matchId });
     } catch (error) {
       socket.emit("error", { message: "Failed to join match" });
+      handleServiceError(error as any);
     }
   }
 
@@ -265,6 +267,7 @@ export class WebSocketService {
         message: "Failed to send message",
         clientNonce,
       });
+      handleServiceError(error as any);
     }
   }
 
@@ -314,6 +317,7 @@ export class WebSocketService {
       });
     } catch (error) {
       socket.emit("error", { message: "Failed to mark messages as read" });
+      handleServiceError(error as any);
     }
   }
 
@@ -328,6 +332,7 @@ export class WebSocketService {
       });
     } catch (error) {
       console.error("Failed to update online status:", error);
+      handleServiceError(error as any);
     }
   }
 
@@ -371,6 +376,7 @@ export class WebSocketService {
       logger.info(`Push notification sent to user ${userId}:`, notification);
     } catch (error: any) {
       logger.error("Failed to send push notification:", error);
+      handleServiceError(error as any);
     }
   }
 

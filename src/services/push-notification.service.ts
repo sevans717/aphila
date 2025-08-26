@@ -2,6 +2,7 @@ import admin from 'firebase-admin';
 import { env } from '../config/env';
 import { prisma } from '../lib/prisma';
 import { logger } from '../utils/logger';
+import { handleServiceError } from '../utils/error';
 
 export interface PushNotificationPayload {
   title: string;
@@ -46,7 +47,7 @@ export class PushNotificationService {
       logger.info('Push notification service initialized');
     } catch (error) {
       logger.error('Failed to initialize Firebase Admin SDK:', error);
-      throw error;
+      return handleServiceError(error) as any;
     }
   }
 
@@ -78,7 +79,7 @@ export class PushNotificationService {
       return device;
     } catch (error) {
       logger.error('Failed to register device:', error);
-      throw error;
+      return handleServiceError(error) as any;
     }
   }
 
@@ -104,7 +105,7 @@ export class PushNotificationService {
       logger.info(`Device registered: ${deviceId} for user ${userId}`);
     } catch (error) {
       logger.error('Failed to register device:', error);
-      throw error;
+      return handleServiceError(error) as any;
     }
   }
 
@@ -121,7 +122,7 @@ export class PushNotificationService {
       logger.info(`Device unregistered for user ${userId}`);
     } catch (error) {
       logger.error('Failed to unregister device:', error);
-      throw error;
+      return handleServiceError(error) as any;
     }
   }
 
@@ -135,7 +136,7 @@ export class PushNotificationService {
       logger.info(`Device unregistered: ${deviceId}`);
     } catch (error) {
       logger.error('Failed to unregister device:', error);
-      throw error;
+      return handleServiceError(error) as any;
     }
   }
 
@@ -153,7 +154,7 @@ export class PushNotificationService {
       };
     } catch (error) {
       logger.error('Failed to get notification preferences:', error);
-      throw error;
+      return handleServiceError(error) as any;
     }
   }
 
@@ -164,7 +165,7 @@ export class PushNotificationService {
       logger.info(`Updated notification preferences for user ${userId}`);
     } catch (error) {
       logger.error('Failed to update notification preferences:', error);
-      throw error;
+      return handleServiceError(error) as any;
     }
   }
 
@@ -245,7 +246,7 @@ export class PushNotificationService {
       return response.successCount > 0;
     } catch (error) {
       logger.error('Failed to send push notification:', error);
-      return false;
+      return handleServiceError(error) as any ?? false;
     }
   }
 
@@ -271,7 +272,7 @@ export class PushNotificationService {
       return true;
     } catch (error) {
       logger.error('Failed to send topic notification:', error);
-      return false;
+      return handleServiceError(error) as any ?? false;
     }
   }
 
@@ -283,6 +284,7 @@ export class PushNotificationService {
       logger.info(`Subscribed token to topic: ${topic}`);
     } catch (error) {
       logger.error('Failed to subscribe to topic:', error);
+      return handleServiceError(error) as any;
     }
   }
 
@@ -294,6 +296,7 @@ export class PushNotificationService {
       logger.info(`Unsubscribed token from topic: ${topic}`);
     } catch (error) {
       logger.error('Failed to unsubscribe from topic:', error);
+      return handleServiceError(error) as any;
     }
   }
 
@@ -311,6 +314,7 @@ export class PushNotificationService {
       logger.info(`Removed ${tokens.length} invalid FCM tokens`);
     } catch (error) {
       logger.error('Failed to remove invalid tokens:', error);
+      return handleServiceError(error) as any;
     }
   }
 

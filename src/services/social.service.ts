@@ -1,6 +1,6 @@
-import { prisma } from '../lib/prisma';
-import { logger } from '../utils/logger';
-import { handleServiceError } from '../utils/error';
+import { prisma } from "../lib/prisma";
+import { logger } from "../utils/logger";
+import { handleServiceError } from "../utils/error";
 
 export interface CreateCommentData {
   postId: string;
@@ -44,8 +44,8 @@ export interface UpdateCommentData {
 export interface LikeData {
   userId: string;
   targetId: string;
-  targetType: 'post' | 'comment' | 'story' | 'profile';
-  likeType?: 'like' | 'love' | 'laugh' | 'angry' | 'sad' | 'wow';
+  targetType: "post" | "comment" | "story" | "profile";
+  likeType?: "like" | "love" | "laugh" | "angry" | "sad" | "wow";
 }
 
 export interface LikeResult {
@@ -59,8 +59,18 @@ export interface LikeResult {
 export interface ReactionData {
   userId: string;
   targetId: string;
-  targetType: 'post' | 'comment' | 'story';
-  reactionType: 'like' | 'love' | 'laugh' | 'angry' | 'sad' | 'wow' | 'fire' | 'heart' | 'thumbsup' | 'thumbsdown';
+  targetType: "post" | "comment" | "story";
+  reactionType:
+    | "like"
+    | "love"
+    | "laugh"
+    | "angry"
+    | "sad"
+    | "wow"
+    | "fire"
+    | "heart"
+    | "thumbsup"
+    | "thumbsdown";
   intensity?: number;
 }
 
@@ -77,7 +87,7 @@ export interface SocialInteraction {
   userId: string;
   targetId: string;
   targetType: string;
-  interactionType: 'like' | 'comment' | 'share' | 'view' | 'mention' | 'tag';
+  interactionType: "like" | "comment" | "share" | "view" | "mention" | "tag";
   metadata?: Record<string, any>;
   timestamp: Date;
 }
@@ -97,7 +107,7 @@ export interface MentionData {
   userId: string;
   mentionedUserId: string;
   contentId: string;
-  contentType: 'post' | 'comment' | 'story';
+  contentType: "post" | "comment" | "story";
   position: {
     start: number;
     end: number;
@@ -109,7 +119,7 @@ export interface TagData {
   userId: string;
   taggedUserId: string;
   contentId: string;
-  contentType: 'post' | 'story' | 'photo';
+  contentType: "post" | "story" | "photo";
   position?: {
     x: number;
     y: number;
@@ -156,7 +166,7 @@ export interface SocialGraph {
   userId: string;
   connections: Array<{
     userId: string;
-    relationship: 'following' | 'follower' | 'mutual' | 'blocked';
+    relationship: "following" | "follower" | "mutual" | "blocked";
     strength: number;
     lastInteraction: Date;
     mutualConnections: number;
@@ -172,7 +182,7 @@ export interface SocialGraph {
 export interface SocialFeed {
   items: Array<{
     id: string;
-    type: 'post' | 'story' | 'activity' | 'suggestion';
+    type: "post" | "story" | "activity" | "suggestion";
     content: any;
     timestamp: Date;
     score: number;
@@ -203,7 +213,7 @@ export interface SocialNotification {
   actorId: string;
   actorName: string;
   actorAvatar?: string;
-  type: 'like' | 'comment' | 'follow' | 'mention' | 'tag' | 'share';
+  type: "like" | "comment" | "follow" | "mention" | "tag" | "share";
   contentId?: string;
   contentType?: string;
   message: string;
@@ -215,7 +225,7 @@ export interface SocialNotification {
 export interface ContentModeration {
   contentId: string;
   contentType: string;
-  status: 'pending' | 'approved' | 'rejected' | 'flagged';
+  status: "pending" | "approved" | "rejected" | "flagged";
   flags: string[];
   moderatorId?: string;
   reason?: string;
@@ -228,14 +238,17 @@ export interface SocialPrivacy {
   allowComments: boolean;
   allowTags: boolean;
   allowMentions: boolean;
-  whoCanFollow: 'everyone' | 'friends' | 'nobody';
-  whoCanMessage: 'everyone' | 'friends' | 'nobody';
-  profileVisibility: 'public' | 'friends' | 'private';
-  postDefaultPrivacy: 'public' | 'friends' | 'private';
+  whoCanFollow: "everyone" | "friends" | "nobody";
+  whoCanMessage: "everyone" | "friends" | "nobody";
+  profileVisibility: "public" | "friends" | "private";
+  postDefaultPrivacy: "public" | "friends" | "private";
 }
 
 export class SocialService {
-  static async createComment(userId: string, data: CreateCommentData): Promise<CommentWithDetails> {
+  static async createComment(
+    userId: string,
+    data: CreateCommentData
+  ): Promise<CommentWithDetails> {
     try {
       const { postId, content, parentId, mediaUrl } = data;
 
@@ -254,21 +267,21 @@ export class SocialService {
                 select: {
                   displayName: true,
                   bio: true,
-                }
+                },
               },
               photos: {
                 where: { isPrimary: true },
                 select: {
                   url: true,
                   isPrimary: true,
-                }
-              }
-            }
-          }
-        }
+                },
+              },
+            },
+          },
+        },
       });
 
-      logger.info('Comment created', { commentId: comment.id, userId, postId });
+      logger.info("Comment created", { commentId: comment.id, userId, postId });
 
       return {
         id: comment.id,
@@ -291,20 +304,23 @@ export class SocialService {
         userLikeType: undefined,
       };
     } catch (error) {
-      logger.error('Error creating comment', { error, userId, data });
+      logger.error("Error creating comment", { error, userId, data });
       return handleServiceError(error);
     }
   }
 
-  static async toggleCommentLike(commentId: string, userId: string): Promise<{ isLiked: boolean; likesCount: number }> {
+  static async toggleCommentLike(
+    commentId: string,
+    userId: string
+  ): Promise<{ isLiked: boolean; likesCount: number }> {
     try {
       const existingLike = await prisma.commentLike.findUnique({
         where: {
           userId_commentId: {
             userId,
             commentId,
-          }
-        }
+          },
+        },
       });
 
       let isLiked: boolean;
@@ -316,18 +332,18 @@ export class SocialService {
             userId_commentId: {
               userId,
               commentId,
-            }
-          }
+            },
+          },
         });
 
         const updatedComment = await prisma.postComment.update({
           where: { id: commentId },
           data: {
             likesCount: {
-              decrement: 1
-            }
+              decrement: 1,
+            },
           },
-          select: { likesCount: true }
+          select: { likesCount: true },
         });
 
         isLiked = false;
@@ -337,17 +353,17 @@ export class SocialService {
           data: {
             userId,
             commentId,
-          }
+          },
         });
 
         const updatedComment = await prisma.postComment.update({
           where: { id: commentId },
           data: {
             likesCount: {
-              increment: 1
-            }
+              increment: 1,
+            },
           },
-          select: { likesCount: true }
+          select: { likesCount: true },
         });
 
         isLiked = true;
@@ -356,12 +372,16 @@ export class SocialService {
 
       return { isLiked, likesCount };
     } catch (error) {
-      logger.error('Error toggling comment like', { error, commentId, userId });
+      logger.error("Error toggling comment like", { error, commentId, userId });
       return handleServiceError(error);
     }
   }
 
-  static async getPostComments(postId: string, viewerId?: string, limit: number = 20): Promise<CommentWithDetails[]> {
+  static async getPostComments(
+    postId: string,
+    viewerId?: string,
+    limit: number = 20
+  ): Promise<CommentWithDetails[]> {
     try {
       const comments = await prisma.postComment.findMany({
         where: {
@@ -375,23 +395,23 @@ export class SocialService {
                 select: {
                   displayName: true,
                   bio: true,
-                }
+                },
               },
               photos: {
                 where: { isPrimary: true },
                 select: {
                   url: true,
                   isPrimary: true,
-                }
-              }
-            }
-          }
+                },
+              },
+            },
+          },
         },
-        orderBy: { createdAt: 'desc' },
-        take: limit
+        orderBy: { createdAt: "desc" },
+        take: limit,
       });
 
-      return comments.map(comment => ({
+      return comments.map((comment) => ({
         id: comment.id,
         author: {
           id: comment.user.id,
@@ -412,7 +432,7 @@ export class SocialService {
         userLikeType: undefined,
       }));
     } catch (error) {
-      logger.error('Error getting post comments', { error, postId, viewerId });
+      logger.error("Error getting post comments", { error, postId, viewerId });
       return handleServiceError(error);
     }
   }
@@ -425,21 +445,21 @@ export class SocialService {
       const [post, likesBreakdown] = await Promise.all([
         prisma.post.findUnique({
           where: { id: postId },
-          select: { likesCount: true }
+          select: { likesCount: true },
         }),
         prisma.postLike.groupBy({
-          by: ['type'],
+          by: ["type"],
           where: { postId },
-          _count: { type: true }
-        })
+          _count: { type: true },
+        }),
       ]);
 
       if (!post) {
-        throw new Error('Post not found');
+        throw new Error("Post not found");
       }
 
       const likeBreakdown: Record<string, number> = {};
-      likesBreakdown.forEach(item => {
+      likesBreakdown.forEach((item) => {
         likeBreakdown[item.type] = item._count.type;
       });
 
@@ -448,20 +468,24 @@ export class SocialService {
         likeBreakdown,
       };
     } catch (error) {
-      logger.error('Error getting post likes breakdown', { error, postId });
+      logger.error("Error getting post likes breakdown", { error, postId });
       return handleServiceError(error);
     }
   }
 
-  static async togglePostLike(postId: string, userId: string, type: string = 'LIKE'): Promise<{ isLiked: boolean; likesCount: number }> {
+  static async togglePostLike(
+    postId: string,
+    userId: string,
+    type: string = "LIKE"
+  ): Promise<{ isLiked: boolean; likesCount: number }> {
     try {
       const existingLike = await prisma.postLike.findUnique({
         where: {
           userId_postId: {
             userId,
             postId,
-          }
-        }
+          },
+        },
       });
 
       let isLiked: boolean;
@@ -473,18 +497,18 @@ export class SocialService {
             userId_postId: {
               userId,
               postId,
-            }
-          }
+            },
+          },
         });
 
         const updatedPost = await prisma.post.update({
           where: { id: postId },
           data: {
             likesCount: {
-              decrement: 1
-            }
+              decrement: 1,
+            },
           },
-          select: { likesCount: true }
+          select: { likesCount: true },
         });
 
         isLiked = false;
@@ -495,17 +519,17 @@ export class SocialService {
             userId,
             postId,
             type: type as any,
-          }
+          },
         });
 
         const updatedPost = await prisma.post.update({
           where: { id: postId },
           data: {
             likesCount: {
-              increment: 1
-            }
+              increment: 1,
+            },
           },
-          select: { likesCount: true }
+          select: { likesCount: true },
         });
 
         isLiked = true;
@@ -514,12 +538,16 @@ export class SocialService {
 
       return { isLiked, likesCount };
     } catch (error) {
-      logger.error('Error toggling post like', { error, postId, userId });
+      logger.error("Error toggling post like", { error, postId, userId });
       return handleServiceError(error);
     }
   }
 
-  static async getPostLikes(postId: string, limit: number = 20, offset: number = 0): Promise<{
+  static async getPostLikes(
+    postId: string,
+    limit: number = 20,
+    offset: number = 0
+  ): Promise<{
     likes: Array<{
       id: string;
       type: string;
@@ -547,29 +575,29 @@ export class SocialService {
                 profile: {
                   select: {
                     displayName: true,
-                  }
+                  },
                 },
                 photos: {
                   where: { isPrimary: true },
                   select: {
                     url: true,
                     isPrimary: true,
-                  }
-                }
-              }
-            }
+                  },
+                },
+              },
+            },
           },
-          orderBy: { createdAt: 'desc' },
+          orderBy: { createdAt: "desc" },
           skip: offset,
-          take: limit
+          take: limit,
         }),
         prisma.postLike.count({
-          where: { postId }
-        })
+          where: { postId },
+        }),
       ]);
 
       return {
-        likes: likes.map(like => ({
+        likes: likes.map((like) => ({
           id: like.id,
           type: like.type,
           user: {
@@ -584,12 +612,16 @@ export class SocialService {
         total,
       };
     } catch (error) {
-      logger.error('Error getting post likes', { error, postId });
+      logger.error("Error getting post likes", { error, postId });
       return handleServiceError(error);
     }
   }
 
-  static async updateComment(commentId: string, authorId: string, data: { content: string }): Promise<CommentWithDetails> {
+  static async updateComment(
+    commentId: string,
+    authorId: string,
+    data: { content: string }
+  ): Promise<CommentWithDetails> {
     try {
       const comment = await prisma.postComment.update({
         where: {
@@ -608,18 +640,18 @@ export class SocialService {
                 select: {
                   displayName: true,
                   bio: true,
-                }
+                },
               },
               photos: {
                 where: { isPrimary: true },
                 select: {
                   url: true,
                   isPrimary: true,
-                }
-              }
-            }
-          }
-        }
+                },
+              },
+            },
+          },
+        },
       });
 
       return {
@@ -643,12 +675,15 @@ export class SocialService {
         userLikeType: undefined,
       };
     } catch (error) {
-      logger.error('Error updating comment', { error, commentId, authorId });
+      logger.error("Error updating comment", { error, commentId, authorId });
       return handleServiceError(error);
     }
   }
 
-  static async deleteComment(commentId: string, authorId: string): Promise<void> {
+  static async deleteComment(
+    commentId: string,
+    authorId: string
+  ): Promise<void> {
     try {
       await prisma.postComment.delete({
         where: {
@@ -657,14 +692,18 @@ export class SocialService {
         },
       });
 
-      logger.info('Comment deleted', { commentId, authorId });
+      logger.info("Comment deleted", { commentId, authorId });
     } catch (error) {
-      logger.error('Error deleting comment', { error, commentId, authorId });
+      logger.error("Error deleting comment", { error, commentId, authorId });
       return handleServiceError(error);
     }
   }
 
-  static async getCommentReplies(commentId: string, limit: number = 10, offset: number = 0): Promise<{
+  static async getCommentReplies(
+    commentId: string,
+    limit: number = 10,
+    offset: number = 0
+  ): Promise<{
     replies: CommentWithDetails[];
     total: number;
   }> {
@@ -681,31 +720,31 @@ export class SocialService {
                   select: {
                     displayName: true,
                     bio: true,
-                  }
+                  },
                 },
                 photos: {
                   where: { isPrimary: true },
                   select: {
                     url: true,
                     isPrimary: true,
-                  }
-                }
-              }
-            }
+                  },
+                },
+              },
+            },
           },
-          orderBy: { createdAt: 'asc' },
+          orderBy: { createdAt: "asc" },
           skip: offset,
-          take: limit
+          take: limit,
         }),
         prisma.postComment.count({
           where: {
             parentId: commentId,
-          }
-        })
+          },
+        }),
       ]);
 
       return {
-        replies: replies.map(reply => ({
+        replies: replies.map((reply) => ({
           id: reply.id,
           author: {
             id: reply.user.id,
@@ -728,7 +767,7 @@ export class SocialService {
         total,
       };
     } catch (error) {
-      logger.error('Error getting comment replies', { error, commentId });
+      logger.error("Error getting comment replies", { error, commentId });
       return handleServiceError(error);
     }
   }
@@ -749,21 +788,21 @@ export class SocialService {
             commentsCount: true,
             sharesCount: true,
             viewsCount: true,
-          }
+          },
         }),
         prisma.postLike.groupBy({
-          by: ['type'],
+          by: ["type"],
           where: { postId },
-          _count: { type: true }
-        })
+          _count: { type: true },
+        }),
       ]);
 
       if (!post) {
-        throw new Error('Post not found');
+        throw new Error("Post not found");
       }
 
       const likeBreakdown: Record<string, number> = {};
-      likesBreakdown.forEach(item => {
+      likesBreakdown.forEach((item) => {
         likeBreakdown[item.type] = item._count.type;
       });
 
@@ -775,7 +814,7 @@ export class SocialService {
         likeBreakdown,
       };
     } catch (error) {
-      logger.error('Error getting post stats', { error, postId });
+      logger.error("Error getting post stats", { error, postId });
       return handleServiceError(error);
     }
   }

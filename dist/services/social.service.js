@@ -23,20 +23,20 @@ class SocialService {
                                 select: {
                                     displayName: true,
                                     bio: true,
-                                }
+                                },
                             },
                             photos: {
                                 where: { isPrimary: true },
                                 select: {
                                     url: true,
                                     isPrimary: true,
-                                }
-                            }
-                        }
-                    }
-                }
+                                },
+                            },
+                        },
+                    },
+                },
             });
-            logger_1.logger.info('Comment created', { commentId: comment.id, userId, postId });
+            logger_1.logger.info("Comment created", { commentId: comment.id, userId, postId });
             return {
                 id: comment.id,
                 author: {
@@ -59,7 +59,7 @@ class SocialService {
             };
         }
         catch (error) {
-            logger_1.logger.error('Error creating comment', { error, userId, data });
+            logger_1.logger.error("Error creating comment", { error, userId, data });
             return (0, error_1.handleServiceError)(error);
         }
     }
@@ -70,8 +70,8 @@ class SocialService {
                     userId_commentId: {
                         userId,
                         commentId,
-                    }
-                }
+                    },
+                },
             });
             let isLiked;
             let likesCount;
@@ -81,17 +81,17 @@ class SocialService {
                         userId_commentId: {
                             userId,
                             commentId,
-                        }
-                    }
+                        },
+                    },
                 });
                 const updatedComment = await prisma_1.prisma.postComment.update({
                     where: { id: commentId },
                     data: {
                         likesCount: {
-                            decrement: 1
-                        }
+                            decrement: 1,
+                        },
                     },
-                    select: { likesCount: true }
+                    select: { likesCount: true },
                 });
                 isLiked = false;
                 likesCount = updatedComment.likesCount;
@@ -101,16 +101,16 @@ class SocialService {
                     data: {
                         userId,
                         commentId,
-                    }
+                    },
                 });
                 const updatedComment = await prisma_1.prisma.postComment.update({
                     where: { id: commentId },
                     data: {
                         likesCount: {
-                            increment: 1
-                        }
+                            increment: 1,
+                        },
                     },
-                    select: { likesCount: true }
+                    select: { likesCount: true },
                 });
                 isLiked = true;
                 likesCount = updatedComment.likesCount;
@@ -118,7 +118,7 @@ class SocialService {
             return { isLiked, likesCount };
         }
         catch (error) {
-            logger_1.logger.error('Error toggling comment like', { error, commentId, userId });
+            logger_1.logger.error("Error toggling comment like", { error, commentId, userId });
             return (0, error_1.handleServiceError)(error);
         }
     }
@@ -136,22 +136,22 @@ class SocialService {
                                 select: {
                                     displayName: true,
                                     bio: true,
-                                }
+                                },
                             },
                             photos: {
                                 where: { isPrimary: true },
                                 select: {
                                     url: true,
                                     isPrimary: true,
-                                }
-                            }
-                        }
-                    }
+                                },
+                            },
+                        },
+                    },
                 },
-                orderBy: { createdAt: 'desc' },
-                take: limit
+                orderBy: { createdAt: "desc" },
+                take: limit,
             });
-            return comments.map(comment => ({
+            return comments.map((comment) => ({
                 id: comment.id,
                 author: {
                     id: comment.user.id,
@@ -173,7 +173,7 @@ class SocialService {
             }));
         }
         catch (error) {
-            logger_1.logger.error('Error getting post comments', { error, postId, viewerId });
+            logger_1.logger.error("Error getting post comments", { error, postId, viewerId });
             return (0, error_1.handleServiceError)(error);
         }
     }
@@ -182,19 +182,19 @@ class SocialService {
             const [post, likesBreakdown] = await Promise.all([
                 prisma_1.prisma.post.findUnique({
                     where: { id: postId },
-                    select: { likesCount: true }
+                    select: { likesCount: true },
                 }),
                 prisma_1.prisma.postLike.groupBy({
-                    by: ['type'],
+                    by: ["type"],
                     where: { postId },
-                    _count: { type: true }
-                })
+                    _count: { type: true },
+                }),
             ]);
             if (!post) {
-                throw new Error('Post not found');
+                throw new Error("Post not found");
             }
             const likeBreakdown = {};
-            likesBreakdown.forEach(item => {
+            likesBreakdown.forEach((item) => {
                 likeBreakdown[item.type] = item._count.type;
             });
             return {
@@ -203,19 +203,19 @@ class SocialService {
             };
         }
         catch (error) {
-            logger_1.logger.error('Error getting post likes breakdown', { error, postId });
+            logger_1.logger.error("Error getting post likes breakdown", { error, postId });
             return (0, error_1.handleServiceError)(error);
         }
     }
-    static async togglePostLike(postId, userId, type = 'LIKE') {
+    static async togglePostLike(postId, userId, type = "LIKE") {
         try {
             const existingLike = await prisma_1.prisma.postLike.findUnique({
                 where: {
                     userId_postId: {
                         userId,
                         postId,
-                    }
-                }
+                    },
+                },
             });
             let isLiked;
             let likesCount;
@@ -225,17 +225,17 @@ class SocialService {
                         userId_postId: {
                             userId,
                             postId,
-                        }
-                    }
+                        },
+                    },
                 });
                 const updatedPost = await prisma_1.prisma.post.update({
                     where: { id: postId },
                     data: {
                         likesCount: {
-                            decrement: 1
-                        }
+                            decrement: 1,
+                        },
                     },
-                    select: { likesCount: true }
+                    select: { likesCount: true },
                 });
                 isLiked = false;
                 likesCount = updatedPost.likesCount;
@@ -246,16 +246,16 @@ class SocialService {
                         userId,
                         postId,
                         type: type,
-                    }
+                    },
                 });
                 const updatedPost = await prisma_1.prisma.post.update({
                     where: { id: postId },
                     data: {
                         likesCount: {
-                            increment: 1
-                        }
+                            increment: 1,
+                        },
                     },
-                    select: { likesCount: true }
+                    select: { likesCount: true },
                 });
                 isLiked = true;
                 likesCount = updatedPost.likesCount;
@@ -263,7 +263,7 @@ class SocialService {
             return { isLiked, likesCount };
         }
         catch (error) {
-            logger_1.logger.error('Error toggling post like', { error, postId, userId });
+            logger_1.logger.error("Error toggling post like", { error, postId, userId });
             return (0, error_1.handleServiceError)(error);
         }
     }
@@ -278,28 +278,28 @@ class SocialService {
                                 profile: {
                                     select: {
                                         displayName: true,
-                                    }
+                                    },
                                 },
                                 photos: {
                                     where: { isPrimary: true },
                                     select: {
                                         url: true,
                                         isPrimary: true,
-                                    }
-                                }
-                            }
-                        }
+                                    },
+                                },
+                            },
+                        },
                     },
-                    orderBy: { createdAt: 'desc' },
+                    orderBy: { createdAt: "desc" },
                     skip: offset,
-                    take: limit
+                    take: limit,
                 }),
                 prisma_1.prisma.postLike.count({
-                    where: { postId }
-                })
+                    where: { postId },
+                }),
             ]);
             return {
-                likes: likes.map(like => ({
+                likes: likes.map((like) => ({
                     id: like.id,
                     type: like.type,
                     user: {
@@ -315,7 +315,7 @@ class SocialService {
             };
         }
         catch (error) {
-            logger_1.logger.error('Error getting post likes', { error, postId });
+            logger_1.logger.error("Error getting post likes", { error, postId });
             return (0, error_1.handleServiceError)(error);
         }
     }
@@ -338,18 +338,18 @@ class SocialService {
                                 select: {
                                     displayName: true,
                                     bio: true,
-                                }
+                                },
                             },
                             photos: {
                                 where: { isPrimary: true },
                                 select: {
                                     url: true,
                                     isPrimary: true,
-                                }
-                            }
-                        }
-                    }
-                }
+                                },
+                            },
+                        },
+                    },
+                },
             });
             return {
                 id: comment.id,
@@ -373,7 +373,7 @@ class SocialService {
             };
         }
         catch (error) {
-            logger_1.logger.error('Error updating comment', { error, commentId, authorId });
+            logger_1.logger.error("Error updating comment", { error, commentId, authorId });
             return (0, error_1.handleServiceError)(error);
         }
     }
@@ -385,10 +385,10 @@ class SocialService {
                     userId: authorId,
                 },
             });
-            logger_1.logger.info('Comment deleted', { commentId, authorId });
+            logger_1.logger.info("Comment deleted", { commentId, authorId });
         }
         catch (error) {
-            logger_1.logger.error('Error deleting comment', { error, commentId, authorId });
+            logger_1.logger.error("Error deleting comment", { error, commentId, authorId });
             return (0, error_1.handleServiceError)(error);
         }
     }
@@ -406,30 +406,30 @@ class SocialService {
                                     select: {
                                         displayName: true,
                                         bio: true,
-                                    }
+                                    },
                                 },
                                 photos: {
                                     where: { isPrimary: true },
                                     select: {
                                         url: true,
                                         isPrimary: true,
-                                    }
-                                }
-                            }
-                        }
+                                    },
+                                },
+                            },
+                        },
                     },
-                    orderBy: { createdAt: 'asc' },
+                    orderBy: { createdAt: "asc" },
                     skip: offset,
-                    take: limit
+                    take: limit,
                 }),
                 prisma_1.prisma.postComment.count({
                     where: {
                         parentId: commentId,
-                    }
-                })
+                    },
+                }),
             ]);
             return {
-                replies: replies.map(reply => ({
+                replies: replies.map((reply) => ({
                     id: reply.id,
                     author: {
                         id: reply.user.id,
@@ -453,7 +453,7 @@ class SocialService {
             };
         }
         catch (error) {
-            logger_1.logger.error('Error getting comment replies', { error, commentId });
+            logger_1.logger.error("Error getting comment replies", { error, commentId });
             return (0, error_1.handleServiceError)(error);
         }
     }
@@ -467,19 +467,19 @@ class SocialService {
                         commentsCount: true,
                         sharesCount: true,
                         viewsCount: true,
-                    }
+                    },
                 }),
                 prisma_1.prisma.postLike.groupBy({
-                    by: ['type'],
+                    by: ["type"],
                     where: { postId },
-                    _count: { type: true }
-                })
+                    _count: { type: true },
+                }),
             ]);
             if (!post) {
-                throw new Error('Post not found');
+                throw new Error("Post not found");
             }
             const likeBreakdown = {};
-            likesBreakdown.forEach(item => {
+            likesBreakdown.forEach((item) => {
                 likeBreakdown[item.type] = item._count.type;
             });
             return {
@@ -491,7 +491,7 @@ class SocialService {
             };
         }
         catch (error) {
-            logger_1.logger.error('Error getting post stats', { error, postId });
+            logger_1.logger.error("Error getting post stats", { error, postId });
             return (0, error_1.handleServiceError)(error);
         }
     }

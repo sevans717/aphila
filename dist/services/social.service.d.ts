@@ -37,8 +37,8 @@ export interface UpdateCommentData {
 export interface LikeData {
     userId: string;
     targetId: string;
-    targetType: 'post' | 'comment' | 'story' | 'profile';
-    likeType?: 'like' | 'love' | 'laugh' | 'angry' | 'sad' | 'wow';
+    targetType: "post" | "comment" | "story" | "profile";
+    likeType?: "like" | "love" | "laugh" | "angry" | "sad" | "wow";
 }
 export interface LikeResult {
     liked: boolean;
@@ -50,8 +50,8 @@ export interface LikeResult {
 export interface ReactionData {
     userId: string;
     targetId: string;
-    targetType: 'post' | 'comment' | 'story';
-    reactionType: 'like' | 'love' | 'laugh' | 'angry' | 'sad' | 'wow' | 'fire' | 'heart' | 'thumbsup' | 'thumbsdown';
+    targetType: "post" | "comment" | "story";
+    reactionType: "like" | "love" | "laugh" | "angry" | "sad" | "wow" | "fire" | "heart" | "thumbsup" | "thumbsdown";
     intensity?: number;
 }
 export interface ReactionResult {
@@ -66,7 +66,7 @@ export interface SocialInteraction {
     userId: string;
     targetId: string;
     targetType: string;
-    interactionType: 'like' | 'comment' | 'share' | 'view' | 'mention' | 'tag';
+    interactionType: "like" | "comment" | "share" | "view" | "mention" | "tag";
     metadata?: Record<string, any>;
     timestamp: Date;
 }
@@ -84,7 +84,7 @@ export interface MentionData {
     userId: string;
     mentionedUserId: string;
     contentId: string;
-    contentType: 'post' | 'comment' | 'story';
+    contentType: "post" | "comment" | "story";
     position: {
         start: number;
         end: number;
@@ -95,7 +95,7 @@ export interface TagData {
     userId: string;
     taggedUserId: string;
     contentId: string;
-    contentType: 'post' | 'story' | 'photo';
+    contentType: "post" | "story" | "photo";
     position?: {
         x: number;
         y: number;
@@ -137,7 +137,7 @@ export interface SocialGraph {
     userId: string;
     connections: Array<{
         userId: string;
-        relationship: 'following' | 'follower' | 'mutual' | 'blocked';
+        relationship: "following" | "follower" | "mutual" | "blocked";
         strength: number;
         lastInteraction: Date;
         mutualConnections: number;
@@ -152,7 +152,7 @@ export interface SocialGraph {
 export interface SocialFeed {
     items: Array<{
         id: string;
-        type: 'post' | 'story' | 'activity' | 'suggestion';
+        type: "post" | "story" | "activity" | "suggestion";
         content: any;
         timestamp: Date;
         score: number;
@@ -181,7 +181,7 @@ export interface SocialNotification {
     actorId: string;
     actorName: string;
     actorAvatar?: string;
-    type: 'like' | 'comment' | 'follow' | 'mention' | 'tag' | 'share';
+    type: "like" | "comment" | "follow" | "mention" | "tag" | "share";
     contentId?: string;
     contentType?: string;
     message: string;
@@ -192,7 +192,7 @@ export interface SocialNotification {
 export interface ContentModeration {
     contentId: string;
     contentType: string;
-    status: 'pending' | 'approved' | 'rejected' | 'flagged';
+    status: "pending" | "approved" | "rejected" | "flagged";
     flags: string[];
     moderatorId?: string;
     reason?: string;
@@ -204,10 +204,10 @@ export interface SocialPrivacy {
     allowComments: boolean;
     allowTags: boolean;
     allowMentions: boolean;
-    whoCanFollow: 'everyone' | 'friends' | 'nobody';
-    whoCanMessage: 'everyone' | 'friends' | 'nobody';
-    profileVisibility: 'public' | 'friends' | 'private';
-    postDefaultPrivacy: 'public' | 'friends' | 'private';
+    whoCanFollow: "everyone" | "friends" | "nobody";
+    whoCanMessage: "everyone" | "friends" | "nobody";
+    profileVisibility: "public" | "friends" | "private";
+    postDefaultPrivacy: "public" | "friends" | "private";
 }
 export declare class SocialService {
     static createComment(userId: string, data: CreateCommentData): Promise<CommentWithDetails>;

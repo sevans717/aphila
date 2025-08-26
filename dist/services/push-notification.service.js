@@ -8,6 +8,7 @@ const firebase_admin_1 = __importDefault(require("firebase-admin"));
 const env_1 = require("../config/env");
 const prisma_1 = require("../lib/prisma");
 const logger_1 = require("../utils/logger");
+const error_1 = require("../utils/error");
 class PushNotificationService {
     isInitialized = false;
     async initialize() {
@@ -34,7 +35,7 @@ class PushNotificationService {
         }
         catch (error) {
             logger_1.logger.error('Failed to initialize Firebase Admin SDK:', error);
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async registerDevice(deviceData) {
@@ -60,7 +61,7 @@ class PushNotificationService {
         }
         catch (error) {
             logger_1.logger.error('Failed to register device:', error);
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     async registerDevice(userId, fcmToken, platform, deviceId) {
@@ -85,7 +86,7 @@ class PushNotificationService {
         }
         catch (error) {
             logger_1.logger.error('Failed to register device:', error);
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async unregisterDevice(userId, deviceToken) {
@@ -101,7 +102,7 @@ class PushNotificationService {
         }
         catch (error) {
             logger_1.logger.error('Failed to unregister device:', error);
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     async unregisterDevice(deviceId) {
@@ -114,7 +115,7 @@ class PushNotificationService {
         }
         catch (error) {
             logger_1.logger.error('Failed to unregister device:', error);
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async getNotificationPreferences(userId) {
@@ -132,7 +133,7 @@ class PushNotificationService {
         }
         catch (error) {
             logger_1.logger.error('Failed to get notification preferences:', error);
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async updateNotificationPreferences(userId, preferences) {
@@ -143,7 +144,7 @@ class PushNotificationService {
         }
         catch (error) {
             logger_1.logger.error('Failed to update notification preferences:', error);
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async sendToUser(userId, payload) {
@@ -215,7 +216,7 @@ class PushNotificationService {
         }
         catch (error) {
             logger_1.logger.error('Failed to send push notification:', error);
-            return false;
+            return (0, error_1.handleServiceError)(error) ?? false;
         }
     }
     async sendToTopic(topic, payload) {
@@ -239,7 +240,7 @@ class PushNotificationService {
         }
         catch (error) {
             logger_1.logger.error('Failed to send topic notification:', error);
-            return false;
+            return (0, error_1.handleServiceError)(error) ?? false;
         }
     }
     async subscribeToTopic(fcmToken, topic) {
@@ -251,6 +252,7 @@ class PushNotificationService {
         }
         catch (error) {
             logger_1.logger.error('Failed to subscribe to topic:', error);
+            return (0, error_1.handleServiceError)(error);
         }
     }
     async unsubscribeFromTopic(fcmToken, topic) {
@@ -262,6 +264,7 @@ class PushNotificationService {
         }
         catch (error) {
             logger_1.logger.error('Failed to unsubscribe from topic:', error);
+            return (0, error_1.handleServiceError)(error);
         }
     }
     async removeInvalidTokens(tokens) {
@@ -278,6 +281,7 @@ class PushNotificationService {
         }
         catch (error) {
             logger_1.logger.error('Failed to remove invalid tokens:', error);
+            return (0, error_1.handleServiceError)(error);
         }
     }
     async sendMatchNotification(userId, matchUserName) {

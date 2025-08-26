@@ -8,6 +8,7 @@ const prisma_1 = require("../lib/prisma");
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const socket_io_1 = require("socket.io");
 const logger_1 = require("../utils/logger");
+const error_1 = require("../utils/error");
 class WebSocketService {
     io = null;
     userSockets = new Map(); // userId -> socketId
@@ -138,6 +139,7 @@ class WebSocketService {
         }
         catch (error) {
             socket.emit("error", { message: "Failed to join match" });
+            (0, error_1.handleServiceError)(error);
         }
     }
     async handleSendMessage(socket, data) {
@@ -218,6 +220,7 @@ class WebSocketService {
                 message: "Failed to send message",
                 clientNonce,
             });
+            (0, error_1.handleServiceError)(error);
         }
     }
     handleTypingStart(socket, data) {
@@ -263,6 +266,7 @@ class WebSocketService {
         }
         catch (error) {
             socket.emit("error", { message: "Failed to mark messages as read" });
+            (0, error_1.handleServiceError)(error);
         }
     }
     async updateUserOnlineStatus(userId, isOnline) {
@@ -277,6 +281,7 @@ class WebSocketService {
         }
         catch (error) {
             console.error("Failed to update online status:", error);
+            (0, error_1.handleServiceError)(error);
         }
     }
     // Public method to send notifications to specific users
@@ -318,6 +323,7 @@ class WebSocketService {
         }
         catch (error) {
             logger_1.logger.error("Failed to send push notification:", error);
+            (0, error_1.handleServiceError)(error);
         }
     }
     /**
