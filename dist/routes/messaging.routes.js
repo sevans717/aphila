@@ -10,7 +10,7 @@ const router = (0, express_1.Router)();
 const sendMessageSchema = zod_1.z.object({
     receiverId: zod_1.z.string(),
     content: zod_1.z.string().min(1),
-    messageType: zod_1.z.enum(['text', 'image', 'gif', 'emoji']).optional(),
+    messageType: zod_1.z.enum(["text", "image", "gif", "emoji"]).optional(),
 });
 const messageQuerySchema = zod_1.z.object({
     limit: zod_1.z.string().transform(Number).optional(),
@@ -26,7 +26,7 @@ const reportMessageSchema = zod_1.z.object({
     reason: zod_1.z.string().min(1),
 });
 // POST /send - Send a message
-router.post('/send', auth_1.requireAuth, (0, validate_1.validateRequest)({ body: sendMessageSchema }), async (req, res) => {
+router.post("/send", auth_1.requireAuth, (0, validate_1.validateRequest)({ body: sendMessageSchema }), async (req, res) => {
     try {
         const senderId = req.user.id;
         const { receiverId, content, messageType } = req.body;
@@ -57,7 +57,7 @@ router.post('/send', auth_1.requireAuth, (0, validate_1.validateRequest)({ body:
     }
 });
 // GET /match/:matchId - Get messages for a match
-router.get('/match/:matchId', auth_1.requireAuth, (0, validate_1.validateRequest)({ params: matchParamsSchema, query: messageQuerySchema }), async (req, res) => {
+router.get("/match/:matchId", auth_1.requireAuth, (0, validate_1.validateRequest)({ params: matchParamsSchema, query: messageQuerySchema }), async (req, res) => {
     try {
         const { matchId } = req.params;
         const filters = {
@@ -91,14 +91,14 @@ router.get('/match/:matchId', auth_1.requireAuth, (0, validate_1.validateRequest
     }
 });
 // PUT /match/:matchId/read - Mark messages as read
-router.put('/match/:matchId/read', auth_1.requireAuth, (0, validate_1.validateRequest)({ params: matchParamsSchema }), async (req, res) => {
+router.put("/match/:matchId/read", auth_1.requireAuth, (0, validate_1.validateRequest)({ params: matchParamsSchema }), async (req, res) => {
     try {
         const { matchId } = req.params;
         const userId = req.user.id;
         await messaging_service_1.MessagingService.markMessagesAsRead(matchId, userId);
         res.json({
             success: true,
-            message: 'Messages marked as read',
+            message: "Messages marked as read",
         });
     }
     catch (error) {
@@ -109,7 +109,7 @@ router.put('/match/:matchId/read', auth_1.requireAuth, (0, validate_1.validateRe
     }
 });
 // GET /unread-count - Get unread message count
-router.get('/unread-count', auth_1.requireAuth, async (req, res) => {
+router.get("/unread-count", auth_1.requireAuth, async (req, res) => {
     try {
         const userId = req.user.id;
         const count = await messaging_service_1.MessagingService.getUnreadCount(userId);
@@ -126,14 +126,14 @@ router.get('/unread-count', auth_1.requireAuth, async (req, res) => {
     }
 });
 // DELETE /message/:messageId - Delete a message
-router.delete('/message/:messageId', auth_1.requireAuth, (0, validate_1.validateRequest)({ params: messageParamsSchema }), async (req, res) => {
+router.delete("/message/:messageId", auth_1.requireAuth, (0, validate_1.validateRequest)({ params: messageParamsSchema }), async (req, res) => {
     try {
         const { messageId } = req.params;
         const userId = req.user.id;
         await messaging_service_1.MessagingService.deleteMessage(messageId, userId);
         res.json({
             success: true,
-            message: 'Message deleted successfully',
+            message: "Message deleted successfully",
         });
     }
     catch (error) {
@@ -144,7 +144,7 @@ router.delete('/message/:messageId', auth_1.requireAuth, (0, validate_1.validate
     }
 });
 // GET /match/:matchId/details - Get match details with messages
-router.get('/match/:matchId/details', auth_1.requireAuth, (0, validate_1.validateRequest)({ params: matchParamsSchema }), async (req, res) => {
+router.get("/match/:matchId/details", auth_1.requireAuth, (0, validate_1.validateRequest)({ params: matchParamsSchema }), async (req, res) => {
     try {
         const { matchId } = req.params;
         const userId = req.user.id;
@@ -183,7 +183,7 @@ router.get('/match/:matchId/details', auth_1.requireAuth, (0, validate_1.validat
     }
 });
 // POST /message/:messageId/report - Report a message
-router.post('/message/:messageId/report', auth_1.requireAuth, (0, validate_1.validateRequest)({ params: messageParamsSchema, body: reportMessageSchema }), async (req, res) => {
+router.post("/message/:messageId/report", auth_1.requireAuth, (0, validate_1.validateRequest)({ params: messageParamsSchema, body: reportMessageSchema }), async (req, res) => {
     try {
         const { messageId } = req.params;
         const { reason } = req.body;
@@ -191,7 +191,7 @@ router.post('/message/:messageId/report', auth_1.requireAuth, (0, validate_1.val
         await messaging_service_1.MessagingService.reportMessage(messageId, reporterId, reason);
         res.json({
             success: true,
-            message: 'Message reported successfully',
+            message: "Message reported successfully",
         });
     }
     catch (error) {

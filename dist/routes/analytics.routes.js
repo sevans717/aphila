@@ -29,7 +29,7 @@ const sessionSchema = zod_1.z.object({
  * Track user event
  * POST /api/v1/analytics/event
  */
-router.post('/event', auth_1.auth, (0, validate_1.validate)(trackEventSchema), async (req, res) => {
+router.post('/event', auth_1.auth, (0, validate_1.validateRequest)({ body: trackEventSchema.shape.body }), async (req, res) => {
     try {
         const { event, properties, platform, appVersion, deviceInfo } = req.body;
         const userId = req.user.userId;
@@ -58,7 +58,7 @@ router.post('/event', auth_1.auth, (0, validate_1.validate)(trackEventSchema), a
  * Track session start
  * POST /api/v1/analytics/session/start
  */
-router.post('/session/start', auth_1.auth, (0, validate_1.validate)(sessionSchema), async (req, res) => {
+router.post('/session/start', auth_1.auth, (0, validate_1.validateRequest)({ body: sessionSchema.shape.body }), async (req, res) => {
     try {
         const { platform, appVersion } = req.body;
         const userId = req.user.userId;
@@ -80,13 +80,11 @@ router.post('/session/start', auth_1.auth, (0, validate_1.validate)(sessionSchem
  * Track session end
  * POST /api/v1/analytics/session/end
  */
-router.post('/session/end', auth_1.auth, (0, validate_1.validate)(zod_1.z.object({
-    body: zod_1.z.object({
+router.post('/session/end', auth_1.auth, (0, validate_1.validateRequest)({ body: zod_1.z.object({
         platform: zod_1.z.string().min(1),
         sessionDuration: zod_1.z.number().min(0),
         appVersion: zod_1.z.string().optional(),
-    }),
-})), async (req, res) => {
+    }) }), async (req, res) => {
     try {
         const { platform, sessionDuration, appVersion } = req.body;
         const userId = req.user.userId;
@@ -108,13 +106,11 @@ router.post('/session/end', auth_1.auth, (0, validate_1.validate)(zod_1.z.object
  * Track swipe action
  * POST /api/v1/analytics/swipe
  */
-router.post('/swipe', auth_1.auth, (0, validate_1.validate)(zod_1.z.object({
-    body: zod_1.z.object({
+router.post('/swipe', auth_1.auth, (0, validate_1.validateRequest)({ body: zod_1.z.object({
         targetUserId: zod_1.z.string().min(1),
         action: zod_1.z.enum(['like', 'pass', 'super_like']),
         platform: zod_1.z.string().min(1),
-    }),
-})), async (req, res) => {
+    }) }), async (req, res) => {
     try {
         const { targetUserId, action, platform } = req.body;
         const userId = req.user.userId;
@@ -136,14 +132,12 @@ router.post('/swipe', auth_1.auth, (0, validate_1.validate)(zod_1.z.object({
  * Track feature usage
  * POST /api/v1/analytics/feature
  */
-router.post('/feature', auth_1.auth, (0, validate_1.validate)(zod_1.z.object({
-    body: zod_1.z.object({
+router.post('/feature', auth_1.auth, (0, validate_1.validateRequest)({ body: zod_1.z.object({
         feature: zod_1.z.string().min(1),
         action: zod_1.z.string().min(1),
         platform: zod_1.z.string().min(1),
         metadata: zod_1.z.record(zod_1.z.string(), zod_1.z.any()).optional(),
-    }),
-})), async (req, res) => {
+    }) }), async (req, res) => {
     try {
         const { feature, action, platform, metadata } = req.body;
         const userId = req.user.userId;

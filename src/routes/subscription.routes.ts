@@ -78,22 +78,27 @@ router.post(
 );
 
 // POST /cancel - Cancel subscription
-router.post("/cancel", requireAuth, validateRequest({}), async (req: any, res: any) => {
-  try {
-    const userId = req.user.id;
-    const result = await SubscriptionService.cancelSubscription(userId);
+router.post(
+  "/cancel",
+  requireAuth,
+  validateRequest({}),
+  async (req: any, res: any) => {
+    try {
+      const userId = req.user.id;
+      const result = await SubscriptionService.cancelSubscription(userId);
 
-    res.json({
-      success: true,
-      data: result,
-    });
-  } catch (error: any) {
-    res.status(400).json({
-      success: false,
-      error: error.message,
-    });
+      res.json({
+        success: true,
+        data: result,
+      });
+    } catch (error: any) {
+      res.status(400).json({
+        success: false,
+        error: error.message,
+      });
+    }
   }
-});
+);
 
 // GET /usage - Get subscription usage and limits
 router.get("/usage", requireAuth, async (req: any, res: any) => {
@@ -114,23 +119,28 @@ router.get("/usage", requireAuth, async (req: any, res: any) => {
 });
 
 // POST /boost - Use a boost
-router.post("/boost", requireAuth, validateRequest({}), async (req: any, res: any) => {
-  try {
-    const userId = req.user.id;
-    const boost = await SubscriptionService.useBoost(userId);
+router.post(
+  "/boost",
+  requireAuth,
+  validateRequest({}),
+  async (req: any, res: any) => {
+    try {
+      const userId = req.user.id;
+      const boost = await SubscriptionService.useBoost(userId);
 
-    res.status(201).json({
-      success: true,
-      data: boost,
-      message:
-        "Boost activated! Your profile will be shown to more people for the next 30 minutes.",
-    });
-  } catch (error: any) {
-    res.status(400).json({
-      success: false,
-      error: error.message,
-    });
+      res.status(201).json({
+        success: true,
+        data: boost,
+        message:
+          "Boost activated! Your profile will be shown to more people for the next 30 minutes.",
+      });
+    } catch (error: any) {
+      res.status(400).json({
+        success: false,
+        error: error.message,
+      });
+    }
   }
-});
+);
 
 export default router;

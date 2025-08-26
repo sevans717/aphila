@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
 import { auth } from '../middleware/auth';
-import { validate } from '../middleware/validate';
+import { validateRequest } from '../middleware/validate';
 import { AnalyticsService } from '../services/analytics.service';
 import { logger } from '../utils/logger';
 
@@ -33,7 +33,7 @@ const sessionSchema = z.object({
  */
 router.post('/event',
   auth,
-  validate(trackEventSchema),
+  validateRequest({ body: trackEventSchema.shape.body }),
   async (req, res) => {
     try {
       const { event, properties, platform, appVersion, deviceInfo } = req.body;
@@ -68,7 +68,7 @@ router.post('/event',
  */
 router.post('/session/start',
   auth,
-  validate(sessionSchema),
+  validateRequest({ body: sessionSchema.shape.body }),
   async (req, res) => {
     try {
       const { platform, appVersion } = req.body;
@@ -96,13 +96,11 @@ router.post('/session/start',
  */
 router.post('/session/end',
   auth,
-  validate(z.object({
-    body: z.object({
+  validateRequest({ body: z.object({
       platform: z.string().min(1),
       sessionDuration: z.number().min(0),
       appVersion: z.string().optional(),
-    }),
-  })),
+    }) }),
   async (req, res) => {
     try {
       const { platform, sessionDuration, appVersion } = req.body;
@@ -130,13 +128,11 @@ router.post('/session/end',
  */
 router.post('/swipe',
   auth,
-  validate(z.object({
-    body: z.object({
+  validateRequest({ body: z.object({
       targetUserId: z.string().min(1),
       action: z.enum(['like', 'pass', 'super_like']),
       platform: z.string().min(1),
-    }),
-  })),
+    }) }),
   async (req, res) => {
     try {
       const { targetUserId, action, platform } = req.body;
@@ -164,14 +160,12 @@ router.post('/swipe',
  */
 router.post('/feature',
   auth,
-  validate(z.object({
-    body: z.object({
+  validateRequest({ body: z.object({
       feature: z.string().min(1),
       action: z.string().min(1),
       platform: z.string().min(1),
       metadata: z.record(z.string(), z.any()).optional(),
-    }),
-  })),
+    }) }),
   async (req, res) => {
     try {
       const { feature, action, platform, metadata } = req.body;

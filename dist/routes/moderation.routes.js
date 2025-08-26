@@ -12,7 +12,7 @@ const requireAdmin = (req, res, next) => {
     if (!req.user.isAdmin) {
         return res.status(403).json({
             success: false,
-            error: 'Admin access required',
+            error: "Admin access required",
         });
     }
     next();
@@ -20,20 +20,20 @@ const requireAdmin = (req, res, next) => {
 // Validation schemas
 const reportSchema = zod_1.z.object({
     reportedId: zod_1.z.string(),
-    type: zod_1.z.enum(['profile', 'message', 'photo', 'behavior']),
+    type: zod_1.z.enum(["profile", "message", "photo", "behavior"]),
     reason: zod_1.z.string().min(1),
     description: zod_1.z.string().optional(),
     contentId: zod_1.z.string().optional(),
 });
 const reportsQuerySchema = zod_1.z.object({
-    status: zod_1.z.enum(['pending', 'reviewed', 'resolved']).optional(),
-    type: zod_1.z.enum(['profile', 'message', 'photo', 'behavior']).optional(),
+    status: zod_1.z.enum(["pending", "reviewed", "resolved"]).optional(),
+    type: zod_1.z.enum(["profile", "message", "photo", "behavior"]).optional(),
     limit: zod_1.z.string().transform(Number).optional(),
     page: zod_1.z.string().transform(Number).optional(),
 });
 const updateReportSchema = zod_1.z.object({
-    status: zod_1.z.enum(['reviewed', 'resolved']),
-    action: zod_1.z.enum(['warn', 'suspend', 'ban', 'dismiss']).optional(),
+    status: zod_1.z.enum(["reviewed", "resolved"]),
+    action: zod_1.z.enum(["warn", "suspend", "ban", "dismiss"]).optional(),
     adminNotes: zod_1.z.string().optional(),
 });
 const reportParamsSchema = zod_1.z.object({
@@ -43,7 +43,7 @@ const userParamsSchema = zod_1.z.object({
     userId: zod_1.z.string(),
 });
 // POST /report - Create a report
-router.post('/report', auth_1.requireAuth, (0, validate_1.validateRequest)({ body: reportSchema }), async (req, res) => {
+router.post("/report", auth_1.requireAuth, (0, validate_1.validateRequest)({ body: reportSchema }), async (req, res) => {
     try {
         const reporterId = req.user.id;
         const reportData = {
@@ -54,7 +54,7 @@ router.post('/report', auth_1.requireAuth, (0, validate_1.validateRequest)({ bod
         res.status(201).json({
             success: true,
             data: report,
-            message: 'Report submitted successfully',
+            message: "Report submitted successfully",
         });
     }
     catch (error) {
@@ -65,7 +65,7 @@ router.post('/report', auth_1.requireAuth, (0, validate_1.validateRequest)({ bod
     }
 });
 // GET /reports - Get reports (admin only)
-router.get('/reports', auth_1.requireAuth, requireAdmin, (0, validate_1.validateRequest)({ query: reportsQuerySchema }), async (req, res) => {
+router.get("/reports", auth_1.requireAuth, requireAdmin, (0, validate_1.validateRequest)({ query: reportsQuerySchema }), async (req, res) => {
     try {
         const filters = req.query;
         const result = await moderation_service_1.ModerationService.getReports(filters);
@@ -83,14 +83,14 @@ router.get('/reports', auth_1.requireAuth, requireAdmin, (0, validate_1.validate
     }
 });
 // PUT /reports/:reportId - Update report status (admin only)
-router.put('/reports/:reportId', auth_1.requireAuth, requireAdmin, (0, validate_1.validateRequest)({ params: reportParamsSchema, body: updateReportSchema }), async (req, res) => {
+router.put("/reports/:reportId", auth_1.requireAuth, requireAdmin, (0, validate_1.validateRequest)({ params: reportParamsSchema, body: updateReportSchema }), async (req, res) => {
     try {
         const { reportId } = req.params;
         const { status, action, adminNotes } = req.body;
         await moderation_service_1.ModerationService.updateReportStatus(reportId, status, action, adminNotes);
         res.json({
             success: true,
-            message: 'Report updated successfully',
+            message: "Report updated successfully",
         });
     }
     catch (error) {
@@ -101,7 +101,7 @@ router.put('/reports/:reportId', auth_1.requireAuth, requireAdmin, (0, validate_
     }
 });
 // GET /user/:userId/history - Get user moderation history (admin only)
-router.get('/user/:userId/history', auth_1.requireAuth, requireAdmin, (0, validate_1.validateRequest)({ params: userParamsSchema }), async (req, res) => {
+router.get("/user/:userId/history", auth_1.requireAuth, requireAdmin, (0, validate_1.validateRequest)({ params: userParamsSchema }), async (req, res) => {
     try {
         const { userId } = req.params;
         const history = await moderation_service_1.ModerationService.getUserModerationHistory(userId);
@@ -118,7 +118,7 @@ router.get('/user/:userId/history', auth_1.requireAuth, requireAdmin, (0, valida
     }
 });
 // GET /user/:userId/suspended - Check if user is suspended
-router.get('/user/:userId/suspended', auth_1.requireAuth, requireAdmin, (0, validate_1.validateRequest)({ params: userParamsSchema }), async (req, res) => {
+router.get("/user/:userId/suspended", auth_1.requireAuth, requireAdmin, (0, validate_1.validateRequest)({ params: userParamsSchema }), async (req, res) => {
     try {
         const { userId } = req.params;
         const isSuspended = await moderation_service_1.ModerationService.isUserSuspended(userId);
