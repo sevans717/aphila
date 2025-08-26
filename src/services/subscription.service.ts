@@ -177,14 +177,18 @@ export class SubscriptionService {
   ) {
     const plan = SUBSCRIPTION_PLANS.find((p) => p.id === planId);
     if (!plan) {
-      throw new Error("Invalid subscription plan");
+      const err = new Error("Invalid subscription plan");
+      if (env.nodeEnv === "production") throw err;
+      return Promise.reject(err);
     }
 
     // In a real app, you'd integrate with Stripe here
     if (plan.price > 0 && !paymentToken) {
       // Allow bypassing real payments in dev environments when explicitly configured
       if (!env.disablePayments) {
-        throw new Error("Payment token required for paid plans");
+        const err = new Error("Payment token required for paid plans");
+        if (env.nodeEnv === "production") throw err;
+        return Promise.reject(err);
       }
     }
 
@@ -354,7 +358,9 @@ export class SubscriptionService {
     const usage = await this.getUsage(userId);
 
     if (!usage.canBoost) {
-      throw new Error("Boost limit reached for your subscription");
+      const err = new Error("Boost limit reached for your subscription");
+      if (env.nodeEnv === "production") throw err;
+      return Promise.reject(err);
     }
 
     // Create boost record
