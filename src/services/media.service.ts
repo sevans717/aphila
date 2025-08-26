@@ -646,8 +646,7 @@ export class MediaService {
       if (!media) {
         const err = new Error("Media not found");
         logger.warn("generateThumbnail called for missing media", { mediaId });
-        if (env.nodeEnv === "production") throw err;
-        return null;
+        return handleServiceError(err) as any;
       }
 
       // For now, return a placeholder thumbnail URL
