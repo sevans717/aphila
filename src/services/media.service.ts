@@ -396,8 +396,8 @@ export class MediaService {
         mediaId,
         userId,
       });
-      if (env.nodeEnv === "production") throw err;
-      return null as any;
+      // Use centralized handler to control throwing vs. rejection
+      return handleServiceError(err) as any;
     }
 
     return await prisma.mediaAsset.update({
@@ -459,6 +459,7 @@ export class MediaService {
     if (!session) {
       const err = new Error("Upload session not found or expired");
       logger.warn("Upload chunk called for missing session", { sessionId });
+      // In production, handleServiceError will re-throw; in dev it rejects
       if (env.nodeEnv === "production") throw err;
       // Dev-fallback: return empty progress so callers can handle gracefully
       return {
