@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.StoryService = void 0;
 const prisma_1 = require("../lib/prisma");
 const logger_1 = require("../utils/logger");
+const error_1 = require("../utils/error");
 class StoryService {
     static async createStory(data) {
         try {
@@ -56,7 +57,7 @@ class StoryService {
         }
         catch (error) {
             logger_1.logger.error("Error creating story", { error, data });
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async getActiveStories(userId) {
@@ -110,7 +111,7 @@ class StoryService {
         }
         catch (error) {
             logger_1.logger.error("Error getting active stories", { error, userId });
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async viewStory(storyId, viewerId) {
@@ -151,7 +152,7 @@ class StoryService {
         }
         catch (error) {
             logger_1.logger.error("Error viewing story", { error, storyId, viewerId });
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async deleteStory(storyId, userId) {
@@ -173,7 +174,7 @@ class StoryService {
         }
         catch (error) {
             logger_1.logger.error("Error deleting story", { error, storyId, userId });
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async getStoryById(storyId, viewerId) {
@@ -227,7 +228,7 @@ class StoryService {
         }
         catch (error) {
             logger_1.logger.error("Error getting story by id", { error, storyId, viewerId });
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async updateStorySettings(storyId, userId, data) {
@@ -285,7 +286,7 @@ class StoryService {
         }
         catch (error) {
             logger_1.logger.error("Error updating story settings", { error, storyId, userId });
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async getStoriesFeed(userId, limit = 20, offset = 0) {
@@ -352,7 +353,7 @@ class StoryService {
         }
         catch (error) {
             logger_1.logger.error("Error getting stories feed", { error, userId });
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async getUserStories(targetUserId, viewerId, includeExpired = false) {
@@ -420,7 +421,7 @@ class StoryService {
                 targetUserId,
                 viewerId,
             });
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async trackView(storyId, viewerId) {
@@ -429,7 +430,7 @@ class StoryService {
         }
         catch (error) {
             logger_1.logger.error("Error tracking story view", { error, storyId, viewerId });
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async getStoryViewers(storyId, ownerId, limit = 50, offset = 0) {
@@ -491,7 +492,7 @@ class StoryService {
         }
         catch (error) {
             logger_1.logger.error("Error getting story viewers", { error, storyId, ownerId });
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async getStoryStats(storyId, userId) {
@@ -545,7 +546,7 @@ class StoryService {
         }
         catch (error) {
             logger_1.logger.error("Error getting story stats", { error, storyId, userId });
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     // New: Get aggregated analytics overview for a timeframe
@@ -614,7 +615,7 @@ class StoryService {
                 startDate,
                 endDate,
             });
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     // New: Mark a story as highlight (DB-backed flag)
@@ -650,7 +651,7 @@ class StoryService {
                 storyId,
                 userId,
             });
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     // New: Discover nearby stories based on latitude/longitude and radius (km)
@@ -732,7 +733,7 @@ class StoryService {
                 longitude,
                 radiusKm,
             });
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async cleanupExpiredStories() {
@@ -750,7 +751,7 @@ class StoryService {
         }
         catch (error) {
             logger_1.logger.error("Error cleaning up expired stories", { error });
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
 }

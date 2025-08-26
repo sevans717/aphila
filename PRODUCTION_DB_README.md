@@ -38,9 +38,10 @@ Notes
 - `DATABASE_URL` should point to PgBouncer for the running API: `postgresql://<user>:<pass>@pgbouncer:6432/<db>?schema=public`
 
 Helpful runtime checks
- - Use the included PgBouncer connectivity helper to verify pooling connectivity from your host:
-	 - PowerShell: `./scripts/check-pgbouncer.ps1`
-	 - This runs a temporary container and executes a `SELECT 1;` against PgBouncer (port 6432). Useful when troubleshooting connection issues between the API and PgBouncer.
+
+- Use the included PgBouncer connectivity helper to verify pooling connectivity from your host:
+  - PowerShell: `./scripts/check-pgbouncer.ps1`
+  - This runs a temporary container and executes a `SELECT 1;` against PgBouncer (port 6432). Useful when troubleshooting connection issues between the API and PgBouncer.
 - Traefik configuration lives in `./traefik` and stores ACME data in `./traefik/acme`.
 
 Backups

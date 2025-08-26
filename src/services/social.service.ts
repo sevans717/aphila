@@ -1,5 +1,6 @@
 import { prisma } from '../lib/prisma';
 import { logger } from '../utils/logger';
+import { handleServiceError } from '../utils/error';
 
 export interface CreateCommentData {
   postId: string;
@@ -291,7 +292,7 @@ export class SocialService {
       };
     } catch (error) {
       logger.error('Error creating comment', { error, userId, data });
-      throw error;
+      return handleServiceError(error);
     }
   }
 
@@ -356,7 +357,7 @@ export class SocialService {
       return { isLiked, likesCount };
     } catch (error) {
       logger.error('Error toggling comment like', { error, commentId, userId });
-      throw error;
+      return handleServiceError(error);
     }
   }
 
@@ -412,7 +413,7 @@ export class SocialService {
       }));
     } catch (error) {
       logger.error('Error getting post comments', { error, postId, viewerId });
-      throw error;
+      return handleServiceError(error);
     }
   }
 
@@ -448,7 +449,7 @@ export class SocialService {
       };
     } catch (error) {
       logger.error('Error getting post likes breakdown', { error, postId });
-      throw error;
+      return handleServiceError(error);
     }
   }
 
@@ -514,7 +515,7 @@ export class SocialService {
       return { isLiked, likesCount };
     } catch (error) {
       logger.error('Error toggling post like', { error, postId, userId });
-      throw error;
+      return handleServiceError(error);
     }
   }
 
@@ -584,7 +585,7 @@ export class SocialService {
       };
     } catch (error) {
       logger.error('Error getting post likes', { error, postId });
-      throw error;
+      return handleServiceError(error);
     }
   }
 
@@ -643,7 +644,7 @@ export class SocialService {
       };
     } catch (error) {
       logger.error('Error updating comment', { error, commentId, authorId });
-      throw error;
+      return handleServiceError(error);
     }
   }
 
@@ -659,7 +660,7 @@ export class SocialService {
       logger.info('Comment deleted', { commentId, authorId });
     } catch (error) {
       logger.error('Error deleting comment', { error, commentId, authorId });
-      throw error;
+      return handleServiceError(error);
     }
   }
 
@@ -728,7 +729,7 @@ export class SocialService {
       };
     } catch (error) {
       logger.error('Error getting comment replies', { error, commentId });
-      throw error;
+      return handleServiceError(error);
     }
   }
 
@@ -775,7 +776,7 @@ export class SocialService {
       };
     } catch (error) {
       logger.error('Error getting post stats', { error, postId });
-      throw error;
+      return handleServiceError(error);
     }
   }
 }

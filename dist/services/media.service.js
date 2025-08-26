@@ -11,6 +11,7 @@ const path_1 = __importDefault(require("path"));
 const uuid_1 = require("uuid");
 const env_1 = require("../config/env");
 const logger_1 = require("../utils/logger");
+const error_1 = require("../utils/error");
 class MediaService {
     static UPLOAD_DIR = process.env.UPLOAD_DIR || "./uploads";
     static THUMBNAIL_DIR = path_1.default.join(this.UPLOAD_DIR, "thumbnails");
@@ -48,11 +49,18 @@ class MediaService {
     static async uploadFile(file, userId, uploadType) {
         // Validate file size
         if (file.size > env_1.env.maxFileSize) {
-            throw new Error(`File size exceeds limit (${env_1.env.maxFileSize / 1024 / 1024}MB)`);
+            // In dev, return a helpful error object instead of throwing to avoid crashing flows
+            const msg = `File size exceeds limit (${env_1.env.maxFileSize / 1024 / 1024}MB)`;
+            if (env_1.env.nodeEnv === "production")
+                throw new Error(msg);
+            return Promise.reject(new Error(msg));
         }
         // Validate file type
         if (!env_1.env.allowedFileTypes.includes(file.mimetype)) {
-            throw new Error(`Invalid file type. Allowed: ${env_1.env.allowedFileTypes.join(", ")}`);
+            const msg = `Invalid file type. Allowed: ${env_1.env.allowedFileTypes.join(", ")}`;
+            if (env_1.env.nodeEnv === "production")
+                throw new Error(msg);
+            return Promise.reject(new Error(msg));
         }
         // Determine media type
         const mediaType = this.getMediaType(file.mimetype);
@@ -113,7 +121,8 @@ class MediaService {
         }
         catch (error) {
             logger_1.logger.error("Failed to upload file:", error);
-            throw new Error("File upload failed");
+            // Use centralized error handling to avoid crashing in dev
+            return (0, error_1.handleServiceError)(error);
         }
     }
     // Delete file (supports both local and S3)
@@ -220,6 +229,9 @@ class MediaService {
             where: { id: mediaId, userId },
         });
         if (!media) {
+            // In dev, return null so callers can handle missing media gracefully
+            if (env_1.env.nodeEnv !== "production")
+                return null;
             throw new Error("Media not found");
         }
         // Delete physical file
@@ -254,7 +266,7 @@ class MediaService {
         // Format: /uploads/<key> with a query param to mimic expiry
         const expiresAt = Math.floor(Date.now() / 1000) + expiresIn;
         const safeKey = encodeURIComponent(key);
-        return `${env_1.env.appUrl.replace(/\/$/, '')}/uploads/${safeKey}?expires=${expiresAt}`;
+        return `${env_1.env.appUrl.replace(/\/$/, "")}/uploads/${safeKey}?expires=${expiresAt}`;
     }
     // Get media asset by ID
     static async getMediaById(mediaId) {
@@ -460,7 +472,7 @@ class MediaService {
             logger_1.logger.error("Failed to complete chunked upload:", error);
             // Cleanup session on error
             this.uploadSessions.delete(sessionId);
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     /**

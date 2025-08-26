@@ -4,6 +4,8 @@ exports.SubscriptionService = exports.SUBSCRIPTION_PLANS = void 0;
 // avoid importing generated enum types directly; use strings for type-safety compatibility
 const prisma_1 = require("../lib/prisma");
 const env_1 = require("../config/env");
+const uuid_1 = require("uuid");
+const error_1 = require("../utils/error");
 // Subscription plans configuration
 exports.SUBSCRIPTION_PLANS = [
     {
@@ -145,13 +147,15 @@ class SubscriptionService {
     static async createSubscription(userId, planId, paymentToken) {
         const plan = exports.SUBSCRIPTION_PLANS.find((p) => p.id === planId);
         if (!plan) {
-            throw new Error("Invalid subscription plan");
+            const err = new Error("Invalid subscription plan");
+            return (0, error_1.handleServiceError)(err);
         }
         // In a real app, you'd integrate with Stripe here
         if (plan.price > 0 && !paymentToken) {
             // Allow bypassing real payments in dev environments when explicitly configured
             if (!env_1.env.disablePayments) {
-                throw new Error("Payment token required for paid plans");
+                const err = new Error("Payment token required for paid plans");
+                return (0, error_1.handleServiceError)(err);
             }
         }
         // Calculate end date
@@ -177,15 +181,25 @@ class SubscriptionService {
             },
         });
         // Create subscription record (you might want a separate subscriptions table)
-        await prisma_1.prisma.notification.create({
-            data: {
-                userId,
-                type: "subscription",
-                title: "Subscription Activated! 🎉",
-                body: `Your ${plan.name} subscription is now active`,
-                data: { planId, endDate: endDate.toISOString() },
-            },
-        });
+        const notificationData = {
+            userId,
+            type: "subscription",
+            title: "Subscription Activated! 🎉",
+            body: `Your ${plan.name} subscription is now active`,
+            data: { planId, endDate: endDate.toISOString() },
+        };
+        // If payments are disabled for dev, add a mock receipt payload
+        if (env_1.env.disablePayments) {
+            notificationData.data.mockPayment = true;
+            notificationData.data.payment = {
+                id: `mock_${(0, uuid_1.v4)()}`,
+                amount: plan.price,
+                currency: "USD",
+                status: "succeeded",
+                createdAt: new Date().toISOString(),
+            };
+        }
+        await prisma_1.prisma.notification.create({ data: notificationData });
         return {
             success: true,
             subscription: {
@@ -293,7 +307,10 @@ class SubscriptionService {
     static async useBoost(userId) {
         const usage = await this.getUsage(userId);
         if (!usage.canBoost) {
-            throw new Error("Boost limit reached for your subscription");
+            const err = new Error("Boost limit reached for your subscription");
+            if (env_1.env.nodeEnv === "production")
+                throw err;
+            return Promise.reject(err);
         }
         // Create boost record
         const boost = await prisma_1.prisma.boost.create({

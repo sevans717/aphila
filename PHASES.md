@@ -1,7 +1,7 @@
-Project Phases for aphila (complete, ordered)
-===========================================
+# Project Phases for aphila (complete, ordered)
 
 Phase 1 — Infrastructure (completed)
+
 - Goal: Prepare production-ready infra for self-hosting.
 - Tasks:
   - Docker Compose for production with Traefik, PgBouncer, Postgres, Adminer, and app services.
@@ -11,6 +11,7 @@ Phase 1 — Infrastructure (completed)
   - Deployment docs and env examples (`.env.example`, `PRODUCTION_DB_README.md`).
 
 Phase 2 — Backend API Completion & Hardening (in-progress)
+
 - Goal: Implement remaining API endpoints, refactor Prisma usage, integrate middleware, and ensure tests/builds pass.
 - Tasks:
   - Ensure Prisma uses singleton client and DATABASE_URL points to PgBouncer in prod compose.
@@ -23,6 +24,7 @@ Phase 2 — Backend API Completion & Hardening (in-progress)
   - Update `tmp/route_service_issues.json` to reflect manual edits.
 
 Phase 3 — Frontend Wiring & Mobile Integration
+
 - Goal: Connect mobile frontend (`sav3-frontend`) to APIs, validate auth flows, and implement client-side feature flags.
 - Tasks:
   - Verify API clients (`src/client/sav3-api-client.ts`) match server endpoints and types.
@@ -31,6 +33,7 @@ Phase 3 — Frontend Wiring & Mobile Integration
   - Add e2e smoke tests (Expo + Detox/Cypress).
 
 Phase 4 — Payments & Billing (production-ready)
+
 - Goal: Integrate a real payment processor (Stripe), receipts, webhooks, and subscription lifecycle.
 - Tasks:
   - Replace dev payment bypass with Stripe integration and webhook handlers.
@@ -38,6 +41,7 @@ Phase 4 — Payments & Billing (production-ready)
   - Add tests for billing flows and edge cases (charge failures, retries).
 
 Phase 5 — Observability & Scaling
+
 - Goal: Add logging, metrics, tracing, and autoscaling patterns.
 - Tasks:
   - Add Prometheus exporters, Grafana dashboards, and alerting rules.
@@ -45,6 +49,7 @@ Phase 5 — Observability & Scaling
   - Add Redis for caching and presence; add worker queue for background jobs.
 
 Phase 6 — High Availability & Backups
+
 - Goal: Configure DB replication, automated backups, and failover.
 - Tasks:
   - Implement streaming replication or managed replica strategy.
@@ -52,6 +57,7 @@ Phase 6 — High Availability & Backups
   - Harden backups, rotation, and test restores.
 
 Phase 7 — Final QA, Security Review, and Launch
+
 - Goal: Complete testing, security audit, and launch checklist.
 - Tasks:
   - Perform security audit (dependency, secret scanning, pen test checklist).
@@ -59,5 +65,6 @@ Phase 7 — Final QA, Security Review, and Launch
   - Finalize domain DNS, TLS, and CI/CD promotions to production.
 
 Notes:
+
 - The repository already contains infra for Phase 1 and substantial Phase 2 work.
 - Phase 2 is currently active; next concrete tasks are reviewing `tmp/route_service_issues.json`, implementing remaining placeholders (media/subscription), and adding tests.

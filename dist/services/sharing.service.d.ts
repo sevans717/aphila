@@ -29,23 +29,23 @@ export interface ShareWithDetails {
 export interface ShareData {
     userId: string;
     contentId: string;
-    contentType: 'post' | 'media' | 'story' | 'profile';
+    contentType: "post" | "media" | "story" | "profile";
     platform: SharePlatform;
     destination?: ShareDestination;
     message?: string;
     recipients?: string[];
-    privacy?: 'public' | 'friends' | 'private';
+    privacy?: "public" | "friends" | "private";
     scheduledAt?: Date;
 }
 export interface SharePlatform {
-    name: 'twitter' | 'facebook' | 'instagram' | 'tiktok' | 'linkedin' | 'whatsapp' | 'telegram' | 'internal' | 'sms' | 'email' | 'link';
+    name: "twitter" | "facebook" | "instagram" | "tiktok" | "linkedin" | "whatsapp" | "telegram" | "internal" | "sms" | "email" | "link";
     displayName: string;
     apiKey?: string;
     accessToken?: string;
     settings?: Record<string, any>;
 }
 export interface ShareDestination {
-    type: 'feed' | 'story' | 'message' | 'group' | 'page';
+    type: "feed" | "story" | "message" | "group" | "page";
     id?: string;
     name?: string;
     settings?: Record<string, any>;
@@ -53,7 +53,7 @@ export interface ShareDestination {
 export interface ShareResult {
     shareId: string;
     platform: string;
-    status: 'pending' | 'sent' | 'failed' | 'scheduled';
+    status: "pending" | "sent" | "failed" | "scheduled";
     externalId?: string;
     externalUrl?: string;
     error?: string;
@@ -64,9 +64,9 @@ export interface ShareResult {
 }
 export interface ShareRecipient {
     id?: string;
-    type: 'user' | 'group' | 'public';
+    type: "user" | "group" | "public";
     name?: string;
-    status: 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
+    status: "pending" | "sent" | "delivered" | "read" | "failed";
     sentAt?: Date;
     readAt?: Date;
     error?: string;
@@ -163,7 +163,7 @@ export interface ShareCampaign {
     message?: string;
     startDate: Date;
     endDate?: Date;
-    status: 'draft' | 'active' | 'paused' | 'completed';
+    status: "draft" | "active" | "paused" | "completed";
     analytics: {
         totalShares: number;
         totalReach: number;
@@ -185,9 +185,9 @@ export declare class SharingService {
     static sharePost(data: CreateShareData): Promise<ShareWithDetails>;
     static shareMedia(data: CreateShareData): Promise<ShareWithDetails>;
     static getUserShares(userId: string, limit?: number): Promise<ShareWithDetails[]>;
-    static deleteShare(shareId: string, userId: string, type: 'post' | 'media'): Promise<void>;
+    static deleteShare(shareId: string, userId: string, type: "post" | "media"): Promise<void>;
     static shareContent(data: CreateShareData): Promise<ShareWithDetails>;
-    static getContentShares(contentId: string, type: 'post' | 'media', limit?: number, offset?: number): Promise<{
+    static getContentShares(contentId: string, type: "post" | "media", limit?: number, offset?: number): Promise<{
         shares: ShareWithDetails[];
         total: number;
     }>;

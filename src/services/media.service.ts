@@ -5,6 +5,7 @@ import path from "path";
 import { v4 as uuidv4 } from "uuid";
 import { env } from "../config/env";
 import { logger } from "../utils/logger";
+import { handleServiceError } from "../utils/error";
 
 // using shared singleton `prisma` from src/lib/prisma
 interface UploadResult {
@@ -92,14 +93,18 @@ export class MediaService {
     // Validate file size
     if (file.size > env.maxFileSize) {
       // In dev, return a helpful error object instead of throwing to avoid crashing flows
-      const msg = `File size exceeds limit (${env.maxFileSize / 1024 / 1024}MB)`;
+      const msg = `File size exceeds limit (${
+        env.maxFileSize / 1024 / 1024
+      }MB)`;
       if (env.nodeEnv === "production") throw new Error(msg);
       return Promise.reject(new Error(msg));
     }
 
     // Validate file type
     if (!env.allowedFileTypes.includes(file.mimetype)) {
-      const msg = `Invalid file type. Allowed: ${env.allowedFileTypes.join(", ")}`;
+      const msg = `Invalid file type. Allowed: ${env.allowedFileTypes.join(
+        ", "
+      )}`;
       if (env.nodeEnv === "production") throw new Error(msg);
       return Promise.reject(new Error(msg));
     }
@@ -168,9 +173,8 @@ export class MediaService {
       };
     } catch (error: any) {
       logger.error("Failed to upload file:", error);
-      // In production surface the error; in dev return a rejected promise with context
-      if (env.nodeEnv === "production") throw new Error("File upload failed");
-      return Promise.reject(error);
+      // Use centralized error handling to avoid crashing in dev
+      return handleServiceError(error);
     }
   }
 
@@ -366,7 +370,6 @@ export class MediaService {
         },
       },
     });
-
   }
 
   // Update media metadata
@@ -609,7 +612,7 @@ export class MediaService {
       logger.error("Failed to complete chunked upload:", error);
       // Cleanup session on error
       this.uploadSessions.delete(sessionId);
-      throw error;
+      return handleServiceError(error);
     }
   }
 

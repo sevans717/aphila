@@ -3,12 +3,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SharingService = void 0;
 const prisma_1 = require("../lib/prisma");
 const logger_1 = require("../utils/logger");
+const error_1 = require("../utils/error");
 class SharingService {
     static async sharePost(data) {
         try {
             const { userId, postId, platform, comment } = data;
             if (!postId) {
-                throw new Error('Post ID is required for post sharing');
+                throw new Error("Post ID is required for post sharing");
             }
             const share = await prisma_1.prisma.postShare.create({
                 data: {
@@ -25,15 +26,20 @@ class SharingService {
                                     profile: {
                                         select: {
                                             displayName: true,
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
             });
-            logger_1.logger.info('Post shared', { shareId: share.id, postId, userId, platform });
+            logger_1.logger.info("Post shared", {
+                shareId: share.id,
+                postId,
+                userId,
+                platform,
+            });
             return {
                 id: share.id,
                 platform: share.platform || undefined,
@@ -46,21 +52,21 @@ class SharingService {
                         id: share.post.author.id,
                         profile: {
                             displayName: share.post.author.profile.displayName,
-                        }
-                    }
-                }
+                        },
+                    },
+                },
             };
         }
         catch (error) {
-            logger_1.logger.error('Error sharing post', { error, data });
-            throw error;
+            logger_1.logger.error("Error sharing post", { error, data });
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async shareMedia(data) {
         try {
             const { userId, mediaId, platform, comment } = data;
             if (!mediaId) {
-                throw new Error('Media ID is required for media sharing');
+                throw new Error("Media ID is required for media sharing");
             }
             const share = await prisma_1.prisma.mediaShare.create({
                 data: {
@@ -75,22 +81,27 @@ class SharingService {
                             id: true,
                             url: true,
                             type: true,
-                        }
-                    }
-                }
+                        },
+                    },
+                },
             });
-            logger_1.logger.info('Media shared', { shareId: share.id, mediaId, userId, platform });
+            logger_1.logger.info("Media shared", {
+                shareId: share.id,
+                mediaId,
+                userId,
+                platform,
+            });
             return {
                 id: share.id,
                 platform: share.platform || undefined,
                 comment: share.comment || undefined,
                 createdAt: share.createdAt,
-                media: share.media
+                media: share.media,
             };
         }
         catch (error) {
-            logger_1.logger.error('Error sharing media', { error, data });
-            throw error;
+            logger_1.logger.error("Error sharing media", { error, data });
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async getUserShares(userId, limit = 20) {
@@ -106,15 +117,15 @@ class SharingService {
                                         profile: {
                                             select: {
                                                 displayName: true,
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
                     },
-                    orderBy: { createdAt: 'desc' },
-                    take: Math.ceil(limit / 2)
+                    orderBy: { createdAt: "desc" },
+                    take: Math.ceil(limit / 2),
                 }),
                 prisma_1.prisma.mediaShare.findMany({
                     where: { userId },
@@ -124,15 +135,15 @@ class SharingService {
                                 id: true,
                                 url: true,
                                 type: true,
-                            }
-                        }
+                            },
+                        },
                     },
-                    orderBy: { createdAt: 'desc' },
-                    take: Math.ceil(limit / 2)
-                })
+                    orderBy: { createdAt: "desc" },
+                    take: Math.ceil(limit / 2),
+                }),
             ]);
             const allShares = [
-                ...postShares.map(share => ({
+                ...postShares.map((share) => ({
                     id: share.id,
                     platform: share.platform || undefined,
                     comment: share.comment || undefined,
@@ -144,62 +155,64 @@ class SharingService {
                             id: share.post.author.id,
                             profile: {
                                 displayName: share.post.author.profile.displayName,
-                            }
-                        }
-                    }
+                            },
+                        },
+                    },
                 })),
-                ...mediaShares.map(share => ({
+                ...mediaShares.map((share) => ({
                     id: share.id,
                     platform: share.platform || undefined,
                     comment: share.comment || undefined,
                     createdAt: share.createdAt,
-                    media: share.media
-                }))
+                    media: share.media,
+                })),
             ];
-            return allShares.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, limit);
+            return allShares
+                .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+                .slice(0, limit);
         }
         catch (error) {
-            logger_1.logger.error('Error getting user shares', { error, userId });
-            throw error;
+            logger_1.logger.error("Error getting user shares", { error, userId });
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async deleteShare(shareId, userId, type) {
         try {
-            if (type === 'post') {
+            if (type === "post") {
                 const share = await prisma_1.prisma.postShare.findUnique({
                     where: { id: shareId },
-                    select: { userId: true }
+                    select: { userId: true },
                 });
                 if (!share) {
-                    throw new Error('Share not found');
+                    throw new Error("Share not found");
                 }
                 if (share.userId !== userId) {
-                    throw new Error('Unauthorized to delete this share');
+                    throw new Error("Unauthorized to delete this share");
                 }
                 await prisma_1.prisma.postShare.delete({
-                    where: { id: shareId }
+                    where: { id: shareId },
                 });
             }
             else {
                 const share = await prisma_1.prisma.mediaShare.findUnique({
                     where: { id: shareId },
-                    select: { userId: true }
+                    select: { userId: true },
                 });
                 if (!share) {
-                    throw new Error('Share not found');
+                    throw new Error("Share not found");
                 }
                 if (share.userId !== userId) {
-                    throw new Error('Unauthorized to delete this share');
+                    throw new Error("Unauthorized to delete this share");
                 }
                 await prisma_1.prisma.mediaShare.delete({
-                    where: { id: shareId }
+                    where: { id: shareId },
                 });
             }
-            logger_1.logger.info('Share deleted', { shareId, userId, type });
+            logger_1.logger.info("Share deleted", { shareId, userId, type });
         }
         catch (error) {
-            logger_1.logger.error('Error deleting share', { error, shareId, userId, type });
-            throw error;
+            logger_1.logger.error("Error deleting share", { error, shareId, userId, type });
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async shareContent(data) {
@@ -211,17 +224,17 @@ class SharingService {
                 return this.shareMedia(data);
             }
             else {
-                throw new Error('Either postId or mediaId must be provided');
+                throw new Error("Either postId or mediaId must be provided");
             }
         }
         catch (error) {
-            logger_1.logger.error('Error sharing content', { error, data });
-            throw error;
+            logger_1.logger.error("Error sharing content", { error, data });
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async getContentShares(contentId, type, limit = 20, offset = 0) {
         try {
-            if (type === 'post') {
+            if (type === "post") {
                 const [shares, total] = await Promise.all([
                     prisma_1.prisma.postShare.findMany({
                         where: { postId: contentId },
@@ -231,9 +244,9 @@ class SharingService {
                                     profile: {
                                         select: {
                                             displayName: true,
-                                        }
-                                    }
-                                }
+                                        },
+                                    },
+                                },
                             },
                             post: {
                                 include: {
@@ -242,23 +255,23 @@ class SharingService {
                                             profile: {
                                                 select: {
                                                     displayName: true,
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
                         },
-                        orderBy: { createdAt: 'desc' },
+                        orderBy: { createdAt: "desc" },
                         skip: offset,
-                        take: limit
+                        take: limit,
                     }),
                     prisma_1.prisma.postShare.count({
-                        where: { postId: contentId }
-                    })
+                        where: { postId: contentId },
+                    }),
                 ]);
                 return {
-                    shares: shares.map(share => ({
+                    shares: shares.map((share) => ({
                         id: share.id,
                         platform: share.platform || undefined,
                         comment: share.comment || undefined,
@@ -270,11 +283,11 @@ class SharingService {
                                 id: share.post.author.id,
                                 profile: {
                                     displayName: share.post.author.profile.displayName,
-                                }
-                            }
-                        }
+                                },
+                            },
+                        },
                     })),
-                    total
+                    total,
                 };
             }
             else {
@@ -287,41 +300,41 @@ class SharingService {
                                     profile: {
                                         select: {
                                             displayName: true,
-                                        }
-                                    }
-                                }
+                                        },
+                                    },
+                                },
                             },
                             media: {
                                 select: {
                                     id: true,
                                     url: true,
                                     type: true,
-                                }
-                            }
+                                },
+                            },
                         },
-                        orderBy: { createdAt: 'desc' },
+                        orderBy: { createdAt: "desc" },
                         skip: offset,
-                        take: limit
+                        take: limit,
                     }),
                     prisma_1.prisma.mediaShare.count({
-                        where: { mediaId: contentId }
-                    })
+                        where: { mediaId: contentId },
+                    }),
                 ]);
                 return {
-                    shares: shares.map(share => ({
+                    shares: shares.map((share) => ({
                         id: share.id,
                         platform: share.platform || undefined,
                         comment: share.comment || undefined,
                         createdAt: share.createdAt,
-                        media: share.media
+                        media: share.media,
                     })),
-                    total
+                    total,
                 };
             }
         }
         catch (error) {
-            logger_1.logger.error('Error getting content shares', { error, contentId, type });
-            throw error;
+            logger_1.logger.error("Error getting content shares", { error, contentId, type });
+            return (0, error_1.handleServiceError)(error);
         }
     }
 }

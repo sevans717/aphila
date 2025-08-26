@@ -40,9 +40,7 @@ export declare class MediaService {
         limit?: number;
         offset?: number;
     }): Promise<any>;
-    static deleteMedia(mediaId: string, userId: string): Promise<{
-        success: boolean;
-    }>;
+    static deleteMedia(mediaId: string, userId: string): Promise<any>;
     static getSignedUrl(key: string, expiresIn?: number): Promise<string>;
     static getMediaById(mediaId: string): Promise<any>;
     static updateMediaMetadata(mediaId: string, userId: string, metadata: {

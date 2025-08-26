@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prisma";
 import { logger } from "../utils/logger";
+import { handleServiceError } from "../utils/error";
 
 export interface CreateStoryData {
   userId: string;
@@ -318,7 +319,7 @@ export class StoryService {
       };
     } catch (error) {
       logger.error("Error creating story", { error, data });
-      throw error;
+      return handleServiceError(error);
     }
   }
 
@@ -374,7 +375,7 @@ export class StoryService {
       }));
     } catch (error) {
       logger.error("Error getting active stories", { error, userId });
-      throw error;
+      return handleServiceError(error);
     }
   }
 
@@ -421,7 +422,7 @@ export class StoryService {
       }
     } catch (error) {
       logger.error("Error viewing story", { error, storyId, viewerId });
-      throw error;
+      return handleServiceError(error);
     }
   }
 
@@ -447,7 +448,7 @@ export class StoryService {
       logger.info("Story deleted", { storyId, userId });
     } catch (error) {
       logger.error("Error deleting story", { error, storyId, userId });
-      throw error;
+      return handleServiceError(error);
     }
   }
 
@@ -507,7 +508,7 @@ export class StoryService {
       };
     } catch (error) {
       logger.error("Error getting story by id", { error, storyId, viewerId });
-      throw error;
+      return handleServiceError(error);
     }
   }
 
@@ -573,7 +574,7 @@ export class StoryService {
       };
     } catch (error) {
       logger.error("Error updating story settings", { error, storyId, userId });
-      throw error;
+      return handleServiceError(error);
     }
   }
 
@@ -649,7 +650,7 @@ export class StoryService {
       };
     } catch (error) {
       logger.error("Error getting stories feed", { error, userId });
-      throw error;
+      return handleServiceError(error);
     }
   }
 
@@ -727,7 +728,7 @@ export class StoryService {
         targetUserId,
         viewerId,
       });
-      throw error;
+      return handleServiceError(error);
     }
   }
 
@@ -736,7 +737,7 @@ export class StoryService {
       await this.viewStory(storyId, viewerId);
     } catch (error) {
       logger.error("Error tracking story view", { error, storyId, viewerId });
-      throw error;
+      return handleServiceError(error);
     }
   }
 
@@ -823,7 +824,7 @@ export class StoryService {
       };
     } catch (error) {
       logger.error("Error getting story viewers", { error, storyId, ownerId });
-      throw error;
+      return handleServiceError(error);
     }
   }
 
@@ -897,7 +898,7 @@ export class StoryService {
       };
     } catch (error) {
       logger.error("Error getting story stats", { error, storyId, userId });
-      throw error;
+      return handleServiceError(error);
     }
   }
 
@@ -974,7 +975,7 @@ export class StoryService {
         startDate,
         endDate,
       });
-      throw error;
+      return handleServiceError(error);
     }
   }
 
@@ -1019,7 +1020,7 @@ export class StoryService {
         storyId,
         userId,
       });
-      throw error;
+      return handleServiceError(error);
     }
   }
 
@@ -1120,7 +1121,7 @@ export class StoryService {
         longitude,
         radiusKm,
       });
-      throw error;
+      return handleServiceError(error);
     }
   }
 
@@ -1141,7 +1142,7 @@ export class StoryService {
       return { deletedCount: result.count };
     } catch (error) {
       logger.error("Error cleaning up expired stories", { error });
-      throw error;
+      return handleServiceError(error);
     }
   }
 }

@@ -2,6 +2,7 @@
 import { prisma } from "../lib/prisma";
 import { env } from "../config/env";
 import { v4 as uuidv4 } from "uuid";
+import { handleServiceError } from "../utils/error";
 
 // using shared singleton `prisma` from src/lib/prisma
 
@@ -178,8 +179,7 @@ export class SubscriptionService {
     const plan = SUBSCRIPTION_PLANS.find((p) => p.id === planId);
     if (!plan) {
       const err = new Error("Invalid subscription plan");
-      if (env.nodeEnv === "production") throw err;
-      return Promise.reject(err);
+      return handleServiceError(err);
     }
 
     // In a real app, you'd integrate with Stripe here
@@ -187,8 +187,7 @@ export class SubscriptionService {
       // Allow bypassing real payments in dev environments when explicitly configured
       if (!env.disablePayments) {
         const err = new Error("Payment token required for paid plans");
-        if (env.nodeEnv === "production") throw err;
-        return Promise.reject(err);
+        return handleServiceError(err);
       }
     }
 

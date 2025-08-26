@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SocialService = void 0;
 const prisma_1 = require("../lib/prisma");
 const logger_1 = require("../utils/logger");
+const error_1 = require("../utils/error");
 class SocialService {
     static async createComment(userId, data) {
         try {
@@ -59,7 +60,7 @@ class SocialService {
         }
         catch (error) {
             logger_1.logger.error('Error creating comment', { error, userId, data });
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async toggleCommentLike(commentId, userId) {
@@ -118,7 +119,7 @@ class SocialService {
         }
         catch (error) {
             logger_1.logger.error('Error toggling comment like', { error, commentId, userId });
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async getPostComments(postId, viewerId, limit = 20) {
@@ -173,7 +174,7 @@ class SocialService {
         }
         catch (error) {
             logger_1.logger.error('Error getting post comments', { error, postId, viewerId });
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async getPostLikesBreakdown(postId) {
@@ -203,7 +204,7 @@ class SocialService {
         }
         catch (error) {
             logger_1.logger.error('Error getting post likes breakdown', { error, postId });
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async togglePostLike(postId, userId, type = 'LIKE') {
@@ -263,7 +264,7 @@ class SocialService {
         }
         catch (error) {
             logger_1.logger.error('Error toggling post like', { error, postId, userId });
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async getPostLikes(postId, limit = 20, offset = 0) {
@@ -315,7 +316,7 @@ class SocialService {
         }
         catch (error) {
             logger_1.logger.error('Error getting post likes', { error, postId });
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async updateComment(commentId, authorId, data) {
@@ -373,7 +374,7 @@ class SocialService {
         }
         catch (error) {
             logger_1.logger.error('Error updating comment', { error, commentId, authorId });
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async deleteComment(commentId, authorId) {
@@ -388,7 +389,7 @@ class SocialService {
         }
         catch (error) {
             logger_1.logger.error('Error deleting comment', { error, commentId, authorId });
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async getCommentReplies(commentId, limit = 10, offset = 0) {
@@ -453,7 +454,7 @@ class SocialService {
         }
         catch (error) {
             logger_1.logger.error('Error getting comment replies', { error, commentId });
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
     static async getPostStats(postId) {
@@ -491,7 +492,7 @@ class SocialService {
         }
         catch (error) {
             logger_1.logger.error('Error getting post stats', { error, postId });
-            throw error;
+            return (0, error_1.handleServiceError)(error);
         }
     }
 }

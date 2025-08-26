@@ -9,7 +9,7 @@ export interface NearbyQuery {
     radius: number;
     userId?: string;
     limit?: number;
-    type?: 'users' | 'communities' | 'all';
+    type?: "users" | "communities" | "all";
 }
 export interface NearbyResult {
     users: Array<{

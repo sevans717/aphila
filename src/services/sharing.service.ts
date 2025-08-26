@@ -1,5 +1,6 @@
-import { prisma } from '../lib/prisma';
-import { logger } from '../utils/logger';
+import { prisma } from "../lib/prisma";
+import { logger } from "../utils/logger";
+import { handleServiceError } from "../utils/error";
 
 export interface CreateShareData {
   userId: string;
@@ -34,17 +35,28 @@ export interface ShareWithDetails {
 export interface ShareData {
   userId: string;
   contentId: string;
-  contentType: 'post' | 'media' | 'story' | 'profile';
+  contentType: "post" | "media" | "story" | "profile";
   platform: SharePlatform;
   destination?: ShareDestination;
   message?: string;
   recipients?: string[];
-  privacy?: 'public' | 'friends' | 'private';
+  privacy?: "public" | "friends" | "private";
   scheduledAt?: Date;
 }
 
 export interface SharePlatform {
-  name: 'twitter' | 'facebook' | 'instagram' | 'tiktok' | 'linkedin' | 'whatsapp' | 'telegram' | 'internal' | 'sms' | 'email' | 'link';
+  name:
+    | "twitter"
+    | "facebook"
+    | "instagram"
+    | "tiktok"
+    | "linkedin"
+    | "whatsapp"
+    | "telegram"
+    | "internal"
+    | "sms"
+    | "email"
+    | "link";
   displayName: string;
   apiKey?: string;
   accessToken?: string;
@@ -52,7 +64,7 @@ export interface SharePlatform {
 }
 
 export interface ShareDestination {
-  type: 'feed' | 'story' | 'message' | 'group' | 'page';
+  type: "feed" | "story" | "message" | "group" | "page";
   id?: string;
   name?: string;
   settings?: Record<string, any>;
@@ -61,7 +73,7 @@ export interface ShareDestination {
 export interface ShareResult {
   shareId: string;
   platform: string;
-  status: 'pending' | 'sent' | 'failed' | 'scheduled';
+  status: "pending" | "sent" | "failed" | "scheduled";
   externalId?: string;
   externalUrl?: string;
   error?: string;
@@ -73,9 +85,9 @@ export interface ShareResult {
 
 export interface ShareRecipient {
   id?: string;
-  type: 'user' | 'group' | 'public';
+  type: "user" | "group" | "public";
   name?: string;
-  status: 'pending' | 'sent' | 'delivered' | 'read' | 'failed';
+  status: "pending" | "sent" | "delivered" | "read" | "failed";
   sentAt?: Date;
   readAt?: Date;
   error?: string;
@@ -180,7 +192,7 @@ export interface ShareCampaign {
   message?: string;
   startDate: Date;
   endDate?: Date;
-  status: 'draft' | 'active' | 'paused' | 'completed';
+  status: "draft" | "active" | "paused" | "completed";
   analytics: {
     totalShares: number;
     totalReach: number;
@@ -206,7 +218,7 @@ export class SharingService {
       const { userId, postId, platform, comment } = data;
 
       if (!postId) {
-        throw new Error('Post ID is required for post sharing');
+        throw new Error("Post ID is required for post sharing");
       }
 
       const share = await prisma.postShare.create({
@@ -224,16 +236,21 @@ export class SharingService {
                   profile: {
                     select: {
                       displayName: true,
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       });
 
-      logger.info('Post shared', { shareId: share.id, postId, userId, platform });
+      logger.info("Post shared", {
+        shareId: share.id,
+        postId,
+        userId,
+        platform,
+      });
 
       return {
         id: share.id,
@@ -247,13 +264,13 @@ export class SharingService {
             id: share.post.author.id,
             profile: {
               displayName: share.post.author.profile!.displayName,
-            }
-          }
-        }
+            },
+          },
+        },
       };
     } catch (error) {
-      logger.error('Error sharing post', { error, data });
-      throw error;
+      logger.error("Error sharing post", { error, data });
+      return handleServiceError(error);
     }
   }
 
@@ -262,7 +279,7 @@ export class SharingService {
       const { userId, mediaId, platform, comment } = data;
 
       if (!mediaId) {
-        throw new Error('Media ID is required for media sharing');
+        throw new Error("Media ID is required for media sharing");
       }
 
       const share = await prisma.mediaShare.create({
@@ -278,27 +295,35 @@ export class SharingService {
               id: true,
               url: true,
               type: true,
-            }
-          }
-        }
+            },
+          },
+        },
       });
 
-      logger.info('Media shared', { shareId: share.id, mediaId, userId, platform });
+      logger.info("Media shared", {
+        shareId: share.id,
+        mediaId,
+        userId,
+        platform,
+      });
 
       return {
         id: share.id,
         platform: share.platform || undefined,
         comment: share.comment || undefined,
         createdAt: share.createdAt,
-        media: share.media
+        media: share.media,
       };
     } catch (error) {
-      logger.error('Error sharing media', { error, data });
-      throw error;
+      logger.error("Error sharing media", { error, data });
+      return handleServiceError(error);
     }
   }
 
-  static async getUserShares(userId: string, limit: number = 20): Promise<ShareWithDetails[]> {
+  static async getUserShares(
+    userId: string,
+    limit: number = 20
+  ): Promise<ShareWithDetails[]> {
     try {
       const [postShares, mediaShares] = await Promise.all([
         prisma.postShare.findMany({
@@ -311,15 +336,15 @@ export class SharingService {
                     profile: {
                       select: {
                         displayName: true,
-                      }
-                    }
-                  }
-                }
-              }
-            }
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
-          orderBy: { createdAt: 'desc' },
-          take: Math.ceil(limit / 2)
+          orderBy: { createdAt: "desc" },
+          take: Math.ceil(limit / 2),
         }),
         prisma.mediaShare.findMany({
           where: { userId },
@@ -329,16 +354,16 @@ export class SharingService {
                 id: true,
                 url: true,
                 type: true,
-              }
-            }
+              },
+            },
           },
-          orderBy: { createdAt: 'desc' },
-          take: Math.ceil(limit / 2)
-        })
+          orderBy: { createdAt: "desc" },
+          take: Math.ceil(limit / 2),
+        }),
       ]);
 
       const allShares: ShareWithDetails[] = [
-        ...postShares.map(share => ({
+        ...postShares.map((share) => ({
           id: share.id,
           platform: share.platform || undefined,
           comment: share.comment || undefined,
@@ -350,68 +375,74 @@ export class SharingService {
               id: share.post.author.id,
               profile: {
                 displayName: share.post.author.profile!.displayName,
-              }
-            }
-          }
+              },
+            },
+          },
         })),
-        ...mediaShares.map(share => ({
+        ...mediaShares.map((share) => ({
           id: share.id,
           platform: share.platform || undefined,
           comment: share.comment || undefined,
           createdAt: share.createdAt,
-          media: share.media
-        }))
+          media: share.media,
+        })),
       ];
 
-      return allShares.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, limit);
+      return allShares
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .slice(0, limit);
     } catch (error) {
-      logger.error('Error getting user shares', { error, userId });
-      throw error;
+      logger.error("Error getting user shares", { error, userId });
+      return handleServiceError(error);
     }
   }
 
-  static async deleteShare(shareId: string, userId: string, type: 'post' | 'media'): Promise<void> {
+  static async deleteShare(
+    shareId: string,
+    userId: string,
+    type: "post" | "media"
+  ): Promise<void> {
     try {
-      if (type === 'post') {
+      if (type === "post") {
         const share = await prisma.postShare.findUnique({
           where: { id: shareId },
-          select: { userId: true }
+          select: { userId: true },
         });
 
         if (!share) {
-          throw new Error('Share not found');
+          throw new Error("Share not found");
         }
 
         if (share.userId !== userId) {
-          throw new Error('Unauthorized to delete this share');
+          throw new Error("Unauthorized to delete this share");
         }
 
         await prisma.postShare.delete({
-          where: { id: shareId }
+          where: { id: shareId },
         });
       } else {
         const share = await prisma.mediaShare.findUnique({
           where: { id: shareId },
-          select: { userId: true }
+          select: { userId: true },
         });
 
         if (!share) {
-          throw new Error('Share not found');
+          throw new Error("Share not found");
         }
 
         if (share.userId !== userId) {
-          throw new Error('Unauthorized to delete this share');
+          throw new Error("Unauthorized to delete this share");
         }
 
         await prisma.mediaShare.delete({
-          where: { id: shareId }
+          where: { id: shareId },
         });
       }
 
-      logger.info('Share deleted', { shareId, userId, type });
+      logger.info("Share deleted", { shareId, userId, type });
     } catch (error) {
-      logger.error('Error deleting share', { error, shareId, userId, type });
-      throw error;
+      logger.error("Error deleting share", { error, shareId, userId, type });
+      return handleServiceError(error);
     }
   }
 
@@ -422,20 +453,25 @@ export class SharingService {
       } else if (data.mediaId) {
         return this.shareMedia(data);
       } else {
-        throw new Error('Either postId or mediaId must be provided');
+        throw new Error("Either postId or mediaId must be provided");
       }
     } catch (error) {
-      logger.error('Error sharing content', { error, data });
-      throw error;
+      logger.error("Error sharing content", { error, data });
+      return handleServiceError(error);
     }
   }
 
-  static async getContentShares(contentId: string, type: 'post' | 'media', limit: number = 20, offset: number = 0): Promise<{
+  static async getContentShares(
+    contentId: string,
+    type: "post" | "media",
+    limit: number = 20,
+    offset: number = 0
+  ): Promise<{
     shares: ShareWithDetails[];
     total: number;
   }> {
     try {
-      if (type === 'post') {
+      if (type === "post") {
         const [shares, total] = await Promise.all([
           prisma.postShare.findMany({
             where: { postId: contentId },
@@ -445,9 +481,9 @@ export class SharingService {
                   profile: {
                     select: {
                       displayName: true,
-                    }
-                  }
-                }
+                    },
+                  },
+                },
               },
               post: {
                 include: {
@@ -456,24 +492,24 @@ export class SharingService {
                       profile: {
                         select: {
                           displayName: true,
-                        }
-                      }
-                    }
-                  }
-                }
-              }
+                        },
+                      },
+                    },
+                  },
+                },
+              },
             },
-            orderBy: { createdAt: 'desc' },
+            orderBy: { createdAt: "desc" },
             skip: offset,
-            take: limit
+            take: limit,
           }),
           prisma.postShare.count({
-            where: { postId: contentId }
-          })
+            where: { postId: contentId },
+          }),
         ]);
 
         return {
-          shares: shares.map(share => ({
+          shares: shares.map((share) => ({
             id: share.id,
             platform: share.platform || undefined,
             comment: share.comment || undefined,
@@ -485,11 +521,11 @@ export class SharingService {
                 id: share.post.author.id,
                 profile: {
                   displayName: share.post.author.profile!.displayName,
-                }
-              }
-            }
+                },
+              },
+            },
           })),
-          total
+          total,
         };
       } else {
         const [shares, total] = await Promise.all([
@@ -501,41 +537,41 @@ export class SharingService {
                   profile: {
                     select: {
                       displayName: true,
-                    }
-                  }
-                }
+                    },
+                  },
+                },
               },
               media: {
                 select: {
                   id: true,
                   url: true,
                   type: true,
-                }
-              }
+                },
+              },
             },
-            orderBy: { createdAt: 'desc' },
+            orderBy: { createdAt: "desc" },
             skip: offset,
-            take: limit
+            take: limit,
           }),
           prisma.mediaShare.count({
-            where: { mediaId: contentId }
-          })
+            where: { mediaId: contentId },
+          }),
         ]);
 
         return {
-          shares: shares.map(share => ({
+          shares: shares.map((share) => ({
             id: share.id,
             platform: share.platform || undefined,
             comment: share.comment || undefined,
             createdAt: share.createdAt,
-            media: share.media
+            media: share.media,
           })),
-          total
+          total,
         };
       }
     } catch (error) {
-      logger.error('Error getting content shares', { error, contentId, type });
-      throw error;
+      logger.error("Error getting content shares", { error, contentId, type });
+      return handleServiceError(error);
     }
   }
 }
