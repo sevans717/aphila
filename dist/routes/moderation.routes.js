@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const zod_1 = require("zod");
 const auth_1 = require("../middleware/auth");
-const validation_1 = require("../middleware/validation");
+const validate_1 = require("../middleware/validate");
 const moderation_service_1 = require("../services/moderation.service");
 const router = (0, express_1.Router)();
 // Admin middleware (simplified - in production, use proper role checking)
@@ -43,7 +43,7 @@ const userParamsSchema = zod_1.z.object({
     userId: zod_1.z.string(),
 });
 // POST /report - Create a report
-router.post('/report', auth_1.requireAuth, (0, validation_1.validateBody)(reportSchema), async (req, res) => {
+router.post('/report', auth_1.requireAuth, (0, validate_1.validateRequest)({ body: reportSchema }), async (req, res) => {
     try {
         const reporterId = req.user.id;
         const reportData = {
@@ -65,7 +65,7 @@ router.post('/report', auth_1.requireAuth, (0, validation_1.validateBody)(report
     }
 });
 // GET /reports - Get reports (admin only)
-router.get('/reports', auth_1.requireAuth, requireAdmin, (0, validation_1.validateQuery)(reportsQuerySchema), async (req, res) => {
+router.get('/reports', auth_1.requireAuth, requireAdmin, (0, validate_1.validateRequest)({ query: reportsQuerySchema }), async (req, res) => {
     try {
         const filters = req.query;
         const result = await moderation_service_1.ModerationService.getReports(filters);
@@ -83,7 +83,7 @@ router.get('/reports', auth_1.requireAuth, requireAdmin, (0, validation_1.valida
     }
 });
 // PUT /reports/:reportId - Update report status (admin only)
-router.put('/reports/:reportId', auth_1.requireAuth, requireAdmin, (0, validation_1.validateParams)(reportParamsSchema), (0, validation_1.validateBody)(updateReportSchema), async (req, res) => {
+router.put('/reports/:reportId', auth_1.requireAuth, requireAdmin, (0, validate_1.validateRequest)({ params: reportParamsSchema, body: updateReportSchema }), async (req, res) => {
     try {
         const { reportId } = req.params;
         const { status, action, adminNotes } = req.body;
@@ -101,7 +101,7 @@ router.put('/reports/:reportId', auth_1.requireAuth, requireAdmin, (0, validatio
     }
 });
 // GET /user/:userId/history - Get user moderation history (admin only)
-router.get('/user/:userId/history', auth_1.requireAuth, requireAdmin, (0, validation_1.validateParams)(userParamsSchema), async (req, res) => {
+router.get('/user/:userId/history', auth_1.requireAuth, requireAdmin, (0, validate_1.validateRequest)({ params: userParamsSchema }), async (req, res) => {
     try {
         const { userId } = req.params;
         const history = await moderation_service_1.ModerationService.getUserModerationHistory(userId);
@@ -118,7 +118,7 @@ router.get('/user/:userId/history', auth_1.requireAuth, requireAdmin, (0, valida
     }
 });
 // GET /user/:userId/suspended - Check if user is suspended
-router.get('/user/:userId/suspended', auth_1.requireAuth, requireAdmin, (0, validation_1.validateParams)(userParamsSchema), async (req, res) => {
+router.get('/user/:userId/suspended', auth_1.requireAuth, requireAdmin, (0, validate_1.validateRequest)({ params: userParamsSchema }), async (req, res) => {
     try {
         const { userId } = req.params;
         const isSuspended = await moderation_service_1.ModerationService.isUserSuspended(userId);

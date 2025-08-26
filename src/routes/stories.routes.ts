@@ -228,24 +228,25 @@ router.post(
   auth,
   validateRequest({ params: z.object({ storyId: z.string() }) }),
   async (req, res) => {
-  try {
-    const { storyId } = req.params;
-    const userId = req.user!.userId;
+    try {
+      const { storyId } = req.params;
+      const userId = req.user!.userId;
 
-    const view = await StoryService.trackView(storyId, userId);
+      const view = await StoryService.trackView(storyId, userId);
 
-    res.json({
-      success: true,
-      data: view,
-    });
-  } catch (error) {
-    logger.error("Error tracking story view:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to track view",
-    });
+      res.json({
+        success: true,
+        data: view,
+      });
+    } catch (error) {
+      logger.error("Error tracking story view:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to track view",
+      });
+    }
   }
-});
+);
 
 router.get("/:storyId/viewers", auth, async (req, res) => {
   try {
@@ -281,32 +282,33 @@ router.post(
     body: z.object({ message: z.string().min(1) }),
   }),
   async (req, res) => {
-  try {
-    const { storyId } = req.params;
-    const { message } = req.body;
-    const userId = req.user!.userId;
+    try {
+      const { storyId } = req.params;
+      const { message } = req.body;
+      const userId = req.user!.userId;
 
-    if (!message || message.trim().length === 0) {
-      return res.status(400).json({
+      if (!message || message.trim().length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: "Reply message is required",
+        });
+      }
+
+      // This would typically be handled by messaging service
+      // For now, we'll return a success response
+      res.json({
+        success: true,
+        message: "Reply sent successfully",
+      });
+    } catch (error) {
+      logger.error("Error sending story reply:", error);
+      res.status(500).json({
         success: false,
-        message: "Reply message is required",
+        message: "Failed to send reply",
       });
     }
-
-    // This would typically be handled by messaging service
-    // For now, we'll return a success response
-    res.json({
-      success: true,
-      message: "Reply sent successfully",
-    });
-  } catch (error) {
-    logger.error("Error sending story reply:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to send reply",
-    });
   }
-});
+);
 
 // Story analytics
 router.get("/:storyId/analytics", auth, async (req, res) => {
@@ -359,32 +361,36 @@ router.post(
   auth,
   validateRequest({
     params: z.object({ storyId: z.string() }),
-    body: z.object({ highlightName: z.string().optional(), coverImage: z.string().optional() }),
+    body: z.object({
+      highlightName: z.string().optional(),
+      coverImage: z.string().optional(),
+    }),
   }),
   async (req, res) => {
-  try {
-    const { storyId } = req.params;
-    const { highlightName, coverImage } = req.body;
-    const userId = req.user!.userId;
-    const updated = await StoryService.addToHighlights(
-      storyId,
-      userId,
-      highlightName,
-      coverImage
-    );
+    try {
+      const { storyId } = req.params;
+      const { highlightName, coverImage } = req.body;
+      const userId = req.user!.userId;
+      const updated = await StoryService.addToHighlights(
+        storyId,
+        userId,
+        highlightName,
+        coverImage
+      );
 
-    res.json({
-      success: true,
-      data: updated,
-    });
-  } catch (error) {
-    logger.error("Error adding story to highlights:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to add to highlights",
-    });
+      res.json({
+        success: true,
+        data: updated,
+      });
+    } catch (error) {
+      logger.error("Error adding story to highlights:", error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to add to highlights",
+      });
+    }
   }
-});
+);
 
 // Story discovery
 router.get("/discover/trending", auth, async (req, res) => {

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth';
-import { validateBody, validateParams, validateQuery } from '../middleware/validation';
+import { validateRequest } from '../middleware/validate';
 import { ModerationService } from '../services/moderation.service';
 
 const router = Router();
@@ -52,7 +52,7 @@ const userParamsSchema = z.object({
 router.post(
   '/report',
   requireAuth,
-  validateBody(reportSchema),
+  validateRequest({ body: reportSchema }),
   async (req: any, res: any) => {
     try {
       const reporterId = req.user.id;
@@ -82,7 +82,7 @@ router.get(
   '/reports',
   requireAuth,
   requireAdmin,
-  validateQuery(reportsQuerySchema),
+  validateRequest({ query: reportsQuerySchema }),
   async (req: any, res: any) => {
     try {
       const filters = req.query;
@@ -107,8 +107,7 @@ router.put(
   '/reports/:reportId',
   requireAuth,
   requireAdmin,
-  validateParams(reportParamsSchema),
-  validateBody(updateReportSchema),
+  validateRequest({ params: reportParamsSchema, body: updateReportSchema }),
   async (req: any, res: any) => {
     try {
       const { reportId } = req.params;
@@ -134,7 +133,7 @@ router.get(
   '/user/:userId/history',
   requireAuth,
   requireAdmin,
-  validateParams(userParamsSchema),
+  validateRequest({ params: userParamsSchema }),
   async (req: any, res: any) => {
     try {
       const { userId } = req.params;
@@ -158,7 +157,7 @@ router.get(
   '/user/:userId/suspended',
   requireAuth,
   requireAdmin,
-  validateParams(userParamsSchema),
+  validateRequest({ params: userParamsSchema }),
   async (req: any, res: any) => {
     try {
       const { userId } = req.params;

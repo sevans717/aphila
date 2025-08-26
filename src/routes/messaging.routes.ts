@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth';
-import { validateBody, validateParams, validateQuery } from '../middleware/validation';
+import { validateRequest } from '../middleware/validate';
 import { MessagingService } from '../services/messaging.service';
 
 const router = Router();
@@ -34,7 +34,7 @@ const reportMessageSchema = z.object({
 router.post(
   '/send',
   requireAuth,
-  validateBody(sendMessageSchema),
+  validateRequest({ body: sendMessageSchema }),
   async (req: any, res: any) => {
     try {
       const senderId = req.user.id;
@@ -72,8 +72,7 @@ router.post(
 router.get(
   '/match/:matchId',
   requireAuth,
-  validateParams(matchParamsSchema),
-  validateQuery(messageQuerySchema),
+  validateRequest({ params: matchParamsSchema, query: messageQuerySchema }),
   async (req: any, res: any) => {
     try {
       const { matchId } = req.params;
@@ -115,7 +114,7 @@ router.get(
 router.put(
   '/match/:matchId/read',
   requireAuth,
-  validateParams(matchParamsSchema),
+  validateRequest({ params: matchParamsSchema }),
   async (req: any, res: any) => {
     try {
       const { matchId } = req.params;
@@ -162,7 +161,7 @@ router.get(
 router.delete(
   '/message/:messageId',
   requireAuth,
-  validateParams(messageParamsSchema),
+  validateRequest({ params: messageParamsSchema }),
   async (req: any, res: any) => {
     try {
       const { messageId } = req.params;
@@ -187,7 +186,7 @@ router.delete(
 router.get(
   '/match/:matchId/details',
   requireAuth,
-  validateParams(matchParamsSchema),
+  validateRequest({ params: matchParamsSchema }),
   async (req: any, res: any) => {
     try {
       const { matchId } = req.params;
@@ -234,8 +233,7 @@ router.get(
 router.post(
   '/message/:messageId/report',
   requireAuth,
-  validateParams(messageParamsSchema),
-  validateBody(reportMessageSchema),
+  validateRequest({ params: messageParamsSchema, body: reportMessageSchema }),
   async (req: any, res: any) => {
     try {
       const { messageId } = req.params;

@@ -12,11 +12,11 @@ const subscribeSchema = zod_1.z.object({
     paymentToken: zod_1.z.string().optional(),
 });
 // GET /plans - Get all subscription plans
-router.get('/plans', async (req, res) => {
+router.get("/plans", async (req, res) => {
     try {
         const plans = subscription_service_1.SubscriptionService.getPlans();
         // If client requests flat shape (?flat=1), return array directly for compatibility with some clients/tests
-        if (req.query.flat === '1' || req.query.flat === 'true') {
+        if (req.query.flat === "1" || req.query.flat === "true") {
             return res.json(plans);
         }
         res.json({ success: true, data: plans });
@@ -29,7 +29,7 @@ router.get('/plans', async (req, res) => {
     }
 });
 // GET /current - Get user's current subscription
-router.get('/current', auth_1.requireAuth, async (req, res) => {
+router.get("/current", auth_1.requireAuth, async (req, res) => {
     try {
         const userId = req.user.id;
         const subscription = await subscription_service_1.SubscriptionService.getUserSubscription(userId);
@@ -46,7 +46,7 @@ router.get('/current', auth_1.requireAuth, async (req, res) => {
     }
 });
 // POST /subscribe - Subscribe to a plan
-router.post('/subscribe', auth_1.requireAuth, (0, validate_1.validateRequest)({ body: subscribeSchema }), async (req, res) => {
+router.post("/subscribe", auth_1.requireAuth, (0, validate_1.validateRequest)({ body: subscribeSchema }), async (req, res) => {
     try {
         const userId = req.user.id;
         const { planId, paymentToken } = req.body;
@@ -64,7 +64,7 @@ router.post('/subscribe', auth_1.requireAuth, (0, validate_1.validateRequest)({ 
     }
 });
 // POST /cancel - Cancel subscription
-router.post('/cancel', auth_1.requireAuth, async (req, res) => {
+router.post("/cancel", auth_1.requireAuth, async (req, res) => {
     try {
         const userId = req.user.id;
         const result = await subscription_service_1.SubscriptionService.cancelSubscription(userId);
@@ -81,7 +81,7 @@ router.post('/cancel', auth_1.requireAuth, async (req, res) => {
     }
 });
 // GET /usage - Get subscription usage and limits
-router.get('/usage', auth_1.requireAuth, async (req, res) => {
+router.get("/usage", auth_1.requireAuth, async (req, res) => {
     try {
         const userId = req.user.id;
         const usage = await subscription_service_1.SubscriptionService.getUsage(userId);
@@ -98,14 +98,14 @@ router.get('/usage', auth_1.requireAuth, async (req, res) => {
     }
 });
 // POST /boost - Use a boost
-router.post('/boost', auth_1.requireAuth, async (req, res) => {
+router.post("/boost", auth_1.requireAuth, async (req, res) => {
     try {
         const userId = req.user.id;
         const boost = await subscription_service_1.SubscriptionService.useBoost(userId);
         res.status(201).json({
             success: true,
             data: boost,
-            message: 'Boost activated! Your profile will be shown to more people for the next 30 minutes.',
+            message: "Boost activated! Your profile will be shown to more people for the next 30 minutes.",
         });
     }
     catch (error) {

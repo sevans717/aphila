@@ -287,7 +287,10 @@ router.get("/analytics/overview", auth_1.auth, async (req, res) => {
 // Story highlights (saved stories)
 router.post("/:storyId/highlight", auth_1.auth, (0, validate_1.validateRequest)({
     params: zod_1.z.object({ storyId: zod_1.z.string() }),
-    body: zod_1.z.object({ highlightName: zod_1.z.string().optional(), coverImage: zod_1.z.string().optional() }),
+    body: zod_1.z.object({
+        highlightName: zod_1.z.string().optional(),
+        coverImage: zod_1.z.string().optional(),
+    }),
 }), async (req, res) => {
     try {
         const { storyId } = req.params;
