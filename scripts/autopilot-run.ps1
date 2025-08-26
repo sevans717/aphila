@@ -2,9 +2,12 @@ param(
   [switch]$once
 )
 
-$root = Split-Path -Parent $MyInvocation.MyCommand.Definition
-Write-Host "Starting autopilot runner from $root"
+# Determine repository root (assume script sits in repo/scripts)
+$scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$root = Resolve-Path (Join-Path $scriptDir '..')
+Write-Host "Starting autopilot runner from $scriptDir; using repo root $root"
 
+# Look for config in repo root
 $configPath = Join-Path $root '.autopilot.json'
 if (-Not (Test-Path $configPath)) { Write-Host "No autopilot config found at $configPath"; exit 1 }
 $cfg = Get-Content $configPath | ConvertFrom-Json
@@ -21,8 +24,8 @@ while ($true) {
 
   if ($cfg.autoCommit) {
     git add -A
-    git commit -m "chore(autopilot): automated changes" || Write-Host "No changes to commit"
-    git push origin main
+    $commit = git commit -m "chore(autopilot): automated changes" 2>&1
+    if ($LASTEXITCODE -ne 0) { Write-Host "No changes to commit" } else { git push origin main }
   }
 
   if ($once) { break }

@@ -1,6 +1,4 @@
-
-Autopilot Runner
-================
+# Autopilot Runner
 
 Purpose:
 

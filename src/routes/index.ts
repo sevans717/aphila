@@ -16,6 +16,7 @@ import sharingRoutes from './sharing.routes';
 import socialRoutes from './social.routes';
 import storiesRoutes from './stories.routes';
 import subscriptionRoutes from './subscription.routes';
+import userRoutes from './user.routes';
 
 const router = Router();
 
@@ -28,6 +29,7 @@ router.use('/communities', communitiesRoutes);
 router.use('/discovery', discoveryRoutes);
 router.use('/messaging', messagingRoutes);
 router.use('/subscription', subscriptionRoutes);
+router.use('/user', userRoutes);
 router.use('/moderation', moderationRoutes);
 router.use('/mobile', mobileRoutes);
 router.use('/posts', postsRoutes);

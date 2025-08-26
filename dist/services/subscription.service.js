@@ -76,8 +76,14 @@ class SubscriptionService {
             where: { id: userId },
             include: { subscription: true },
         });
+        // If user is not found, return the default basic plan (graceful fallback)
         if (!user) {
-            throw new Error("User not found");
+            return {
+                type: "basic",
+                endDate: null,
+                isActive: false,
+                features: this.getFeatures("basic"),
+            };
         }
         const subscription = user.subscription;
         const planId = this.mapSubscriptionEnumToPlanId(subscription?.type);
