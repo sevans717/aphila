@@ -24,8 +24,8 @@ services:
       db:
         condition: service_healthy
     environment:
-      # Force the runtime DATABASE_URL to point to the Compose `db` service so
-      # the API inside the container can reach Postgres at hostname `db`.
+      # For local dev without PgBouncer we keep the DB host as `db`.
+      # In production we recommend pointing `DATABASE_URL` at PgBouncer (6432).
       DATABASE_URL: "postgresql://postgres:postgres@db:5432/sav3"
       JWT_SECRET: ${JWT_SECRET:-change_me}
       PORT: ${PORT:-4000}

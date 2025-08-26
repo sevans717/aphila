@@ -1,34 +1,34 @@
 import {
-    BoostStatus,
-    BoostType,
-    CategoryType,
-    CommunityVisibility,
-    FriendshipStatus,
-    Gender,
-    MatchStatus,
-    MediaType,
-    Orientation,
-    PrismaClient
-} from '@prisma/client';
-import bcrypt from 'bcrypt';
+  BoostStatus,
+  BoostType,
+  CategoryType,
+  CommunityVisibility,
+  FriendshipStatus,
+  Gender,
+  MatchStatus,
+  MediaType,
+  Orientation,
+} from "@prisma/client";
+import { prisma } from "../src/lib/prisma";
+import bcrypt from "bcrypt";
 
-const prisma = new PrismaClient();
+// Using shared singleton `prisma` from src/lib/prisma
 
 async function main() {
-  console.log('🌱 Seeding database...');
+  console.log("🌱 Seeding database...");
 
   // Create interests
   const interests = [
-    { name: 'Photography', description: 'Taking and editing photos' },
-    { name: 'Hiking', description: 'Outdoor hiking and trekking' },
-    { name: 'Cooking', description: 'Cooking and baking' },
-    { name: 'Music', description: 'Playing and listening to music' },
-    { name: 'Travel', description: 'Exploring new places' },
-    { name: 'Fitness', description: 'Working out and staying fit' },
-    { name: 'Reading', description: 'Reading books and articles' },
-    { name: 'Gaming', description: 'Video games and board games' },
-    { name: 'Art', description: 'Drawing, painting, and visual arts' },
-    { name: 'Coffee', description: 'Coffee appreciation and brewing' },
+    { name: "Photography", description: "Taking and editing photos" },
+    { name: "Hiking", description: "Outdoor hiking and trekking" },
+    { name: "Cooking", description: "Cooking and baking" },
+    { name: "Music", description: "Playing and listening to music" },
+    { name: "Travel", description: "Exploring new places" },
+    { name: "Fitness", description: "Working out and staying fit" },
+    { name: "Reading", description: "Reading books and articles" },
+    { name: "Gaming", description: "Video games and board games" },
+    { name: "Art", description: "Drawing, painting, and visual arts" },
+    { name: "Coffee", description: "Coffee appreciation and brewing" },
   ];
 
   for (const interest of interests) {
@@ -40,63 +40,83 @@ async function main() {
   }
 
   // Create users
-  const hashedPassword = await bcrypt.hash('password123', 10);
-  
+  const hashedPassword = await bcrypt.hash("password123", 10);
+
   const users = [
     {
-      email: 'alice@example.com',
+      email: "alice@example.com",
       password: hashedPassword,
       profile: {
-        displayName: 'Alice',
-        bio: 'Love hiking and photography! Looking for someone who enjoys the outdoors.',
-        birthdate: new Date('1995-03-15'),
+        displayName: "Alice",
+        bio: "Love hiking and photography! Looking for someone who enjoys the outdoors.",
+        birthdate: new Date("1995-03-15"),
         gender: Gender.FEMALE,
         orientation: Orientation.STRAIGHT,
-        location: 'San Francisco, CA',
+        location: "San Francisco, CA",
         latitude: 37.7749,
         longitude: -122.4194,
       },
-      interests: ['Photography', 'Hiking', 'Travel'],
+      interests: ["Photography", "Hiking", "Travel"],
       photos: [
-        { url: 'https://images.unsplash.com/photo-1494790108755-2616b612b890', isPrimary: true, order: 0 },
-        { url: 'https://images.unsplash.com/photo-1517841905240-472988babdf9', isPrimary: false, order: 1 },
+        {
+          url: "https://images.unsplash.com/photo-1494790108755-2616b612b890",
+          isPrimary: true,
+          order: 0,
+        },
+        {
+          url: "https://images.unsplash.com/photo-1517841905240-472988babdf9",
+          isPrimary: false,
+          order: 1,
+        },
       ],
     },
     {
-      email: 'bob@example.com',
+      email: "bob@example.com",
       password: hashedPassword,
       profile: {
-        displayName: 'Bob',
-        bio: 'Software engineer who loves cooking and music. Always up for trying new restaurants!',
-        birthdate: new Date('1992-07-22'),
+        displayName: "Bob",
+        bio: "Software engineer who loves cooking and music. Always up for trying new restaurants!",
+        birthdate: new Date("1992-07-22"),
         gender: Gender.MALE,
         orientation: Orientation.STRAIGHT,
-        location: 'San Francisco, CA',
+        location: "San Francisco, CA",
         latitude: 37.7849,
         longitude: -122.4094,
       },
-      interests: ['Cooking', 'Music', 'Coffee'],
+      interests: ["Cooking", "Music", "Coffee"],
       photos: [
-        { url: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d', isPrimary: true, order: 0 },
-        { url: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e', isPrimary: false, order: 1 },
+        {
+          url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d",
+          isPrimary: true,
+          order: 0,
+        },
+        {
+          url: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e",
+          isPrimary: false,
+          order: 1,
+        },
       ],
     },
     {
-      email: 'charlie@example.com',
+      email: "charlie@example.com",
       password: hashedPassword,
       profile: {
-        displayName: 'Charlie',
-        bio: 'Fitness enthusiast and book lover. Let\'s grab a coffee and talk about life!',
-        birthdate: new Date('1990-11-08'),
+        displayName: "Charlie",
+        bio: "Fitness enthusiast and book lover. Let's grab a coffee and talk about life!",
+        birthdate: new Date("1990-11-08"),
         gender: Gender.MALE,
         orientation: Orientation.BISEXUAL,
-        location: 'Oakland, CA',
+        location: "Oakland, CA",
         latitude: 37.8044,
         longitude: -122.2712,
       },
-      interests: ['Fitness', 'Reading', 'Coffee'],
+      interests: ["Fitness", "Reading", "Coffee"],
       photos: [
-        { url: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e', isPrimary: true, order: 0 },
+        {
+          url: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e",
+          isPrimary: true,
+          order: 0,
+        },
       ],
     },
   ];
@@ -104,7 +124,7 @@ async function main() {
   const createdUsers = [];
   for (const userData of users) {
     const { profile, interests: userInterests, photos, ...user } = userData;
-    
+
     const createdUser = await prisma.user.create({
       data: {
         ...user,
@@ -121,12 +141,14 @@ async function main() {
     const interestRecords = await prisma.interest.findMany({
       where: { name: { in: userInterests } },
     });
-    
+
     await prisma.user.update({
       where: { id: createdUser.id },
       data: {
         interests: {
-          connect: interestRecords.map((interest: { id: string }) => ({ id: interest.id })),
+          connect: interestRecords.map((interest: { id: string }) => ({
+            id: interest.id,
+          })),
         },
       },
     });
@@ -175,15 +197,16 @@ async function main() {
         matchId: match.id,
         senderId: createdUsers[0].id,
         receiverId: createdUsers[1].id,
-        content: 'Hey! Nice to match with you! 😊',
-        messageType: 'text',
+        content: "Hey! Nice to match with you! 😊",
+        messageType: "text",
       },
       {
         matchId: match.id,
         senderId: createdUsers[1].id,
         receiverId: createdUsers[0].id,
-        content: 'Hi Alice! Love your hiking photos! Maybe we can go for a hike sometime?',
-        messageType: 'text',
+        content:
+          "Hi Alice! Love your hiking photos! Maybe we can go for a hike sometime?",
+        messageType: "text",
         isRead: true,
         readAt: new Date(),
       },
@@ -191,30 +214,91 @@ async function main() {
         matchId: match.id,
         senderId: createdUsers[0].id,
         receiverId: createdUsers[1].id,
-        content: 'That sounds amazing! I know some great trails around the bay area.',
-        messageType: 'text',
+        content:
+          "That sounds amazing! I know some great trails around the bay area.",
+        messageType: "text",
         isRead: true,
         readAt: new Date(),
       },
     ],
   });
 
-  console.log('✅ Database seeded successfully!');
+  console.log("✅ Database seeded successfully!");
 
   // Create categories
   const categories = [
-    { slug: 'art', name: 'Art', type: CategoryType.ART, description: 'Creative expression and visual arts' },
-    { slug: 'fashion', name: 'Fashion', type: CategoryType.FASHION, description: 'Style, fashion, and trends' },
-    { slug: 'food', name: 'Food', type: CategoryType.FOOD, description: 'Culinary experiences and dining' },
-    { slug: 'sports', name: 'Sports', type: CategoryType.SPORTS, description: 'Athletic activities and fitness' },
-    { slug: 'music', name: 'Music', type: CategoryType.MUSIC, description: 'Musical interests and concerts' },
-    { slug: 'gaming', name: 'Gaming', type: CategoryType.GAMING, description: 'Video games and gaming culture' },
-    { slug: 'tech', name: 'Technology', type: CategoryType.TECH, description: 'Technology and innovation' },
-    { slug: 'travel', name: 'Travel', type: CategoryType.TRAVEL, description: 'Travel and exploration' },
-    { slug: 'casual', name: 'Casual Dating', type: CategoryType.CASUAL, description: 'Casual connections' },
-    { slug: 'serious', name: 'Serious Dating', type: CategoryType.SERIOUS, description: 'Long-term relationships' },
-    { slug: 'friends', name: 'Friends', type: CategoryType.FRIENDS, description: 'Friendship and social connections' },
-    { slug: 'fun', name: 'Fun & Entertainment', type: CategoryType.FUN, description: 'Entertainment and fun activities' },
+    {
+      slug: "art",
+      name: "Art",
+      type: CategoryType.ART,
+      description: "Creative expression and visual arts",
+    },
+    {
+      slug: "fashion",
+      name: "Fashion",
+      type: CategoryType.FASHION,
+      description: "Style, fashion, and trends",
+    },
+    {
+      slug: "food",
+      name: "Food",
+      type: CategoryType.FOOD,
+      description: "Culinary experiences and dining",
+    },
+    {
+      slug: "sports",
+      name: "Sports",
+      type: CategoryType.SPORTS,
+      description: "Athletic activities and fitness",
+    },
+    {
+      slug: "music",
+      name: "Music",
+      type: CategoryType.MUSIC,
+      description: "Musical interests and concerts",
+    },
+    {
+      slug: "gaming",
+      name: "Gaming",
+      type: CategoryType.GAMING,
+      description: "Video games and gaming culture",
+    },
+    {
+      slug: "tech",
+      name: "Technology",
+      type: CategoryType.TECH,
+      description: "Technology and innovation",
+    },
+    {
+      slug: "travel",
+      name: "Travel",
+      type: CategoryType.TRAVEL,
+      description: "Travel and exploration",
+    },
+    {
+      slug: "casual",
+      name: "Casual Dating",
+      type: CategoryType.CASUAL,
+      description: "Casual connections",
+    },
+    {
+      slug: "serious",
+      name: "Serious Dating",
+      type: CategoryType.SERIOUS,
+      description: "Long-term relationships",
+    },
+    {
+      slug: "friends",
+      name: "Friends",
+      type: CategoryType.FRIENDS,
+      description: "Friendship and social connections",
+    },
+    {
+      slug: "fun",
+      name: "Fun & Entertainment",
+      type: CategoryType.FUN,
+      description: "Entertainment and fun activities",
+    },
   ];
 
   const createdCategories = [];
@@ -231,42 +315,43 @@ async function main() {
   await prisma.categoryMembership.create({
     data: {
       userId: createdUsers[0].id, // Alice joins Art
-      categoryId: createdCategories.find(c => c.slug === 'art')!.id,
+      categoryId: createdCategories.find((c) => c.slug === "art")!.id,
     },
   });
 
   await prisma.categoryMembership.create({
     data: {
       userId: createdUsers[1].id, // Bob joins Tech
-      categoryId: createdCategories.find(c => c.slug === 'tech')!.id,
+      categoryId: createdCategories.find((c) => c.slug === "tech")!.id,
     },
   });
 
   await prisma.categoryMembership.create({
     data: {
       userId: createdUsers[2].id, // Charlie joins Sports
-      categoryId: createdCategories.find(c => c.slug === 'sports')!.id,
+      categoryId: createdCategories.find((c) => c.slug === "sports")!.id,
     },
   });
 
   // Create communities
   const artCommunity = await prisma.community.create({
     data: {
-      name: 'Bay Area Photographers',
-      description: 'A community for photographers in the San Francisco Bay Area',
+      name: "Bay Area Photographers",
+      description:
+        "A community for photographers in the San Francisco Bay Area",
       visibility: CommunityVisibility.PUBLIC,
       ownerId: createdUsers[0].id, // Alice owns it
-      categoryId: createdCategories.find(c => c.slug === 'art')!.id,
+      categoryId: createdCategories.find((c) => c.slug === "art")!.id,
     },
   });
 
   const techCommunity = await prisma.community.create({
     data: {
-      name: 'Tech Meetup SF',
-      description: 'Weekly tech discussions and networking in San Francisco',
+      name: "Tech Meetup SF",
+      description: "Weekly tech discussions and networking in San Francisco",
       visibility: CommunityVisibility.PUBLIC,
       ownerId: createdUsers[1].id, // Bob owns it
-      categoryId: createdCategories.find(c => c.slug === 'tech')!.id,
+      categoryId: createdCategories.find((c) => c.slug === "tech")!.id,
     },
   });
 
@@ -286,17 +371,19 @@ async function main() {
       {
         communityId: artCommunity.id,
         senderId: createdUsers[0].id,
-        content: 'Welcome to Bay Area Photographers! Share your latest shots here.',
+        content:
+          "Welcome to Bay Area Photographers! Share your latest shots here.",
       },
       {
         communityId: artCommunity.id,
         senderId: createdUsers[1].id,
-        content: 'Excited to be here! Any recommendations for good sunset spots?',
+        content:
+          "Excited to be here! Any recommendations for good sunset spots?",
       },
       {
         communityId: techCommunity.id,
         senderId: createdUsers[1].id,
-        content: 'Our next meetup is this Friday. Topic: AI and Dating Apps 😄',
+        content: "Our next meetup is this Friday. Topic: AI and Dating Apps 😄",
       },
     ],
   });
@@ -344,7 +431,7 @@ async function main() {
     data: [
       {
         userId: createdUsers[0].id,
-        url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4',
+        url: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4",
         type: MediaType.IMAGE,
         isFavorite: true,
         usedInProfile: true,
@@ -353,7 +440,7 @@ async function main() {
       },
       {
         userId: createdUsers[1].id,
-        url: 'https://images.unsplash.com/photo-1518709268805-4e9042af2176',
+        url: "https://images.unsplash.com/photo-1518709268805-4e9042af2176",
         type: MediaType.IMAGE,
         isFavorite: false,
         usedInProfile: false,
@@ -391,14 +478,14 @@ async function main() {
         showAge: true,
         showDistance: true,
         searchable: true,
-        allowMessagesFrom: 'matches',
+        allowMessagesFrom: "matches",
       },
       {
         userId: createdUsers[1].id,
         showAge: false,
         showDistance: true,
         searchable: true,
-        allowMessagesFrom: 'friends',
+        allowMessagesFrom: "friends",
       },
     ],
   });
@@ -408,7 +495,7 @@ async function main() {
     data: [
       {
         userId: createdUsers[0].id,
-        name: 'Default Filter',
+        name: "Default Filter",
         minAge: 25,
         maxAge: 35,
         maxDistance: 50,
@@ -416,7 +503,7 @@ async function main() {
       },
       {
         userId: createdUsers[1].id,
-        name: 'Nearby Only',
+        name: "Nearby Only",
         minAge: 22,
         maxAge: 40,
         maxDistance: 25,
@@ -425,8 +512,8 @@ async function main() {
     ],
   });
 
-  console.log('✅ Extended database seeded successfully!');
-  
+  console.log("✅ Extended database seeded successfully!");
+
   // Print summary
   const userCount = await prisma.user.count();
   const profileCount = await prisma.profile.count();
@@ -467,7 +554,7 @@ Social Features:
 
 main()
   .catch((e) => {
-    console.error('❌ Error seeding database:', e);
+    console.error("❌ Error seeding database:", e);
     process.exit(1);
   })
   .finally(async () => {

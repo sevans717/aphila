@@ -1,0 +1,96 @@
+version: "3.8"
+
+services:
+  traefik:
+    image: traefik:v2.13
+    restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.le.acme.email=ops@aphila.io
+      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
+      - --certificatesresolvers.le.acme.tlschallenge=true
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/acme:/letsencrypt
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - aphila-network
+
+  pgbouncer:
+    image: edoburu/pgbouncer:1.16.0
+    restart: unless-stopped
+    environment:
+      # PgBouncer needs to know the upstream Postgres; keep this pointing at the
+      # `db` service. Runtime clients should connect to PgBouncer on port 6432.
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/sav3
+    volumes:
+      - ./pgbouncer:/etc/pgbouncer
+    ports:
+      - "6432:6432"
+    depends_on:
+      - db
+    networks:
+      - aphila-network
+
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-sav3}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./postgres/backups:/backups
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - aphila-network
+
+  api:
+    build: .
+    environment:
+      # In production, point DATABASE_URL at PgBouncer (service name `pgbouncer`, port 6432).
+      # Example override in environment or .env: DATABASE_URL="postgresql://postgres:postgres@pgbouncer:6432/sav3"
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@db:5432/sav3}
+      JWT_SECRET: ${JWT_SECRET}
+      NODE_ENV: production
+      PORT: ${PORT:-4000}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.aphila.rule=Host(`aphila.io`, `www.aphila.io`)"
+      - "traefik.http.routers.aphila.entrypoints=websecure"
+      - "traefik.http.routers.aphila.tls.certresolver=le"
+    depends_on:
+      - db
+      - pgbouncer
+    networks:
+      - aphila-network
+
+  backup:
+    image: postgres:16
+    restart: "no"
+    entrypoint: ["/bin/sh", "-c"]
+    command: "pg_dump -h db -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-sav3} -F c -Z 6 -f /backups/backup-$(date +%F_%T).dump"
+    environment:
+      PGPASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - ./postgres/backups:/backups
+    networks:
+      - aphila-network
+
+volumes:
+  db-data:
+
+networks:
+  aphila-network:
+    driver: bridge
