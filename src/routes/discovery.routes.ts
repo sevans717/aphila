@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth';
-import { validateBody, validateQuery } from '../middleware/validation';
+import { validateRequest } from '../middleware/validate';
 import { CommunityService } from '../services/community.service';
 import { DiscoveryService } from '../services/discovery.service';
 
@@ -29,7 +29,7 @@ const swipeSchema = z.object({
 router.get(
   '/discover',
   requireAuth,
-  validateQuery(discoverQuerySchema),
+  validateRequest({ query: discoverQuerySchema }),
   async (req: any, res: any) => {
     try {
       const userId = req.user.id;
@@ -85,7 +85,7 @@ router.get(
 router.post(
   '/swipe',
   requireAuth,
-  validateBody(swipeSchema),
+  validateRequest({ body: swipeSchema }),
   async (req: any, res: any) => {
     try {
       const swiperId = req.user.id;

@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { requireAuth } from '../middleware/auth';
-import { validateBody, validateParams } from '../middleware/validation';
+import { validateRequest } from '../middleware/validate';
 import { MediaService } from '../services/media.service';
 import { PushNotificationService } from '../services/push-notification.service';
 
@@ -40,7 +40,7 @@ const uploadMetadataSchema = z.object({
 router.post(
   '/device/register',
   requireAuth,
-  validateBody(deviceRegistrationSchema),
+  validateRequest({ body: deviceRegistrationSchema }),
   async (req: any, res: any) => {
     try {
       const userId = req.user.id;
@@ -71,7 +71,7 @@ router.post(
 router.delete(
   '/device/unregister',
   requireAuth,
-  validateBody(z.object({ token: z.string() })),
+  validateRequest({ body: z.object({ token: z.string() }) }),
   async (req: any, res: any) => {
     try {
       const userId = req.user.id;
@@ -118,7 +118,7 @@ router.get(
 router.put(
   '/notifications/preferences',
   requireAuth,
-  validateBody(notificationPreferencesSchema),
+  validateRequest({ body: notificationPreferencesSchema }),
   async (req: any, res: any) => {
     try {
       const userId = req.user.id;
@@ -143,6 +143,7 @@ router.put(
 router.post(
   '/media/upload',
   requireAuth,
+  validateRequest({ body: uploadMetadataSchema }),
   async (req: any, res: any) => {
     try {
       // In a real app, you'd use multer middleware for file uploads
@@ -206,8 +207,7 @@ router.get(
 router.put(
   '/media/:mediaId',
   requireAuth,
-  validateParams(mediaParamsSchema),
-  validateBody(uploadMetadataSchema),
+  validateRequest({ params: mediaParamsSchema, body: uploadMetadataSchema }),
   async (req: any, res: any) => {
     try {
       const userId = req.user.id;
@@ -234,7 +234,7 @@ router.put(
 router.delete(
   '/media/:mediaId',
   requireAuth,
-  validateParams(mediaParamsSchema),
+  validateRequest({ params: mediaParamsSchema }),
   async (req: any, res: any) => {
     try {
       const userId = req.user.id;
@@ -259,7 +259,7 @@ router.delete(
 router.get(
   '/media/:mediaId',
   requireAuth,
-  validateParams(mediaParamsSchema),
+  validateRequest({ params: mediaParamsSchema }),
   async (req: any, res: any) => {
     try {
       const { mediaId } = req.params;
@@ -334,7 +334,7 @@ router.get('/app/config', async (req: any, res: any) => {
 router.post(
   '/app/feedback',
   requireAuth,
-  validateBody(z.object({
+  validateRequest({ body: z.object({
     type: z.enum(['bug', 'feature', 'general']),
     message: z.string().min(1),
     rating: z.number().min(1).max(5).optional(),
@@ -343,7 +343,7 @@ router.post(
       version: z.string(),
       model: z.string().optional(),
     }).optional(),
-  })),
+  }) }),
   async (req: any, res: any) => {
     try {
       const userId = req.user.id;

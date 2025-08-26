@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const zod_1 = require("zod");
 const auth_1 = require("../middleware/auth");
-const validation_1 = require("../middleware/validation");
+const validate_1 = require("../middleware/validate");
 const community_service_1 = require("../services/community.service");
 const discovery_service_1 = require("../services/discovery.service");
 const router = (0, express_1.Router)();
@@ -24,7 +24,7 @@ const swipeSchema = zod_1.z.object({
     isSuper: zod_1.z.boolean().optional().default(false),
 });
 // GET /discover - Get users for discovery
-router.get('/discover', auth_1.requireAuth, (0, validation_1.validateQuery)(discoverQuerySchema), async (req, res) => {
+router.get('/discover', auth_1.requireAuth, (0, validate_1.validateRequest)({ query: discoverQuerySchema }), async (req, res) => {
     try {
         const userId = req.user.id;
         const filters = {
@@ -68,7 +68,7 @@ router.get('/discover', auth_1.requireAuth, (0, validation_1.validateQuery)(disc
     }
 });
 // POST /swipe - Handle swipe actions
-router.post('/swipe', auth_1.requireAuth, (0, validation_1.validateBody)(swipeSchema), async (req, res) => {
+router.post('/swipe', auth_1.requireAuth, (0, validate_1.validateRequest)({ body: swipeSchema }), async (req, res) => {
     try {
         const swiperId = req.user.id;
         const { swipedId, isLike, isSuper } = req.body;

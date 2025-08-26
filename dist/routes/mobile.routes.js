@@ -3,7 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const zod_1 = require("zod");
 const auth_1 = require("../middleware/auth");
-const validation_1 = require("../middleware/validation");
+const validate_1 = require("../middleware/validate");
 const media_service_1 = require("../services/media.service");
 const push_notification_service_1 = require("../services/push-notification.service");
 const router = (0, express_1.Router)();
@@ -33,7 +33,7 @@ const uploadMetadataSchema = zod_1.z.object({
     isPublic: zod_1.z.boolean().optional(),
 });
 // POST /device/register - Register device for push notifications
-router.post('/device/register', auth_1.requireAuth, (0, validation_1.validateBody)(deviceRegistrationSchema), async (req, res) => {
+router.post('/device/register', auth_1.requireAuth, (0, validate_1.validateRequest)({ body: deviceRegistrationSchema }), async (req, res) => {
     try {
         const userId = req.user.id;
         const { token, platform, deviceInfo } = req.body;
@@ -57,7 +57,7 @@ router.post('/device/register', auth_1.requireAuth, (0, validation_1.validateBod
     }
 });
 // DELETE /device/unregister - Unregister device
-router.delete('/device/unregister', auth_1.requireAuth, (0, validation_1.validateBody)(zod_1.z.object({ token: zod_1.z.string() })), async (req, res) => {
+router.delete('/device/unregister', auth_1.requireAuth, (0, validate_1.validateRequest)({ body: zod_1.z.object({ token: zod_1.z.string() }) }), async (req, res) => {
     try {
         const userId = req.user.id;
         const { token } = req.body;
@@ -92,7 +92,7 @@ router.get('/notifications/preferences', auth_1.requireAuth, async (req, res) =>
     }
 });
 // PUT /notifications/preferences - Update notification preferences
-router.put('/notifications/preferences', auth_1.requireAuth, (0, validation_1.validateBody)(notificationPreferencesSchema), async (req, res) => {
+router.put('/notifications/preferences', auth_1.requireAuth, (0, validate_1.validateRequest)({ body: notificationPreferencesSchema }), async (req, res) => {
     try {
         const userId = req.user.id;
         const preferences = req.body;
@@ -110,7 +110,7 @@ router.put('/notifications/preferences', auth_1.requireAuth, (0, validation_1.va
     }
 });
 // POST /media/upload - Upload media file (simplified for example)
-router.post('/media/upload', auth_1.requireAuth, async (req, res) => {
+router.post('/media/upload', auth_1.requireAuth, (0, validate_1.validateRequest)({ body: uploadMetadataSchema }), async (req, res) => {
     try {
         // In a real app, you'd use multer middleware for file uploads
         // This is a simplified example
@@ -161,7 +161,7 @@ router.get('/media', auth_1.requireAuth, async (req, res) => {
     }
 });
 // PUT /media/:mediaId - Update media metadata
-router.put('/media/:mediaId', auth_1.requireAuth, (0, validation_1.validateParams)(mediaParamsSchema), (0, validation_1.validateBody)(uploadMetadataSchema), async (req, res) => {
+router.put('/media/:mediaId', auth_1.requireAuth, (0, validate_1.validateRequest)({ params: mediaParamsSchema, body: uploadMetadataSchema }), async (req, res) => {
     try {
         const userId = req.user.id;
         const { mediaId } = req.params;
@@ -181,7 +181,7 @@ router.put('/media/:mediaId', auth_1.requireAuth, (0, validation_1.validateParam
     }
 });
 // DELETE /media/:mediaId - Delete media
-router.delete('/media/:mediaId', auth_1.requireAuth, (0, validation_1.validateParams)(mediaParamsSchema), async (req, res) => {
+router.delete('/media/:mediaId', auth_1.requireAuth, (0, validate_1.validateRequest)({ params: mediaParamsSchema }), async (req, res) => {
     try {
         const userId = req.user.id;
         const { mediaId } = req.params;
@@ -199,7 +199,7 @@ router.delete('/media/:mediaId', auth_1.requireAuth, (0, validation_1.validatePa
     }
 });
 // GET /media/:mediaId - Get media details
-router.get('/media/:mediaId', auth_1.requireAuth, (0, validation_1.validateParams)(mediaParamsSchema), async (req, res) => {
+router.get('/media/:mediaId', auth_1.requireAuth, (0, validate_1.validateRequest)({ params: mediaParamsSchema }), async (req, res) => {
     try {
         const { mediaId } = req.params;
         const media = await media_service_1.MediaService.getMediaById(mediaId);
@@ -266,16 +266,16 @@ router.get('/app/config', async (req, res) => {
     }
 });
 // POST /app/feedback - Submit app feedback
-router.post('/app/feedback', auth_1.requireAuth, (0, validation_1.validateBody)(zod_1.z.object({
-    type: zod_1.z.enum(['bug', 'feature', 'general']),
-    message: zod_1.z.string().min(1),
-    rating: zod_1.z.number().min(1).max(5).optional(),
-    deviceInfo: zod_1.z.object({
-        platform: zod_1.z.string(),
-        version: zod_1.z.string(),
-        model: zod_1.z.string().optional(),
-    }).optional(),
-})), async (req, res) => {
+router.post('/app/feedback', auth_1.requireAuth, (0, validate_1.validateRequest)({ body: zod_1.z.object({
+        type: zod_1.z.enum(['bug', 'feature', 'general']),
+        message: zod_1.z.string().min(1),
+        rating: zod_1.z.number().min(1).max(5).optional(),
+        deviceInfo: zod_1.z.object({
+            platform: zod_1.z.string(),
+            version: zod_1.z.string(),
+            model: zod_1.z.string().optional(),
+        }).optional(),
+    }) }), async (req, res) => {
     try {
         const userId = req.user.id;
         const { type, message, rating, deviceInfo } = req.body;
