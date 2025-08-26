@@ -3,10 +3,7 @@
     "service": "MediaService",
     "methods": {
       "uploadProfilePhoto": { "status": "implemented" },
-      "uploadFile": {
-        "status": "implemented",
-        "notes": "now persists to media_assets"
-      },
+      "uploadFile": { "status": "implemented", "notes": "now persists to media_assets" },
       "getUserMedia": { "status": "implemented" },
       "updateMediaMetadata": { "status": "implemented" },
       "deleteMedia": { "status": "implemented" },
@@ -24,10 +21,7 @@
     "methods": {
       "getPlans": { "status": "implemented" },
       "getUserSubscription": { "status": "implemented" },
-      "createSubscription": {
-        "status": "implemented",
-        "notes": "dev payment bypass implemented (DISABLE_PAYMENTS=true). Stripe required for production paid plans."
-      },
+      "createSubscription": { "status": "implemented", "notes": "dev payment bypass implemented (DISABLE_PAYMENTS=true). Stripe required for production paid plans." },
       "cancelSubscription": { "status": "implemented" },
       "getUsage": { "status": "implemented" },
       "useBoost": { "status": "implemented" }
@@ -51,10 +45,7 @@
       "updateUserLocation": { "status": "implemented" },
       "findNearby": { "status": "implemented" },
       "getUsersNearUser": { "status": "implemented" },
-      "getDiscoveryFeed": {
-        "status": "implemented",
-        "notes": "age filtering implemented (verified Aug 26 2025)"
-      },
+      "getDiscoveryFeed": { "status": "implemented", "notes": "age filtering implemented (verified Aug 26 2025)" },
       "updateLocationAndGetNearby": { "status": "implemented" }
     }
   },
