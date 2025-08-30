@@ -1,0 +1,7 @@
+? GitHub Copilot CLI loaded for HApiGraS project!
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "sav3", schema "public" at "localhost:5433"
+
+Migration 002_add_performance_indexes marked as applied.
+

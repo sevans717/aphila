@@ -11,7 +11,11 @@ import { requireAuth } from "../middleware/auth";
 
 const router = Router();
 
-router.post("/register", validateRequest({ body: registerSchema }), registerHandler);
+router.post(
+  "/register",
+  validateRequest({ body: registerSchema }),
+  registerHandler
+);
 router.post("/login", validateRequest({ body: loginSchema }), loginHandler);
 router.get("/me", requireAuth, meHandler);
 router.post("/refresh", refreshHandler);

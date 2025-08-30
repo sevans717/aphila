@@ -16,6 +16,7 @@ export declare class ModerationService {
     private static isSpamLike;
     private static hasContactInfo;
     static createReport(data: ReportData): Promise<{
+        details: string | null;
         id: string;
         createdAt: Date;
         updatedAt: Date;
@@ -23,7 +24,6 @@ export declare class ModerationService {
         reporterId: string;
         reportedId: string;
         reason: string;
-        details: string | null;
     }>;
     private static checkReportThreshold;
     static getReports(filters: {
@@ -33,6 +33,7 @@ export declare class ModerationService {
         page?: number;
     }): Promise<{
         reports: {
+            details: string | null;
             id: string;
             createdAt: Date;
             updatedAt: Date;
@@ -40,7 +41,6 @@ export declare class ModerationService {
             reporterId: string;
             reportedId: string;
             reason: string;
-            details: string | null;
         }[];
         pagination: {
             page: number;

@@ -11,9 +11,9 @@ export declare const searchQuerySchema: z.ZodObject<{
         limit: z.ZodDefault<z.ZodPipe<z.ZodPipe<z.ZodString, z.ZodTransform<number, string>>, z.ZodNumber>>;
         offset: z.ZodDefault<z.ZodPipe<z.ZodPipe<z.ZodString, z.ZodTransform<number, string>>, z.ZodNumber>>;
         sort: z.ZodDefault<z.ZodEnum<{
+            popular: "popular";
             relevance: "relevance";
             recent: "recent";
-            popular: "popular";
         }>>;
     }, z.core.$strip>;
 }, z.core.$strip>;
@@ -23,9 +23,9 @@ export declare const searchPostsQuerySchema: z.ZodObject<{
         limit: z.ZodDefault<z.ZodPipe<z.ZodPipe<z.ZodString, z.ZodTransform<number, string>>, z.ZodNumber>>;
         offset: z.ZodDefault<z.ZodPipe<z.ZodPipe<z.ZodString, z.ZodTransform<number, string>>, z.ZodNumber>>;
         sort: z.ZodDefault<z.ZodEnum<{
+            popular: "popular";
             relevance: "relevance";
             recent: "recent";
-            popular: "popular";
         }>>;
         privacy: z.ZodOptional<z.ZodEnum<{
             private: "private";

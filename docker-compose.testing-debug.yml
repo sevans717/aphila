@@ -1,0 +1,194 @@
+version: "3.8"
+
+services:
+  # Test Database (Separate from development database)
+  test-db:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-test_password}
+      POSTGRES_USER: ${POSTGRES_USER:-test_user}
+      POSTGRES_DB: ${POSTGRES_DB:-sav3_test}
+    ports:
+      - "10090:5432"
+    volumes:
+      - test-db-data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
+      - ./docker/postgres/init-scripts:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-test_user}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - test-network
+
+  # Test API (Isolated testing environment)
+  test-api:
+    build: .
+    depends_on:
+      test-db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "postgresql://test_user:test_password@test-db:5432/sav3_test"
+      JWT_SECRET: ${JWT_SECRET:-test_jwt_secret}
+      PORT: 4000
+      NODE_ENV: test
+    ports:
+      - "10091:4000"
+    volumes:
+      - ./:/usr/src/app
+    command: sh -c "npm run test:api"
+    networks:
+      - test-network
+
+  # Test Runner (Automated test execution)
+  test-runner:
+    image: node:18-alpine
+    restart: "no"
+    environment:
+      NODE_ENV: test
+      DATABASE_URL: "postgresql://test_user:test_password@test-db:5432/sav3_test"
+    ports:
+      - "10092:3000"
+    volumes:
+      - ./:/usr/src/app
+      - test-results:/usr/src/app/test-results
+    command: sh -c "npm install && npm run test:integration"
+    depends_on:
+      test-db:
+        condition: service_healthy
+      test-api:
+        condition: service_started
+    networks:
+      - test-network
+
+  # Debug Server (Application debugging)
+  debug-server:
+    image: node:18-alpine
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      DEBUG_PORT: 9229
+    ports:
+      - "10093:9229"
+    volumes:
+      - ./:/usr/src/app
+    command: sh -c "npm run debug:test"
+    networks:
+      - test-network
+
+  # Profiling Tools (Performance analysis)
+  profiling-tools:
+    image: node:18-alpine
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+    ports:
+      - "10094:3000"
+    volumes:
+      - ./:/usr/src/app
+      - profiling-data:/usr/src/app/profiling
+    command: sh -c "npm install && npm run profile"
+    networks:
+      - test-network
+
+  # Load Testing Service
+  load-testing:
+    image: locustio/locust:latest
+    restart: unless-stopped
+    environment:
+      LOCUST_MODE: standalone
+      LOCUST_HOST: http://test-api:4000
+    ports:
+      - "10095:8089" # Web UI
+    volumes:
+      - ./docker/load-testing/locustfile.py:/mnt/locust/locustfile.py:ro
+      - load-test-results:/mnt/locust/results
+    command: ["--autostart", "--autoquit", "10"]
+    depends_on:
+      - test-api
+    networks:
+      - test-network
+
+  # Integration Test Service
+  integration-test:
+    image: node:18-alpine
+    restart: "no"
+    environment:
+      NODE_ENV: test
+      API_BASE_URL: http://test-api:4000
+      DATABASE_URL: "postgresql://test_user:test_password@test-db:5432/sav3_test"
+    ports:
+      - "10096:3001"
+    volumes:
+      - ./:/usr/src/app
+      - integration-test-results:/usr/src/app/integration-results
+    command: sh -c "npm install && npm run test:e2e"
+    depends_on:
+      test-db:
+        condition: service_healthy
+      test-api:
+        condition: service_started
+    networks:
+      - test-network
+
+  # Mock Server (API mocking for testing)
+  mock-server:
+    image: node:18-alpine
+    restart: unless-stopped
+    environment:
+      NODE_ENV: test
+      PORT: 3000
+    ports:
+      - "10097:3000"
+    volumes:
+      - ./docker/mock-server:/usr/src/app
+    command: sh -c "npm install && npm start"
+    networks:
+      - test-network
+
+  # Test Coverage Reporter
+  test-coverage:
+    image: node:18-alpine
+    restart: "no"
+    environment:
+      NODE_ENV: test
+      PORT: 3000
+    ports:
+      - "10098:3000"
+    volumes:
+      - ./:/usr/src/app
+      - coverage-reports:/usr/src/app/coverage
+    command: sh -c "npm install && npm run test:coverage:serve"
+    networks:
+      - test-network
+
+  # Performance Monitoring (Testing)
+  perf-monitoring:
+    image: prom/prometheus:v2.47.0
+    restart: unless-stopped
+    ports:
+      - "10099:9090"
+    volumes:
+      - ./docker/test-monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - perf-prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+    networks:
+      - test-network
+
+volumes:
+  test-db-data:
+  test-results:
+  profiling-data:
+  load-test-results:
+  integration-test-results:
+  coverage-reports:
+  perf-prometheus-data:
+
+networks:
+  test-network:
+    driver: bridge

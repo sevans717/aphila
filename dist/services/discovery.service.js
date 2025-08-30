@@ -66,6 +66,11 @@ class DiscoveryService {
         // Add orientation filtering
         if (orientation) {
             whereClause.orientation = orientation;
+            logger_1.logger.info(`Filtering discovery by orientation: ${orientation}`);
+        }
+        // Add interests filtering if provided
+        if (interests.length > 0) {
+            logger_1.logger.info(`Filtering discovery by interests: ${interests.join(", ")}`);
         }
         // Get potential matches
         let potentialMatches = await prisma_1.prisma.profile.findMany({
@@ -135,6 +140,7 @@ class DiscoveryService {
     // Handle swipe actions
     static async handleSwipe(action) {
         const { swiperId, swipedId, isLike, isSuper = false } = action;
+        logger_1.logger.info(`Processing swipe: ${swiperId} -> ${swipedId}, like: ${isLike}, super: ${isSuper}`);
         if (!isLike) {
             // For passes, we just record that they've been shown (no DB record needed)
             return { type: "pass", message: "User passed" };

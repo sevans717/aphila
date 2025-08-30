@@ -109,7 +109,7 @@ router.post("/swipe", auth_1.requireAuth, (0, validate_1.validateRequest)({ body
     }
 });
 // GET /matches - Get user's matches
-router.get("/matches", auth_1.requireAuth, async (req, res) => {
+router.get("/matches", auth_1.requireAuth, (0, validate_1.validateRequest)({ query: zod_1.z.object({}), params: zod_1.z.object({}) }), async (req, res) => {
     try {
         const userId = req.user.id;
         const matches = await discovery_service_1.DiscoveryService.getUserMatches(userId);
@@ -147,7 +147,7 @@ router.get("/matches", auth_1.requireAuth, async (req, res) => {
     }
 });
 // GET /likes - Get likes received
-router.get("/likes", auth_1.requireAuth, async (req, res) => {
+router.get("/likes", auth_1.requireAuth, (0, validate_1.validateRequest)({ query: zod_1.z.object({}), params: zod_1.z.object({}) }), async (req, res) => {
     try {
         const userId = req.user.id;
         const likes = await discovery_service_1.DiscoveryService.getReceivedLikes(userId);
@@ -174,16 +174,14 @@ router.get("/likes", auth_1.requireAuth, async (req, res) => {
     }
 });
 // GET /communities - simple passthrough for communities listing (compatibility)
-router.get("/communities", async (req, res) => {
+router.get("/communities", (0, validate_1.validateRequest)({ query: zod_1.z.object({ categoryId: zod_1.z.string().optional() }) }), async (req, res) => {
     try {
         const { categoryId } = req.query;
         const communities = await community_service_1.CommunityService.getAllCommunities(categoryId || undefined);
         res.json(communities);
     }
     catch (error) {
-        res
-            .status(500)
-            .json({
+        res.status(500).json({
             success: false,
             error: error.message || "Failed to fetch communities",
         });

@@ -8,6 +8,11 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// generator dbml {
+//   provider = "prisma-dbml-generator"
+//   output   = "../docs"
+// }
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -50,11 +55,81 @@ enum VerificationStatus {
   REJECTED
 }
 
+enum DevicePlatform {
+  IOS
+  ANDROID
+  WEB
+}
+
+enum MessageStatus {
+  SENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
 enum AdminActionType {
   BAN
   UNBAN
   WARNING
   DELETE_CONTENT
+}
+
+// Presence and Activity Models
+enum PresenceStatus {
+  ONLINE
+  AWAY
+  OFFLINE
+}
+
+enum ActivityType {
+  TYPING
+  VIEWING_PROFILE
+  VIEWING_MATCH
+  VIEWING_MESSAGE
+  VIEWING_POST
+  VIEWING_STORY
+  SEARCHING
+  EDITING_PROFILE
+  UPLOADING_MEDIA
+}
+
+model Presence {
+  id          String         @id @default(cuid())
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String         @unique
+  status      PresenceStatus @default(OFFLINE)
+  lastSeen    DateTime       @default(now())
+  lastActivity DateTime      @default(now())
+  isActive    Boolean        @default(false)
+  deviceId    String?        // Current active device
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  // Relations
+  activities  UserActivity[]
+
+  @@index([status])
+  @@index([lastSeen])
+  @@index([isActive])
+  @@map("presence")
+}
+
+model UserActivity {
+  id        String       @id @default(cuid())
+  presence  Presence     @relation(fields: [presenceId], references: [id], onDelete: Cascade)
+  presenceId String
+  type      ActivityType
+  targetId  String?      // ID of the target (user, post, etc.)
+  metadata  Json?        // Additional activity data
+  startedAt DateTime     @default(now())
+  endedAt   DateTime?
+
+  @@index([presenceId])
+  @@index([type])
+  @@index([targetId])
+  @@map("user_activities")
 }
 
 // New enums for categories, communities, friendships, boosts, media & settings
@@ -154,7 +229,12 @@ model User {
   privacySetting       PrivacySetting?
   filterSettings       FilterSetting[]
   ownedCommunities     Community[]       @relation("UserOwnedCommunities")
-  
+
+  // Push notification relations
+  deviceTokens      DeviceToken[]
+  pushNotifications PushNotification[]
+  topicSubscriptions TopicSubscription[]
+
   // Phase 1-8: Advanced Media Operations Relations
   posts                Post[]               @relation("UserPosts")
   postLikes            PostLike[]           @relation("UserPostLikes")
@@ -170,6 +250,16 @@ model User {
   postReports          PostReport[]         @relation("UserPostReports")
   contentViews         ContentView[]        @relation("UserContentViews")
   searchQueries        SearchQuery[]        @relation("UserSearches")
+  invoices             Invoice[]
+
+  // Message reactions relation
+  messageReactions     MessageReaction[]
+
+  // Analytics Events
+  analyticsEvents      AnalyticsEvent[]
+
+  // Presence relation
+  presence             Presence?
 
   @@index([email])
   @@index([isActive])
@@ -184,12 +274,14 @@ model Profile {
   userId       String      @unique
   displayName  String
   bio          String?
+  avatar       String?
   birthdate    DateTime
   gender       Gender
   orientation  Orientation
-  location     String?
-  latitude     Float?
-  longitude    Float?
+  location     String?     // Keep as string for now, will be geography in migration
+  locationGeography String? // PostGIS geography column - will be implemented later
+  latitude     Float?      // Keep for backward compatibility during migration
+  longitude    Float?      // Keep for backward compatibility during migration
   maxDistance  Int         @default(50) // in km
   ageMin       Int         @default(18)
   ageMax       Int         @default(65)
@@ -205,6 +297,7 @@ model Profile {
   @@index([isVerified])
   @@index([latitude, longitude])
   @@index([birthdate])
+  @@index([locationGeography])
   @@map("profiles")
 }
 
@@ -217,6 +310,7 @@ model Photo {
   order     Int      @default(0)
   createdAt DateTime @default(now())
 
+  @@index([userId])
   @@map("photos")
 }
 
@@ -239,6 +333,7 @@ model Like {
   createdAt DateTime @default(now())
 
   @@unique([likerId, likedId])
+  @@index([likedId])
   @@map("likes")
 }
 
@@ -254,6 +349,7 @@ model Match {
   messages   Message[]
 
   @@unique([initiatorId, receiverId])
+  @@index([receiverId])
   @@index([status])
   @@index([createdAt])
   @@map("matches")
@@ -271,13 +367,58 @@ model Message {
   messageType String  @default("text") // text, image, gif, etc.
   isRead     Boolean  @default(false)
   readAt     DateTime?
+
+  // Threading support
+  parent     Message? @relation("MessageReplies", fields: [parentId], references: [id])
+  parentId   String?
+  replies    Message[] @relation("MessageReplies")
+
+  // Status tracking
+  status     MessageStatus @default(SENT)
+  clientNonce String? // For tracking message status across clients
+
   createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  reactions  MessageReaction[]
+  media      Media[]
 
   @@index([matchId, createdAt])
   @@index([senderId])
   @@index([receiverId])
   @@index([isRead])
+  @@index([parentId])
   @@map("messages")
+}
+
+model MessageReaction {
+  id        String   @id @default(cuid())
+  message   Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  messageId String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  reaction  String   // emoji or reaction type
+  createdAt DateTime @default(now())
+
+  @@unique([messageId, userId, reaction])
+  @@index([messageId])
+  @@index([userId])
+  @@map("message_reactions")
+}
+
+model Media {
+  id           String    @id @default(cuid())
+  url          String
+  type         String    // image, video
+  message      Message?  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  messageId    String?
+  thumbnailUrl String?
+  metadata     Json?
+  createdAt    DateTime  @default(now())
+
+  @@index([messageId])
+  @@map("media")
 }
 
 model Report {
@@ -305,6 +446,7 @@ model Block {
   createdAt DateTime @default(now())
 
   @@unique([blockerId, blockedId])
+  @@index([blockedId])
   @@map("blocks")
 }
 
@@ -319,10 +461,62 @@ model Subscription {
   autoRenew       Boolean          @default(false)
   stripeCustomerId String?
   stripePriceId   String?
+  stripeSubscriptionId String?
+  lastInvoiceId       String?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
+  invoices         Invoice[]
 
   @@map("subscriptions")
+}
+
+// Store processed webhook events to provide idempotency for Stripe webhooks
+model ProcessedWebhookEvent {
+  id         String   @id @default(cuid())
+  eventId    String   @unique
+  provider   String   @default("stripe")
+  payload    Json
+  receivedAt DateTime @default(now())
+
+  @@index([eventId])
+  @@map("processed_webhook_events")
+}
+
+// Persist invoices and minimal charge information for reconciliation and auditing
+model Invoice {
+  id             String   @id @default(cuid())
+  user           User?    @relation(fields: [userId], references: [id])
+  userId         String?
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
+  subscriptionId String?
+  stripeInvoiceId String  @unique
+  amountPaid     Int?
+  currency       String?
+  status         String?
+  invoicePdf     String?
+  hostedInvoiceUrl String?
+  createdAt      DateTime @default(now())
+  charges         Charge[]
+
+  @@index([userId])
+  @@index([subscriptionId])
+  @@map("invoices")
+}
+
+model Charge {
+  id              String   @id @default(cuid())
+  invoice         Invoice? @relation(fields: [invoiceId], references: [id])
+  invoiceId       String?
+  stripeChargeId  String   @unique
+  paymentIntentId String?
+  amount          Int?
+  currency        String?
+  status          String?
+  paymentMethod   String?
+  createdAt       DateTime @default(now())
+
+  @@index([invoiceId])
+  @@map("charges")
 }
 
 model Verification {
@@ -371,6 +565,7 @@ model Notification {
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
 
+  @@index([userId])
   @@map("notifications")
 }
 
@@ -379,14 +574,85 @@ model Device {
   user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId       String
   fcmToken     String?   @unique
-  platform     String    // ios, android, web
+  platform     DevicePlatform // ios, android, web
   deviceId     String    @unique
   isActive     Boolean   @default(true)
   lastUsedAt   DateTime  @default(now())
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
+  // Push notification relations
+  deviceTokens      DeviceToken[]
+  pushNotifications PushNotification[]
+  topicSubscriptions TopicSubscription[]
+
+  @@index([userId])
   @@map("devices")
+}
+
+// Push Notification Models
+model DeviceToken {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+  device    Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  deviceId  String
+  token     String   @unique
+  platform  DevicePlatform // ios, android, web
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  pushNotifications PushNotification[]
+  topicSubscriptions TopicSubscription[]
+
+  @@index([userId])
+  @@index([deviceId])
+  @@index([isActive])
+  @@map("device_tokens")
+}
+
+model PushNotification {
+  id            String   @id @default(cuid())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  device        Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  deviceId      String
+  deviceToken   DeviceToken @relation(fields: [deviceTokenId], references: [id], onDelete: Cascade)
+  deviceTokenId String
+  title         String
+  body          String
+  data          Json?
+  status        String   @default("pending") // pending, sent, failed
+  errorMessage  String?
+  sentAt        DateTime?
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+  @@index([deviceTokenId])
+  @@index([status])
+  @@map("push_notifications")
+}
+
+model TopicSubscription {
+  id            String   @id @default(cuid())
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId        String
+  device        Device   @relation(fields: [deviceId], references: [id], onDelete: Cascade)
+  deviceId      String
+  deviceToken   DeviceToken @relation(fields: [deviceTokenId], references: [id], onDelete: Cascade)
+  deviceTokenId String
+  topic         String
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([userId, topic, deviceTokenId])
+  @@index([topic])
+  @@index([deviceTokenId])
+  @@index([isActive])
+  @@map("topic_subscriptions")
 }
 
 // New models
@@ -437,7 +703,7 @@ model Community {
   memberships CommunityMembership[]
   messages    CommunityMessage[]
   boosts      Boost[]
-  
+
   // Phase 1-8: Advanced Media Operations Relations
   posts       Post[]
   postShares  PostShare[]
@@ -525,7 +791,7 @@ model MediaAsset {
   height       Int?
   duration     Int?      // seconds for video/gif
   createdAt    DateTime  @default(now())
-  
+
   // Phase 1-8: Advanced Media Operations Relations
   postMedia      PostMedia[]
   mediaBookmarks MediaBookmark[]
@@ -546,6 +812,7 @@ model UserSetting {
   showOnlineStatus Boolean  @default(true)
   hudCompact       Boolean  @default(false)
   enableSounds     Boolean  @default(true)
+  notificationPreferences Json?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
@@ -589,26 +856,27 @@ model Post {
   authorId    String
   community   Community? @relation(fields: [communityId], references: [id], onDelete: SetNull)
   communityId String?
-  
+
   content     String?
   mediaAssets PostMedia[]
-  
+
   type        PostType  @default(REGULAR)
   visibility  PostVisibility @default(PUBLIC)
-  
+  isPublic    Boolean   @default(true) // Add this field
+
   likesCount     Int @default(0)
   commentsCount  Int @default(0)
   sharesCount    Int @default(0)
   viewsCount     Int @default(0)
-  
+
   isEdited    Boolean   @default(false)
   editedAt    DateTime?
   isPinned    Boolean   @default(false)
   isArchived  Boolean   @default(false)
-  
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  
+
   // Relations
   likes       PostLike[]
   comments    PostComment[]
@@ -617,7 +885,7 @@ model Post {
   reports     PostReport[]
   tags        PostTag[]
   views       ContentView[]
-  
+
   @@index([authorId])
   @@index([communityId])
   @@index([createdAt])
@@ -633,7 +901,7 @@ model PostMedia {
   mediaId  String
   order    Int        @default(0)
   caption  String?
-  
+
   @@unique([postId, mediaId])
   @@index([postId])
   @@map("post_media")
@@ -664,7 +932,7 @@ model PostLike {
   postId  String
   type    LikeType @default(LIKE)
   createdAt DateTime @default(now())
-  
+
   @@unique([userId, postId])
   @@index([postId])
   @@map("post_likes")
@@ -678,23 +946,23 @@ model PostComment {
   postId   String
   parent   PostComment? @relation("CommentReplies", fields: [parentId], references: [id])
   parentId String?
-  
+
   content  String
   mediaUrl String?
-  
+
   likesCount Int @default(0)
   repliesCount Int @default(0)
-  
+
   isEdited Boolean   @default(false)
   editedAt DateTime?
-  
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Relations
   replies  PostComment[] @relation("CommentReplies")
   likes    CommentLike[]
-  
+
   @@index([postId])
   @@index([userId])
   @@index([parentId])
@@ -708,7 +976,7 @@ model CommentLike {
   comment   PostComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
   commentId String
   createdAt DateTime    @default(now())
-  
+
   @@unique([userId, commentId])
   @@map("comment_likes")
 }
@@ -732,7 +1000,7 @@ model PostBookmark {
   collection Collection? @relation(fields: [collectionId], references: [id], onDelete: SetNull)
   collectionId String?
   createdAt  DateTime   @default(now())
-  
+
   @@unique([userId, postId])
   @@index([userId])
   @@index([collectionId])
@@ -748,9 +1016,9 @@ model Collection {
   isPublic    Boolean        @default(false)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
-  
+
   bookmarks   PostBookmark[]
-  
+
   @@index([userId])
   @@map("collections")
 }
@@ -763,7 +1031,7 @@ model MediaBookmark {
   mediaId   String
   tags      String[]   @default([])
   createdAt DateTime   @default(now())
-  
+
   @@unique([userId, mediaId])
   @@index([userId])
   @@map("media_bookmarks")
@@ -776,16 +1044,16 @@ model PostShare {
   userId     String
   post       Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
   postId     String
-  
+
   shareType  ShareType @default(REPOST)
   platform   String?   // external platform if shared outside app
   comment    String?   // user's comment when sharing
-  
+
   community  Community? @relation(fields: [communityId], references: [id], onDelete: SetNull)
   communityId String?
-  
+
   createdAt  DateTime  @default(now())
-  
+
   @@index([userId])
   @@index([postId])
   @@index([shareType])
@@ -798,13 +1066,13 @@ model MediaShare {
   userId    String
   media     MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Cascade)
   mediaId   String
-  
+
   shareType ShareType  @default(DIRECT)
   platform  String?
   comment   String?
-  
+
   createdAt DateTime   @default(now())
-  
+
   @@index([userId])
   @@index([mediaId])
   @@map("media_shares")
@@ -825,18 +1093,20 @@ model Story {
   userId    String
   media     MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Cascade)
   mediaId   String
-  
+
+  content   String?    // Add this field
   caption   String?
   duration  Int        @default(24) // hours
   viewsCount Int       @default(0)
-  
+
+  isPublic  Boolean    @default(true) // Add this field
   isHighlight Boolean  @default(false)
   expiresAt DateTime
   createdAt DateTime   @default(now())
-  
+
   views     StoryView[]
   contentViews ContentView[]
-  
+
   @@index([userId])
   @@index([expiresAt])
   @@map("stories")
@@ -849,7 +1119,7 @@ model StoryView {
   viewer  User     @relation("UserStoryViews", fields: [viewerId], references: [id], onDelete: Cascade)
   viewerId String
   viewedAt DateTime @default(now())
-  
+
   @@unique([storyId, viewerId])
   @@map("story_views")
 }
@@ -861,10 +1131,10 @@ model ContentTag {
   category  String?
   isSystem  Boolean  @default(false)
   createdAt DateTime @default(now())
-  
+
   posts     PostTag[]
   media     MediaTag[]
-  
+
   @@map("content_tags")
 }
 
@@ -874,7 +1144,7 @@ model PostTag {
   postId String
   tag    ContentTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
   tagId  String
-  
+
   @@unique([postId, tagId])
   @@map("post_tags")
 }
@@ -885,7 +1155,7 @@ model MediaTag {
   mediaId String
   tag     ContentTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
   tagId   String
-  
+
   @@unique([mediaId, tagId])
   @@map("media_tags")
 }
@@ -901,7 +1171,7 @@ model PostReport {
   details  String?
   status   String    @default("pending")
   createdAt DateTime @default(now())
-  
+
   @@index([postId])
   @@index([reporterId])
   @@map("post_reports")
@@ -918,7 +1188,7 @@ model ContentView {
   storyId   String?
   duration  Int?       // seconds viewed
   viewedAt  DateTime   @default(now())
-  
+
   @@index([userId])
   @@index([postId])
   @@index([storyId])
@@ -933,8 +1203,25 @@ model SearchQuery {
   results   Int      @default(0)
   clicked   Boolean  @default(false)
   createdAt DateTime @default(now())
-  
+
   @@index([userId])
   @@index([query])
   @@map("search_queries")
+}
+
+// Analytics Events Model
+model AnalyticsEvent {
+  id        String   @id @default(cuid())
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  userId    String?
+  eventType String   // e.g., 'page_view', 'button_click', 'search', 'share', 'like'
+  eventData Json?    // Flexible data storage for event-specific information
+  metadata  Json?    // Additional metadata like user agent, IP, etc.
+  timestamp DateTime @default(now())
+  sessionId String?  // For tracking user sessions
+
+  @@index([userId])
+  @@index([eventType])
+  @@index([timestamp])
+  @@map("analytics_events")
 }

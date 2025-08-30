@@ -58,7 +58,7 @@ export interface CommunitySearchResult {
     relevanceScore?: number;
 }
 export interface SearchFilters {
-    type?: 'all' | 'posts' | 'users' | 'communities' | 'media';
+    type?: "all" | "posts" | "users" | "communities" | "media";
     dateRange?: {
         from: Date;
         to: Date;
@@ -72,8 +72,8 @@ export interface SearchFilters {
     tags?: string[];
     verified?: boolean;
     hasMedia?: boolean;
-    sortBy?: 'relevance' | 'recent' | 'popular' | 'alphabetical';
-    sortOrder?: 'asc' | 'desc';
+    sortBy?: "relevance" | "recent" | "popular" | "alphabetical";
+    sortOrder?: "asc" | "desc";
 }
 export interface SearchParams {
     query: string;
@@ -86,7 +86,7 @@ export interface SearchParams {
 }
 export interface SearchSuggestion {
     text: string;
-    type: 'query' | 'user' | 'hashtag' | 'location';
+    type: "query" | "user" | "hashtag" | "location";
     count?: number;
     metadata?: Record<string, any>;
 }
@@ -118,7 +118,7 @@ export interface SearchAnalytics {
 export interface AutocompleteResult {
     suggestions: Array<{
         text: string;
-        type: 'query' | 'user' | 'hashtag' | 'community';
+        type: "query" | "user" | "hashtag" | "community";
         metadata?: Record<string, any>;
     }>;
     trending: string[];
@@ -126,7 +126,7 @@ export interface AutocompleteResult {
 }
 export interface SearchIndexData {
     id: string;
-    type: 'post' | 'user' | 'community';
+    type: "post" | "user" | "community";
     title: string;
     content: string;
     tags: string[];
@@ -152,7 +152,7 @@ export interface TrendingSearch {
     regions: Record<string, number>;
 }
 export declare class SearchService {
-    static searchAll(userId: string, query: string, limit?: number): Promise<{
+    static searchAll(userId: string, query: string, limit?: number, includeHighlights?: boolean, includeSuggestions?: boolean): Promise<{
         posts: {
             id: string;
             createdAt: Date;
@@ -177,15 +177,16 @@ export declare class SearchService {
         communities: {
             id: string;
             name: string;
-            description: string | null;
             _count: {
                 memberships: number;
             };
+            description: string | null;
         }[];
     }>;
-    static searchPosts(userId: string, query: string, options?: {
+    static searchPosts(_userId: string, query: string, options?: {
         limit?: number;
         cursor?: string;
+        includeHighlights?: boolean;
     }): Promise<{
         items: ({
             _count: {
@@ -211,14 +212,15 @@ export declare class SearchService {
             };
         } & {
             id: string;
+            type: import("@prisma/client").$Enums.PostType;
             createdAt: Date;
             updatedAt: Date;
             content: string | null;
-            type: import(".prisma/client").$Enums.PostType;
             communityId: string | null;
             editedAt: Date | null;
-            visibility: import(".prisma/client").$Enums.PostVisibility;
+            visibility: import("@prisma/client").$Enums.PostVisibility;
             authorId: string;
+            isPublic: boolean;
             likesCount: number;
             commentsCount: number;
             sharesCount: number;
@@ -232,6 +234,7 @@ export declare class SearchService {
     static searchUsers(userId: string, query: string, options?: {
         limit?: number;
         cursor?: string;
+        includeSuggestions?: boolean;
     }): Promise<{
         items: ({
             profile: {
@@ -260,5 +263,16 @@ export declare class SearchService {
     static clearSearchHistory(userId: string): Promise<{
         success: boolean;
     }>;
+    static comprehensiveSearch(userId: string, query: string, limit?: number): Promise<SearchResult>;
+    static filteredSearch(userId: string, query: string, filters: SearchFilters): Promise<any>;
+    static advancedSearch(params: SearchParams): Promise<any>;
+    static getSearchSuggestions(query: string): Promise<SearchSuggestion[]>;
+    static saveSearchHistory(history: SearchHistory): Promise<void>;
+    static getSearchAnalytics(query: string): Promise<SearchAnalytics>;
+    static getAutocompleteResults(query: string): Promise<AutocompleteResult>;
+    static indexSearchData(data: SearchIndexData): Promise<void>;
+    static getSearchConfiguration(): SearchConfiguration;
+    static getTrendingSearches(): Promise<TrendingSearch[]>;
+    private static getSortOrder;
 }
 //# sourceMappingURL=search.service.d.ts.map

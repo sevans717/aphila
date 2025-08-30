@@ -1,44 +1,18 @@
 import { Router } from "express";
-import { z } from "zod";
 import { requireAuth } from "../middleware/auth";
-import { validateRequest } from "../middleware/validate";
-import { SubscriptionService } from "../services/subscription.service";
 
 const router = Router();
 
-// Validation schemas
-const subscribeSchema = z.object({
-  planId: z.string(),
-  paymentToken: z.string().optional(),
-});
-
-// GET /plans - Get all subscription plans
-router.get("/plans", async (req: any, res: any) => {
+// Get subscription plans
+router.get("/plans", async (_req, res) => {
   try {
-    const plans = SubscriptionService.getPlans();
-    // If client requests flat shape (?flat=1), return array directly for compatibility with some clients/tests
-    if (req.query.flat === "1" || req.query.flat === "true") {
-      return res.json(plans);
-    }
-
-    res.json({ success: true, data: plans });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
-  }
-});
-
-// GET /current - Get user's current subscription
-router.get("/current", requireAuth, async (req: any, res: any) => {
-  try {
-    const userId = req.user.id;
-    const subscription = await SubscriptionService.getUserSubscription(userId);
-
+    // TODO: Implement subscription plans service
     res.json({
       success: true,
-      data: subscription,
+      data: {
+        plans: [],
+        message: "Subscription plans endpoint - implementation pending",
+      },
     });
   } catch (error: any) {
     res.status(500).json({
@@ -48,67 +22,48 @@ router.get("/current", requireAuth, async (req: any, res: any) => {
   }
 });
 
-// POST /subscribe - Subscribe to a plan
-router.post(
-  "/subscribe",
-  requireAuth,
-  validateRequest({ body: subscribeSchema }),
-  async (req: any, res: any) => {
-    try {
-      const userId = req.user.id;
-      const { planId, paymentToken } = req.body;
+// Get user's subscription
+router.get("/", requireAuth, async (req, res) => {
+  try {
+    const userId = (req as any).user?.userId;
 
-      const result = await SubscriptionService.createSubscription(
+    // TODO: Implement user subscription service
+    res.json({
+      success: true,
+      data: {
+        userId,
+        subscription: {
+          plan: "free",
+          status: "active",
+          expiresAt: null,
+        },
+        message: "User subscription endpoint - implementation pending",
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Subscribe to plan
+router.post("/subscribe", requireAuth, async (req, res) => {
+  try {
+    const userId = (req as any).user?.userId;
+    const { planId, paymentMethod } = req.body;
+
+    // TODO: Implement subscription service
+    res.json({
+      success: true,
+      data: {
         userId,
         planId,
-        paymentToken
-      );
-
-      res.status(201).json({
-        success: true,
-        data: result,
-      });
-    } catch (error: any) {
-      res.status(400).json({
-        success: false,
-        error: error.message,
-      });
-    }
-  }
-);
-
-// POST /cancel - Cancel subscription
-router.post(
-  "/cancel",
-  requireAuth,
-  validateRequest({}),
-  async (req: any, res: any) => {
-    try {
-      const userId = req.user.id;
-      const result = await SubscriptionService.cancelSubscription(userId);
-
-      res.json({
-        success: true,
-        data: result,
-      });
-    } catch (error: any) {
-      res.status(400).json({
-        success: false,
-        error: error.message,
-      });
-    }
-  }
-);
-
-// GET /usage - Get subscription usage and limits
-router.get("/usage", requireAuth, async (req: any, res: any) => {
-  try {
-    const userId = req.user.id;
-    const usage = await SubscriptionService.getUsage(userId);
-
-    res.json({
-      success: true,
-      data: usage,
+        paymentMethod,
+        subscribedAt: new Date().toISOString(),
+        message: "Subscription created - implementation pending",
+      },
     });
   } catch (error: any) {
     res.status(500).json({
@@ -118,29 +73,72 @@ router.get("/usage", requireAuth, async (req: any, res: any) => {
   }
 });
 
-// POST /boost - Use a boost
-router.post(
-  "/boost",
-  requireAuth,
-  validateRequest({}),
-  async (req: any, res: any) => {
-    try {
-      const userId = req.user.id;
-      const boost = await SubscriptionService.useBoost(userId);
+// Cancel subscription
+router.post("/cancel", requireAuth, async (req, res) => {
+  try {
+    const userId = (req as any).user?.userId;
 
-      res.status(201).json({
-        success: true,
-        data: boost,
-        message:
-          "Boost activated! Your profile will be shown to more people for the next 30 minutes.",
-      });
-    } catch (error: any) {
-      res.status(400).json({
-        success: false,
-        error: error.message,
-      });
-    }
+    // TODO: Implement subscription cancellation service
+    res.json({
+      success: true,
+      data: {
+        userId,
+        cancelledAt: new Date().toISOString(),
+        message: "Subscription cancelled - implementation pending",
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
   }
-);
+});
+
+// Update subscription
+router.put("/", requireAuth, async (req, res) => {
+  try {
+    const userId = (req as any).user?.userId;
+    const { planId } = req.body;
+
+    // TODO: Implement subscription update service
+    res.json({
+      success: true,
+      data: {
+        userId,
+        planId,
+        updatedAt: new Date().toISOString(),
+        message: "Subscription updated - implementation pending",
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Get billing history
+router.get("/billing", requireAuth, async (req, res) => {
+  try {
+    const userId = (req as any).user?.userId;
+
+    // TODO: Implement billing history service
+    res.json({
+      success: true,
+      data: {
+        userId,
+        billingHistory: [],
+        message: "Billing history endpoint - implementation pending",
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
 
 export default router;

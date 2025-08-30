@@ -1,5 +1,5 @@
-import { createHash } from 'crypto';
-import { NextFunction, Request, Response } from 'express';
+import { createHash } from "crypto";
+import { NextFunction, Request, Response } from "express";
 
 export interface CacheOptions {
   ttl?: number; // Time to live in seconds
@@ -16,7 +16,7 @@ export interface CacheOptions {
 export function cache(options: CacheOptions = {}) {
   const {
     ttl = 300, // 5 minutes default
-    vary = ['Authorization'],
+    vary = ["Authorization"],
     private: isPrivate = false,
     staleWhileRevalidate = 0,
     etag = true,
@@ -25,28 +25,32 @@ export function cache(options: CacheOptions = {}) {
 
   return (req: Request, res: Response, next: NextFunction) => {
     // Skip caching for non-GET requests
-    if (req.method !== 'GET') {
+    if (req.method !== "GET") {
       return next();
     }
 
     // Generate cache key
     const cacheKey = generateCacheKey(req, vary);
-    
+
     // Set cache headers
-    const cacheControl = buildCacheControl(ttl, isPrivate, staleWhileRevalidate);
-    res.set('Cache-Control', cacheControl);
+    const cacheControl = buildCacheControl(
+      ttl,
+      isPrivate,
+      staleWhileRevalidate
+    );
+    res.set("Cache-Control", cacheControl);
 
     // Set Vary headers
     if (vary.length > 0) {
-      res.set('Vary', vary.join(', '));
+      res.set("Vary", vary.join(", "));
     }
 
     // Generate ETag if enabled
     if (etag) {
-      res.set('ETag', `"${cacheKey}"`);
-      
+      res.set("ETag", `"${cacheKey}"`);
+
       // Check if client has matching ETag
-      const clientETag = req.headers['if-none-match'];
+      const clientETag = req.headers["if-none-match"];
       if (clientETag === `"${cacheKey}"`) {
         return res.status(304).end();
       }
@@ -55,10 +59,10 @@ export function cache(options: CacheOptions = {}) {
     // Set Last-Modified if enabled
     if (lastModified) {
       const lastMod = new Date().toUTCString();
-      res.set('Last-Modified', lastMod);
-      
+      res.set("Last-Modified", lastMod);
+
       // Check if client has newer version
-      const ifModifiedSince = req.headers['if-modified-since'];
+      const ifModifiedSince = req.headers["if-modified-since"];
       if (ifModifiedSince && new Date(ifModifiedSince) >= new Date(lastMod)) {
         return res.status(304).end();
       }
@@ -66,8 +70,8 @@ export function cache(options: CacheOptions = {}) {
 
     // Add mobile-optimized headers
     res.set({
-      'X-Cache-Key': cacheKey,
-      'X-Cache-TTL': ttl.toString(),
+      "X-Cache-Key": cacheKey,
+      "X-Cache-TTL": ttl.toString(),
     });
 
     next();
@@ -81,17 +85,17 @@ function generateCacheKey(req: Request, vary: string[]): string {
   const keyParts = [
     req.method,
     req.originalUrl,
-    req.query ? JSON.stringify(req.query) : '',
+    req.query ? JSON.stringify(req.query) : "",
   ];
 
   // Add varying headers to cache key
   for (const header of vary) {
     const value = req.headers[header.toLowerCase()];
-    keyParts.push(value ? value.toString() : '');
+    keyParts.push(value ? value.toString() : "");
   }
 
-  const keyString = keyParts.join('|');
-  return createHash('md5').update(keyString).digest('hex');
+  const keyString = keyParts.join("|");
+  return createHash("md5").update(keyString).digest("hex");
 }
 
 /**
@@ -105,7 +109,7 @@ function buildCacheControl(
   const parts: string[] = [];
 
   // Public or private
-  parts.push(isPrivate ? 'private' : 'public');
+  parts.push(isPrivate ? "private" : "public");
 
   // Max age
   parts.push(`max-age=${ttl}`);
@@ -115,17 +119,17 @@ function buildCacheControl(
     parts.push(`stale-while-revalidate=${staleWhileRevalidate}`);
   }
 
-  return parts.join(', ');
+  return parts.join(", ");
 }
 
 /**
  * No-cache middleware for sensitive endpoints
  */
-export function noCache(req: Request, res: Response, next: NextFunction) {
+export function noCache(_req: Request, res: Response, next: NextFunction) {
   res.set({
-    'Cache-Control': 'no-cache, no-store, must-revalidate',
-    'Pragma': 'no-cache',
-    'Expires': '0',
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    Pragma: "no-cache",
+    Expires: "0",
   });
   next();
 }
@@ -158,7 +162,7 @@ export function userCache(ttl: number = 300) {
   return cache({
     ttl,
     private: true,
-    vary: ['Authorization'],
+    vary: ["Authorization"],
     etag: true,
   });
 }

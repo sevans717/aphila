@@ -1,0 +1,7 @@
+# Ignore all markdown files (per user request)
+
+\*_/_.md
+
+# If you want to exclude specific docs, add them here
+
+# Example: \n# !docs/DR_RUNBOOKS.md

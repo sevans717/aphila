@@ -1,15 +1,17 @@
 services:
   db:
-    image: postgres:16
+    image: postgis/postgis:16-3.4
     restart: unless-stopped
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-sav3}
     ports:
-      - "5432:5432"
+      - "10000:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
+      - ./docker/postgres/init-scripts:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
       interval: 5s
@@ -26,13 +28,28 @@ services:
     environment:
       # For local dev without PgBouncer we keep the DB host as `db`.
       # In production we recommend pointing `DATABASE_URL` at PgBouncer (6432).
-      DATABASE_URL: "postgresql://postgres:postgres@db:5432/sav3"
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@db:5432/sav3}
       JWT_SECRET: ${JWT_SECRET:-change_me}
       PORT: ${PORT:-4000}
-      NODE_ENV: ${NODE_ENV:-development}
+      NODE_ENV: ${NODE_ENV:-production}
     ports:
       - "4000:4000"
-    command: sh -c "npx prisma migrate deploy && node dist/server.js"
+    entrypoint: ""
+    command: ["node", "dist/server.js"]
+    networks:
+      - sav3-network
+
+  pgbouncer:
+    image: edoburu/pgbouncer:1.16.0
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@db:5432/sav3}
+    volumes:
+      - ./pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+      - ./pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
+    ports:
+      - "6432:6432"
+    depends_on:
+      - db
     networks:
       - sav3-network
 

@@ -26,11 +26,17 @@ export declare class MediaService {
     private static readonly UPLOAD_DIR;
     private static readonly THUMBNAIL_DIR;
     private static readonly CHUNK_SIZE;
-    private static s3;
+    private static minioClient;
+    private static mediaProxyUrl;
     private static uploadSessions;
     static initializeUploadDir(): Promise<void>;
-    static uploadFile(file: FileUpload, userId: string, uploadType?: string): Promise<UploadResult>;
+    static uploadFile(file: FileUpload, userId: string, _uploadType?: string): Promise<UploadResult>;
     static deleteFile(url: string): Promise<void>;
+    private static uploadToMinIO;
+    private static uploadViaMediaProxy;
+    private static deleteViaMediaProxy;
+    private static extractKeyFromMinIOUrl;
+    private static extractKeyFromMediaProxyUrl;
     private static getMediaType;
     private static extractImageMetadata;
     private static extractVideoMetadata;
@@ -49,17 +55,28 @@ export declare class MediaService {
     }): Promise<{
         id: string;
         userId: string;
+        type: import("@prisma/client").$Enums.MediaType;
         createdAt: Date;
+        duration: number | null;
         url: string;
-        type: import(".prisma/client").$Enums.MediaType;
         isFavorite: boolean;
         usedInProfile: boolean;
         width: number | null;
         height: number | null;
-        duration: number | null;
     }[]>;
     static deleteMedia(mediaId: string, userId: string): Promise<any>;
     static getSignedUrl(key: string, expiresIn?: number): Promise<string>;
+    /**
+     * Generate a presigned upload URL for direct uploads.
+     * Supports MinIO and server-side fallback.
+     */
+    static generatePresignedUploadUrl(userId: string, filename: string, contentType: string, expiresIn?: number): Promise<{
+        uploadUrl: string;
+        key: string;
+        expiresIn: number;
+        method: "PUT" | "POST" | "SERVER";
+        headers?: Record<string, string> | null;
+    }>;
     static getMediaById(mediaId: string): Promise<({
         user: {
             id: string;
@@ -70,14 +87,14 @@ export declare class MediaService {
     } & {
         id: string;
         userId: string;
+        type: import("@prisma/client").$Enums.MediaType;
         createdAt: Date;
+        duration: number | null;
         url: string;
-        type: import(".prisma/client").$Enums.MediaType;
         isFavorite: boolean;
         usedInProfile: boolean;
         width: number | null;
         height: number | null;
-        duration: number | null;
     }) | null>;
     /**
      * Update media metadata

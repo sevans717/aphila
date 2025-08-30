@@ -18,3 +18,4 @@ when working on phase plans, follow these guidelines:
    use ports in the 10000-10999 range for services
    always separate css into its own file and avoid inline styles
    always create the missing types, modules, variables, props, etc instead of removing
+Always run expo with a background terminal, so as not to interrupt chat.

@@ -1,8 +1,8 @@
 export declare class CommunityService {
     static getAllCommunities(categoryId?: string): Promise<({
         _count: {
-            messages: number;
             memberships: number;
+            messages: number;
         };
         category: {
             name: string;
@@ -22,19 +22,39 @@ export declare class CommunityService {
         description: string | null;
         categoryId: string | null;
         ownerId: string;
-        visibility: import(".prisma/client").$Enums.CommunityVisibility;
+        visibility: import("@prisma/client").$Enums.CommunityVisibility;
     })[]>;
     static getCommunityById(id: string): Promise<({
         category: {
             id: string;
+            type: import("@prisma/client").$Enums.CategoryType | null;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
             description: string | null;
-            type: import(".prisma/client").$Enums.CategoryType | null;
             slug: string;
         } | null;
+        memberships: ({
+            user: {
+                id: string;
+                profile: {
+                    displayName: string;
+                } | null;
+            };
+        } & {
+            id: string;
+            userId: string;
+            role: import("@prisma/client").$Enums.MembershipRole;
+            joinedAt: Date;
+            communityId: string;
+        })[];
+        owner: {
+            id: string;
+            profile: {
+                displayName: string;
+            } | null;
+        };
         messages: ({
             sender: {
                 id: string;
@@ -51,26 +71,6 @@ export declare class CommunityService {
             communityId: string;
             editedAt: Date | null;
         })[];
-        memberships: ({
-            user: {
-                id: string;
-                profile: {
-                    displayName: string;
-                } | null;
-            };
-        } & {
-            id: string;
-            userId: string;
-            role: import(".prisma/client").$Enums.MembershipRole;
-            joinedAt: Date;
-            communityId: string;
-        })[];
-        owner: {
-            id: string;
-            profile: {
-                displayName: string;
-            } | null;
-        };
     } & {
         id: string;
         name: string;
@@ -79,7 +79,7 @@ export declare class CommunityService {
         description: string | null;
         categoryId: string | null;
         ownerId: string;
-        visibility: import(".prisma/client").$Enums.CommunityVisibility;
+        visibility: import("@prisma/client").$Enums.CommunityVisibility;
     }) | null>;
     static createCommunity(data: {
         name: string;
@@ -90,12 +90,12 @@ export declare class CommunityService {
     }): Promise<{
         category: {
             id: string;
+            type: import("@prisma/client").$Enums.CategoryType | null;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
             description: string | null;
-            type: import(".prisma/client").$Enums.CategoryType | null;
             slug: string;
         } | null;
         owner: {
@@ -111,19 +111,19 @@ export declare class CommunityService {
         description: string | null;
         categoryId: string | null;
         ownerId: string;
-        visibility: import(".prisma/client").$Enums.CommunityVisibility;
+        visibility: import("@prisma/client").$Enums.CommunityVisibility;
     }>;
     static joinCommunity(userId: string, communityId: string): Promise<{
         id: string;
         userId: string;
-        role: import(".prisma/client").$Enums.MembershipRole;
+        role: import("@prisma/client").$Enums.MembershipRole;
         joinedAt: Date;
         communityId: string;
     }>;
     static leaveCommunity(userId: string, communityId: string): Promise<{
         id: string;
         userId: string;
-        role: import(".prisma/client").$Enums.MembershipRole;
+        role: import("@prisma/client").$Enums.MembershipRole;
         joinedAt: Date;
         communityId: string;
     }>;

@@ -1,0 +1,163 @@
+# Docker Compose Configuration for Self-Hosted Media Storage
+# Provides MinIO (S3-compatible) and media proxy services
+
+version: "3.8"
+
+services:
+  # MinIO - Self-hosted S3-compatible storage
+  minio:
+    image: minio/minio:RELEASE.2024-08-17T01-24-54Z
+    container_name: sav3_minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio_admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minio_admin_password123}
+      MINIO_DOMAIN: ${MINIO_DOMAIN:-localhost:19000}
+      MINIO_BROWSER: ${MINIO_BROWSER:-on}
+      MINIO_CONSOLE_ADDRESS: ":19001"
+      MINIO_API_CORS_ALLOW_ORIGIN: "*"
+    ports:
+      - "9000:9000" # MinIO API
+      - "9001:9001" # MinIO Console
+    volumes:
+      - minio_data:/data
+      - ./docker/minio/policies:/policies:ro
+    command: server /data --console-address ":9001"
+    networks:
+      - media_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 40s
+
+  # MinIO Client - Initialize buckets and policies
+  minio-init:
+    image: minio/mc:latest
+    container_name: sav3_minio_init
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio_admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minio_admin_password123}
+    volumes:
+      - ./docker/minio-init:/scripts:ro
+      - ./docker/minio/policies:/policies:ro
+    entrypoint: /scripts/init-buckets.sh
+    networks:
+      - media_network
+
+  # Media Proxy - Handles uploads, transformations, and access control
+  media-proxy:
+    build:
+      context: ./docker/media-proxy
+      dockerfile: Dockerfile
+    container_name: sav3_media_proxy
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: ${PORT:-3001}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minio_admin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minio_admin_password123}
+      MINIO_USE_SSL: "false"
+      MEDIA_BUCKET_NAME: ${MEDIA_BUCKET_NAME:-sav3-media}
+      THUMBNAILS_BUCKET_NAME: ${THUMBNAILS_BUCKET_NAME:-sav3-thumbnails}
+      MAX_UPLOAD_SIZE: ${MAX_UPLOAD_SIZE:-100MB}
+      JWT_SECRET: ${JWT_ACCESS_SECRET}
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      ALLOWED_ORIGINS: ${FRONTEND_URL:-http://localhost:3000}
+    ports:
+      - "3001:3001"
+    volumes:
+      - media_temp:/tmp/uploads
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    networks:
+      - media_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Redis for caching and session management
+  redis:
+    image: redis:7.2-alpine
+    container_name: sav3_media_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - ./docker/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    command: redis-server /usr/local/etc/redis/redis.conf
+    networks:
+      - media_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Image optimization service
+  image-processor:
+    build:
+      context: ./docker/image-processor
+      dockerfile: Dockerfile
+    container_name: sav3_image_processor
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: ${PORT:-3002}
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-minio_admin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minio_admin_password123}
+      MINIO_USE_SSL: "false"
+      MEDIA_BUCKET_NAME: ${MEDIA_BUCKET_NAME:-sav3-media}
+      THUMBNAILS_BUCKET_NAME: ${THUMBNAILS_BUCKET_NAME:-sav3-thumbnails}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+      PROCESSING_QUALITY: ${PROCESSING_QUALITY:-85}
+      MAX_IMAGE_DIMENSION: ${MAX_IMAGE_DIMENSION:-2048}
+    ports:
+      - "3002:3002"
+    volumes:
+      - processing_temp:/tmp/processing
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    networks:
+      - media_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  media_network:
+    driver: bridge
+    name: sav3_media_network
+
+volumes:
+  minio_data:
+    driver: local
+    name: sav3_minio_data
+  redis_data:
+    driver: local
+    name: sav3_media_redis_data
+  media_temp:
+    driver: local
+    name: sav3_media_temp
+  processing_temp:
+    driver: local
+    name: sav3_processing_temp

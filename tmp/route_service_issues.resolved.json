@@ -65,15 +65,15 @@
     "methods": {
       "POST /register": {
         "status": "scanned",
-        "handler": "validate(registerSchema",
-        "handlerToken": "validate(registerSchema",
-        "resolved": "middleware:validate"
+        "handler": "validateRequest({",
+        "handlerToken": "validateRequest({",
+        "resolved": null
       },
       "POST /login": {
         "status": "scanned",
-        "handler": "validate(loginSchema",
-        "handlerToken": "validate(loginSchema",
-        "resolved": "middleware:validate"
+        "handler": "validateRequest({",
+        "handlerToken": "validateRequest({",
+        "resolved": null
       },
       "GET /me": {
         "status": "scanned",
@@ -87,8 +87,8 @@
         "handlerToken": "refreshHandler",
         "resolved": "import:../controllers/auth.controller",
         "importFile": "../controllers/auth.controller",
-        "importPath": "src/controllers/auth.controller.ts",
-        "exports": ["refreshHandler"]
+        "importPath": null,
+        "exports": []
       }
     }
   },
@@ -200,15 +200,15 @@
     "methods": {
       "GET /": {
         "status": "scanned",
-        "handler": "async",
-        "handlerToken": "async",
-        "resolved": "inline:anonymous"
+        "handler": "validateRequest({",
+        "handlerToken": "validateRequest({",
+        "resolved": null
       },
       "GET /:id": {
         "status": "scanned",
-        "handler": "async",
-        "handlerToken": "async",
-        "resolved": "inline:anonymous"
+        "handler": "validateRequest({",
+        "handlerToken": "validateRequest({",
+        "resolved": null
       },
       "POST /": {
         "status": "scanned",
@@ -296,9 +296,9 @@
       },
       "GET /communities": {
         "status": "scanned",
-        "handler": "async",
-        "handlerToken": "async",
-        "resolved": "inline:anonymous"
+        "handler": "validateRequest({",
+        "handlerToken": "validateRequest({",
+        "resolved": null
       }
     }
   },

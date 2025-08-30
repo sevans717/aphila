@@ -38,8 +38,8 @@ export interface CreatePostData {
     content?: string;
     mediaIds?: string[];
     communityId?: string;
-    type?: 'text' | 'image' | 'video' | 'poll' | 'link';
-    visibility?: 'public' | 'friends' | 'private' | 'community';
+    type?: "text" | "image" | "video" | "poll" | "link";
+    visibility?: "public" | "friends" | "private" | "community";
     tags?: string[];
     location?: {
         latitude: number;
@@ -51,7 +51,7 @@ export interface CreatePostData {
 }
 export interface UpdatePostData {
     content?: string;
-    visibility?: 'public' | 'friends' | 'private' | 'community';
+    visibility?: "public" | "friends" | "private" | "community";
     tags?: string[];
     isPinned?: boolean;
     isArchived?: boolean;
@@ -71,8 +71,8 @@ export interface PostFilters {
 export interface PostSearchParams {
     query?: string;
     filters?: PostFilters;
-    sortBy?: 'created' | 'updated' | 'likes' | 'comments' | 'views';
-    sortOrder?: 'asc' | 'desc';
+    sortBy?: "created" | "updated" | "likes" | "comments" | "views";
+    sortOrder?: "asc" | "desc";
     limit?: number;
     offset?: number;
     viewerId?: string;
@@ -104,7 +104,7 @@ export interface PostAnalytics {
 export interface MediaAsset {
     id: string;
     url: string;
-    type: 'image' | 'video' | 'audio' | 'document';
+    type: "image" | "video" | "audio" | "document";
     mimeType: string;
     size: number;
     width?: number;
@@ -117,7 +117,7 @@ export interface MediaAsset {
 }
 export interface PostAttachment {
     id: string;
-    type: 'link' | 'location' | 'poll' | 'event';
+    type: "link" | "location" | "poll" | "event";
     data: Record<string, any>;
     metadata?: Record<string, any>;
 }
@@ -166,9 +166,9 @@ export interface PostVersion {
 }
 export interface FeedParams {
     userId: string;
-    type?: 'timeline' | 'explore' | 'following' | 'community';
+    type?: "timeline" | "explore" | "following" | "community";
     communityId?: string;
-    algorithm?: 'chronological' | 'engagement' | 'personalized';
+    algorithm?: "chronological" | "engagement" | "personalized";
     limit?: number;
     offset?: number;
     includePromoted?: boolean;
@@ -176,7 +176,7 @@ export interface FeedParams {
 export interface PostEngagement {
     postId: string;
     userId: string;
-    type: 'view' | 'like' | 'comment' | 'share' | 'bookmark' | 'click';
+    type: "view" | "like" | "comment" | "share" | "bookmark" | "click";
     timestamp: Date;
     metadata?: Record<string, any>;
 }
@@ -198,10 +198,23 @@ export declare class PostService {
     static getFeed(userId: string, options?: {
         limit?: number;
         cursor?: string;
+        algorithm?: string;
+        includePromoted?: boolean;
     }): Promise<{
         items: PostWithDetails[];
         nextCursor?: string;
     }>;
     private static toPostWithDetails;
+    static logSearchAnalytics(searchParams: PostSearchParams): Promise<void>;
+    static trackPostAnalytics(postId: string): Promise<PostAnalytics>;
+    static getPostMediaAssets(postId: string): Promise<MediaAsset[]>;
+    static getPostAttachments(postId: string): Promise<PostAttachment[]>;
+    static extractMentions(content: string): Promise<PostMention[]>;
+    static extractHashtags(content: string): Promise<PostHashtag[]>;
+    static getPostPermissions(postId: string, userId: string): Promise<PostPermissions>;
+    static savePostDraft(draft: PostDraft): Promise<PostDraft>;
+    static getPostVersions(postId: string): Promise<PostVersion[]>;
+    static getCustomizedFeed(params: FeedParams): Promise<PostWithDetails[]>;
+    static trackPostEngagement(engagement: PostEngagement): Promise<void>;
 }
 //# sourceMappingURL=post.service.d.ts.map

@@ -1,4 +1,4 @@
-import bcrypt from "bcrypt";
+import * as bcrypt from "bcrypt";
 import { prisma } from "../lib/prisma";
 
 export async function createUser(email: string, password: string) {

@@ -1,0 +1,12 @@
+ALTER TABLE public.posts RENAME COLUMN authorid TO "authorId";
+ALTER TABLE public.posts RENAME COLUMN communityid TO "communityId";
+ALTER TABLE public.posts RENAME COLUMN likescount TO "likesCount";
+ALTER TABLE public.posts RENAME COLUMN commentscount TO "commentsCount";
+ALTER TABLE public.posts RENAME COLUMN sharescount TO "sharesCount";
+ALTER TABLE public.posts RENAME COLUMN viewscount TO "viewsCount";
+ALTER TABLE public.posts RENAME COLUMN isedited TO "isEdited";
+ALTER TABLE public.posts RENAME COLUMN editedat TO "editedAt";
+ALTER TABLE public.posts RENAME COLUMN ispinned TO "isPinned";
+ALTER TABLE public.posts RENAME COLUMN isarchived TO "isArchived";
+ALTER TABLE public.posts RENAME COLUMN createdat TO "createdAt";
+ALTER TABLE public.posts RENAME COLUMN updatedat TO "updatedAt";

@@ -1,4 +1,3 @@
-import { PrismaClient } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { logger } from "../utils/logger";
 import { handleServiceError } from "../utils/error";
@@ -118,6 +117,12 @@ export class DiscoveryService {
     // Add orientation filtering
     if (orientation) {
       whereClause.orientation = orientation;
+      logger.info(`Filtering discovery by orientation: ${orientation}`);
+    }
+
+    // Add interests filtering if provided
+    if (interests.length > 0) {
+      logger.info(`Filtering discovery by interests: ${interests.join(", ")}`);
     }
 
     // Get potential matches
@@ -205,6 +210,10 @@ export class DiscoveryService {
   // Handle swipe actions
   static async handleSwipe(action: SwipeAction) {
     const { swiperId, swipedId, isLike, isSuper = false } = action;
+
+    logger.info(
+      `Processing swipe: ${swiperId} -> ${swipedId}, like: ${isLike}, super: ${isSuper}`
+    );
 
     if (!isLike) {
       // For passes, we just record that they've been shown (no DB record needed)

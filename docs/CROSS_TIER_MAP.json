@@ -1,0 +1,51 @@
+{
+  "frontend": {
+    "ARCHIVED_netlify/functions/auth-login.js": {
+      "calls": [
+        {
+          "method": "POST",
+          "path": "/api/v1/auth/login",
+          "backendRoute": "POST /auth/login",
+          "db": ["User"]
+        }
+      ],
+      "status": "ARCHIVED - moved to archive/netlify"
+    },
+    "ARCHIVED_netlify/functions/me.js": {
+      "calls": [
+        {
+          "method": "GET",
+          "path": "/api/v1/me",
+          "backendRoute": "GET /me",
+          "db": ["User", "Profile", "Device"]
+        }
+      ],
+      "status": "ARCHIVED - moved to archive/netlify"
+    },
+    "ARCHIVED_netlify/functions/posts-feed.js": {
+      "calls": [
+        {
+          "method": "GET",
+          "path": "/api/v1/posts/feed",
+          "backendRoute": "GET /posts/feed",
+          "db": ["Post", "PostLike", "PostComment", "User", "Community"]
+        }
+      ],
+      "status": "ARCHIVED - moved to archive/netlify"
+    },
+    "ARCHIVED_netlify/functions/media-list.js": {
+      "calls": [
+        {
+          "method": "GET",
+          "path": "/api/v1/media",
+          "backendRoute": "GET /media/",
+          "db": ["MediaAsset"]
+        }
+      ],
+      "status": "ARCHIVED - moved to archive/netlify"
+    }
+  },
+  "backendIndex": "tmp/route_service_issues.resolved.json",
+  "notes": "This map is a starting point derived from archived Netlify functions and route index. Extend by scanning mobile/web API clients for additional calls.",
+  "archived": "All Netlify functions moved to archive/netlify/ directory for self-hosted deployment"
+}

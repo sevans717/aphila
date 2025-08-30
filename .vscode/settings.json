@@ -1,0 +1,12 @@
+{
+  "files.exclude": {
+    "**/.env": false
+  },
+  "search.exclude": {
+    "**/.env": false
+  },
+  "explorer.fileNesting.enabled": false,
+  "files.watcherExclude": {
+    "**/.env": false
+  }
+}

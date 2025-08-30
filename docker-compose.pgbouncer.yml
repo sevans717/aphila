@@ -1,0 +1,148 @@
+version: "3.8"
+
+services:
+  # Primary database
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-sav3}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sav3-network
+    # Internal only - not exposed directly
+    expose:
+      - "5432"
+
+  # Read replica (optional for read scaling)
+  db-replica:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-sav3}
+      POSTGRES_REPLICATION_MODE: slave
+      POSTGRES_REPLICATION_USER: replicator
+      POSTGRES_REPLICATION_PASSWORD: ${REPLICATION_PASSWORD:-replicator_pass}
+      POSTGRES_MASTER_HOST: db
+      POSTGRES_MASTER_PORT: 5432
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - sav3-network
+    expose:
+      - "5432"
+
+  # Optimized PgBouncer connection pooler
+  pgbouncer:
+    image: edoburu/pgbouncer:1.17.0
+    restart: unless-stopped
+    environment:
+      DATABASES_HOST: db
+      DATABASES_PORT: 5432
+      DATABASES_USER: ${POSTGRES_USER:-postgres}
+      DATABASES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      DATABASES_DBNAME: ${POSTGRES_DB:-sav3}
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 200
+      DEFAULT_POOL_SIZE: 25
+      MIN_POOL_SIZE: 5
+      RESERVE_POOL_SIZE: 5
+      MAX_DB_CONNECTIONS: 50
+      SERVER_LIFETIME: 3600
+      SERVER_IDLE_TIMEOUT: 600
+      QUERY_WAIT_TIMEOUT: 120
+    ports:
+      - "10002:6432"
+    volumes:
+      - ./pgbouncer/pgbouncer-optimized.ini:/etc/pgbouncer/pgbouncer.ini:ro
+      - pgbouncer-userlist:/etc/pgbouncer
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "psql -h localhost -p 6432 -U ${POSTGRES_USER:-postgres} -d pgbouncer -c 'SHOW POOLS;' || exit 1",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - sav3-network
+
+  # PgBouncer configuration helper
+  pgbouncer-config:
+    build:
+      context: ./docker/pgbouncer-config
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      SAV3_USER: ${SAV3_USER:-sav3_user}
+      SAV3_PASSWORD: ${SAV3_PASSWORD:-sav3_password}
+    volumes:
+      - pgbouncer-userlist:/etc/pgbouncer
+    depends_on:
+      - db
+    networks:
+      - sav3-network
+
+  # Main application (using PgBouncer)
+  api:
+    build: .
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+    environment:
+      # Use PgBouncer for database connections
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@pgbouncer:6432/${POSTGRES_DB:-sav3}"
+      DATABASE_URL_REPLICA: "postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db-replica:5432/${POSTGRES_DB:-sav3}"
+      JWT_SECRET: ${JWT_SECRET:-change_me}
+      PORT: ${PORT:-10010}
+      NODE_ENV: ${NODE_ENV:-development}
+      # Connection pool settings for Prisma
+      DATABASE_CONNECTION_LIMIT: 20
+      DATABASE_POOL_TIMEOUT: 20000
+    ports:
+      - "10010:4000"
+    command: sh -c "npx prisma migrate deploy && node dist/server.js"
+    networks:
+      - sav3-network
+
+  # Connection monitoring and health checks
+  pgbouncer-monitor:
+    build:
+      context: ./docker/pgbouncer-monitor
+    environment:
+      PGBOUNCER_HOST: pgbouncer
+      PGBOUNCER_PORT: 6432
+      PGBOUNCER_USER: ${POSTGRES_USER:-postgres}
+      PGBOUNCER_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      MONITOR_INTERVAL: 30
+    depends_on:
+      pgbouncer:
+        condition: service_healthy
+    networks:
+      - sav3-network
+    ports:
+      - "10011:8080" # Health monitoring endpoint
+
+volumes:
+  db-data:
+  pgbouncer-userlist:
+
+networks:
+  sav3-network:
+    driver: bridge

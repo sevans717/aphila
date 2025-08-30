@@ -67,7 +67,6 @@ export interface BookmarkWithDetails {
         id: string;
         url: string;
         type: string;
-        caption?: string;
     };
     collection?: {
         id: string;
@@ -157,6 +156,14 @@ export declare class BookmarkService {
         total: number;
     }>;
     static listCollectionsWithCounts(userId: string): Promise<CollectionWithDetails[]>;
-    static getCollectionAnalytics(collectionId: string): Promise<CollectionAnalytics>;
+    static createCollectionWithDetails(data: CreateCollectionData): Promise<CollectionWithDetails>;
+    static updateCollectionWithDetails(collectionId: string, userId: string, data: UpdateCollectionData): Promise<CollectionWithDetails | null>;
+    static createBookmarkWithDetails(data: BookmarkData): Promise<BookmarkWithDetails | null>;
+    static updateCollectionShareSettings(collectionId: string, userId: string, settings: CollectionShareSettings): Promise<CollectionWithDetails | null>;
+    static performBulkBookmarkOperation(userId: string, operation: BulkBookmarkOperation): Promise<{
+        success: boolean;
+        affected: number;
+    }>;
+    static exportBookmarks(userId: string): Promise<BookmarkExportData>;
 }
 //# sourceMappingURL=bookmark.service.d.ts.map

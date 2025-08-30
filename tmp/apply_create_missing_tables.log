@@ -1,0 +1,5 @@
+CREATE TABLE
+psql:/tmp/create_missing_tables.sql:20: NOTICE:  relation "posts" already exists, skipping
+CREATE TABLE
+psql:/tmp/create_missing_tables.sql:29: NOTICE:  relation "post_likes" already exists, skipping
+DO

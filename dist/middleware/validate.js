@@ -9,23 +9,23 @@ const validateRequest = (options) => {
     return (req, res, next) => {
         try {
             // Validate content type for POST/PUT/PATCH requests
-            if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
-                const contentType = req.headers['content-type'] || '';
+            if (["POST", "PUT", "PATCH"].includes(req.method)) {
+                const contentType = req.headers["content-type"] || "";
                 const allowedTypes = options.allowedContentTypes || [
-                    'application/json',
-                    'multipart/form-data',
-                    'application/x-www-form-urlencoded'
+                    "application/json",
+                    "multipart/form-data",
+                    "application/x-www-form-urlencoded",
                 ];
-                const isValidContentType = allowedTypes.some(type => contentType.includes(type));
+                const isValidContentType = allowedTypes.some((type) => contentType.includes(type));
                 if (!isValidContentType) {
-                    return response_1.ResponseHelper.error(res, 'INVALID_CONTENT_TYPE', `Content-Type must be one of: ${allowedTypes.join(', ')}`, 415, { contentType, allowedTypes }, false);
+                    return response_1.ResponseHelper.error(res, "INVALID_CONTENT_TYPE", `Content-Type must be one of: ${allowedTypes.join(", ")}`, 415, { contentType, allowedTypes }, false);
                 }
             }
             // Validate body size
-            if (options.maxBodySize && req.headers['content-length']) {
-                const contentLength = parseInt(req.headers['content-length']);
+            if (options.maxBodySize && req.headers["content-length"]) {
+                const contentLength = parseInt(req.headers["content-length"]);
                 if (contentLength > options.maxBodySize) {
-                    return response_1.ResponseHelper.error(res, 'PAYLOAD_TOO_LARGE', `Request body too large. Maximum size: ${options.maxBodySize} bytes`, 413, { contentLength, maxBodySize: options.maxBodySize }, false);
+                    return response_1.ResponseHelper.error(res, "PAYLOAD_TOO_LARGE", `Request body too large. Maximum size: ${options.maxBodySize} bytes`, 413, { contentLength, maxBodySize: options.maxBodySize }, false);
                 }
             }
             // Validate schemas
@@ -33,7 +33,9 @@ const validateRequest = (options) => {
                 req.body = options.body.parse(req.body);
             }
             if (options.query) {
-                req.query = options.query.parse(req.query);
+                // Validate query without modifying the read-only req.query
+                const validatedQuery = options.query.parse(req.query);
+                req.validatedQuery = validatedQuery;
             }
             if (options.params) {
                 req.params = options.params.parse(req.params);
@@ -45,22 +47,22 @@ const validateRequest = (options) => {
         }
         catch (error) {
             if (error instanceof zod_1.ZodError) {
-                logger_1.logger.warn('Request validation failed:', {
+                logger_1.logger.warn("Request validation failed:", {
                     path: req.path,
                     method: req.method,
                     errors: error.issues,
                     requestId: res.locals.requestId,
                 });
                 return response_1.ResponseHelper.validationError(res, {
-                    errors: error.issues.map(err => ({
-                        field: err.path.join('.'),
+                    errors: error.issues.map((err) => ({
+                        field: err.path.join("."),
                         message: err.message,
                         code: err.code,
                         received: err.received,
                     })),
                 });
             }
-            logger_1.logger.error('Validation middleware error:', error);
+            logger_1.logger.error("Validation middleware error:", error);
             next(error);
         }
     };
@@ -74,7 +76,9 @@ function validate(schema) {
             next();
         }
         catch (err) {
-            return res.status(400).json({ error: 'ValidationError', issues: err.errors });
+            return res
+                .status(400)
+                .json({ error: "ValidationError", issues: err.errors });
         }
     };
 }
@@ -83,12 +87,12 @@ function validate(schema) {
  */
 exports.commonValidation = {
     pagination: zod_1.z.object({
-        page: zod_1.z.string().optional().default('1').transform(Number),
-        limit: zod_1.z.string().optional().default('10').transform(Number),
+        page: zod_1.z.string().optional().default("1").transform(Number),
+        limit: zod_1.z.string().optional().default("10").transform(Number),
         sortBy: zod_1.z.string().optional(),
-        sortOrder: zod_1.z.enum(['asc', 'desc']).optional().default('desc'),
+        sortOrder: zod_1.z.enum(["asc", "desc"]).optional().default("desc"),
     }),
-    uuid: zod_1.z.string().uuid('Invalid UUID format'),
+    uuid: zod_1.z.string().uuid("Invalid UUID format"),
     coordinates: zod_1.z.object({
         latitude: zod_1.z.number().min(-90).max(90),
         longitude: zod_1.z.number().min(-180).max(180),

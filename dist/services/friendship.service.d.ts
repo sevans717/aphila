@@ -15,7 +15,7 @@ export declare class FriendshipService {
     } & {
         id: string;
         createdAt: Date;
-        status: import(".prisma/client").$Enums.FriendshipStatus;
+        status: import("@prisma/client").$Enums.FriendshipStatus;
         requesterId: string;
         addresseeId: string;
         respondedAt: Date | null;
@@ -36,7 +36,7 @@ export declare class FriendshipService {
     } & {
         id: string;
         createdAt: Date;
-        status: import(".prisma/client").$Enums.FriendshipStatus;
+        status: import("@prisma/client").$Enums.FriendshipStatus;
         requesterId: string;
         addresseeId: string;
         respondedAt: Date | null;
@@ -65,7 +65,7 @@ export declare class FriendshipService {
     } & {
         id: string;
         createdAt: Date;
-        status: import(".prisma/client").$Enums.FriendshipStatus;
+        status: import("@prisma/client").$Enums.FriendshipStatus;
         requesterId: string;
         addresseeId: string;
         respondedAt: Date | null;
@@ -84,7 +84,7 @@ export declare class FriendshipService {
     } & {
         id: string;
         createdAt: Date;
-        status: import(".prisma/client").$Enums.FriendshipStatus;
+        status: import("@prisma/client").$Enums.FriendshipStatus;
         requesterId: string;
         addresseeId: string;
         respondedAt: Date | null;

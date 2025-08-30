@@ -1,0 +1,12 @@
+[dotenv@17.2.1] injecting env (0) from .env -- tip: ≡ƒôí auto-backup env with Radar: https://dotenvx.com/radar
+{"level":30,"time":1756360386375,"pid":36472,"hostname":"LAPTOP-47D13BVE","msg":"MinIO client initialized"}
+≡ƒÜÇ Starting server on port 4000...
+≡ƒôü Current working directory: C:\Users\evans\Desktop\sav3-backend
+≡ƒîÉ Environment: development
+{"level":30,"time":1756360386376,"pid":36472,"hostname":"LAPTOP-47D13BVE","msg":"Media proxy URL set to: http://localhost:4000"}
+{"level":40,"time":1756360386514,"pid":36472,"hostname":"LAPTOP-47D13BVE","msg":"Stripe secret not set ΓÇö payments may be disabled or misconfigured"}
+Γ£à Database connectivity OK
+Γ£à Server successfully listening on http://0.0.0.0:4000
+≡ƒöù Health check: http://localhost:4000/health
+≡ƒöù API base: http://localhost:4000/api/v1
+{"level":30,"time":1756360387031,"pid":36472,"hostname":"LAPTOP-47D13BVE","msg":"Server listening with WebSocket support"}

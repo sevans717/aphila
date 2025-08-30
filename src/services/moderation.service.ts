@@ -1,4 +1,3 @@
-import { PrismaClient } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { logger } from "../utils/logger";
 import { handleServiceError } from "../utils/error";
@@ -109,6 +108,10 @@ export class ModerationService {
   static async createReport(data: ReportData) {
     const { reporterId, reportedId, reason, description, contentId } = data;
 
+    logger.info(
+      `Creating report: ${reporterId} reporting ${reportedId} for ${reason}, contentId: ${contentId}, description: ${description}`
+    );
+
     // Prevent self-reporting
     if (reporterId === reportedId) {
       const err = new Error("Cannot report yourself");
@@ -147,7 +150,7 @@ export class ModerationService {
             profile: { select: { displayName: true } },
           },
         },
-        // @ts-ignore
+        // @ts-ignore - reportedUser relation might not exist in schema
         reportedUser: {
           select: {
             profile: { select: { displayName: true } },
@@ -232,7 +235,10 @@ export class ModerationService {
 
     const where: any = {};
     if (status) where.status = status;
-    if (type) where.type = type;
+    if (type) {
+      where.reason = { contains: type }; // Map type to reason field
+      logger.info(`Filtering reports by type: ${type}`);
+    }
 
     const [reports, total] = await Promise.all([
       prisma.report.findMany({
@@ -244,7 +250,7 @@ export class ModerationService {
               profile: { select: { displayName: true } },
             },
           },
-          // @ts-ignore
+          // @ts-ignore - reportedUser relation might not exist in schema
           reportedUser: {
             select: {
               id: true,
@@ -295,11 +301,15 @@ export class ModerationService {
       where: { id: reportId },
       data: {
         status,
-        // @ts-ignore
+        // @ts-ignore - adminNotes field might not exist in schema
         adminNotes,
         reviewedAt: new Date(),
       },
     });
+
+    logger.info(
+      `Updated report ${reportId} status to ${status}, admin notes: ${adminNotes || "none"}`
+    );
 
     // Take action if specified
     if (action && action !== "dismiss") {

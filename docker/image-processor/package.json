@@ -1,0 +1,34 @@
+{
+  "name": "sav3-image-processor",
+  "version": "1.0.0",
+  "description": "Image processing and optimization service for SAV3",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "sharp": "^0.33.4",
+    "fluent-ffmpeg": "^2.1.3",
+    "minio": "^8.0.1",
+    "ioredis": "^5.4.1",
+    "winston": "^3.13.0",
+    "cors": "^2.8.5",
+    "helmet": "^7.1.0",
+    "compression": "^1.7.4",
+    "uuid": "^10.0.0",
+    "dotenv": "^16.4.5",
+    "pino": "^9.2.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/fluent-ffmpeg": "^2.1.24",
+    "@types/cors": "^2.8.17",
+    "@types/compression": "^1.7.5",
+    "@types/uuid": "^10.0.0",
+    "typescript": "^5.5.4",
+    "tsx": "^4.16.2"
+  }
+}

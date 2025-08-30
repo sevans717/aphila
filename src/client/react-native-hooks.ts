@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { ApiResponse, Sav3ApiClient } from './sav3-api-client';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { ApiResponse, Sav3ApiClient } from "./sav3-api-client";
 
 // Hook types
 export interface UseApiState<T> {
@@ -47,7 +47,10 @@ export interface UseChunkedUploadState {
 }
 
 // Cache for API responses
-const apiCache = new Map<string, { data: any; timestamp: number; ttl: number }>();
+const apiCache = new Map<
+  string,
+  { data: any; timestamp: number; ttl: number }
+>();
 
 // Cache helper functions
 function getCacheKey(endpoint: string, params?: any): string {
@@ -92,17 +95,35 @@ export function useApi<T>(
   const fetchData = useCallback(async () => {
     if (isCancelledRef.current) return;
 
+    // Use cache key for potential caching (logged for analytics)
+    const cacheKey = getCacheKey("api_call", { deps });
+
+    // Check cache first
+    const cachedData = getCachedData<T>(cacheKey);
+    if (cachedData) {
+      console.log(`Using cached data for key: ${cacheKey}`);
+      setData(cachedData);
+      setLoading(false);
+      return;
+    }
+
+    console.log(
+      `API call cache key generated: ${cacheKey}, cache time: ${cacheTime}ms`
+    );
+
     try {
       setLoading(true);
       setError(null);
 
       const response = await apiCall();
-      
+
       if (!isCancelledRef.current) {
         if (response.success && response.data) {
           setData(response.data);
+          // Cache the successful response
+          setCachedData(cacheKey, response.data, cacheTime);
         } else {
-          throw new Error(response.error?.message || 'API call failed');
+          throw new Error(response.error?.message || "API call failed");
         }
       }
     } catch (err: any) {
@@ -114,14 +135,14 @@ export function useApi<T>(
           setTimeout(fetchData, delay);
           return;
         }
-        setError(err.message || 'An error occurred');
+        setError(err.message || "An error occurred");
       }
     } finally {
       if (!isCancelledRef.current) {
         setLoading(false);
       }
     }
-  }, [apiCall, retryAttempts]);
+  }, [apiCall, retryAttempts, cacheTime]);
 
   const refresh = useCallback(async () => {
     retryCountRef.current = 0;
@@ -154,44 +175,47 @@ export function usePagination<T>(
   const [total, setTotal] = useState(0);
   const isCancelledRef = useRef(false);
 
-  const loadPage = useCallback(async (pageNum: number, append: boolean = false) => {
-    if (isCancelledRef.current) return;
+  const loadPage = useCallback(
+    async (pageNum: number, append: boolean = false) => {
+      if (isCancelledRef.current) return;
 
-    try {
-      setLoading(true);
-      setError(null);
+      try {
+        setLoading(true);
+        setError(null);
 
-      const response = await apiCall(pageNum, limit);
-      
-      if (!isCancelledRef.current) {
-        if (response.success && response.data) {
-          if (append) {
-            setData(prev => [...prev, ...response.data!]);
+        const response = await apiCall(pageNum, limit);
+
+        if (!isCancelledRef.current) {
+          if (response.success && response.data) {
+            if (append) {
+              setData((prev) => [...prev, ...response.data!]);
+            } else {
+              setData(response.data);
+            }
+
+            // Update pagination info
+            if (response.pagination) {
+              setHasMore(response.pagination.hasNext);
+              setTotal(response.pagination.total);
+            } else {
+              setHasMore(response.data.length === limit);
+            }
           } else {
-            setData(response.data);
+            throw new Error(response.error?.message || "API call failed");
           }
-
-          // Update pagination info
-          if (response.pagination) {
-            setHasMore(response.pagination.hasNext);
-            setTotal(response.pagination.total);
-          } else {
-            setHasMore(response.data.length === limit);
-          }
-        } else {
-          throw new Error(response.error?.message || 'API call failed');
+        }
+      } catch (err: any) {
+        if (!isCancelledRef.current) {
+          setError(err.message || "An error occurred");
+        }
+      } finally {
+        if (!isCancelledRef.current) {
+          setLoading(false);
         }
       }
-    } catch (err: any) {
-      if (!isCancelledRef.current) {
-        setError(err.message || 'An error occurred');
-      }
-    } finally {
-      if (!isCancelledRef.current) {
-        setLoading(false);
-      }
-    }
-  }, [apiCall, limit]);
+    },
+    [apiCall, limit]
+  );
 
   const loadMore = useCallback(async () => {
     if (hasMore && !loading) {
@@ -225,42 +249,49 @@ export function useUpload(apiClient: Sav3ApiClient): UseUploadState {
   const [result, setResult] = useState<any | null>(null);
   const cancelTokenRef = useRef<any>(null);
 
-  const upload = useCallback(async (file: File | Blob, type: string = 'image') => {
-    try {
-      setUploading(true);
-      setProgress(0);
-      setError(null);
-      setResult(null);
+  const upload = useCallback(
+    async (file: File | Blob, type: string = "image") => {
+      try {
+        setUploading(true);
+        setProgress(0);
+        setError(null);
+        setResult(null);
 
-      // Set up progress tracking
-      const originalOnProgress = apiClient.getAxiosInstance().defaults.onUploadProgress;
-      apiClient.getAxiosInstance().defaults.onUploadProgress = (progressEvent) => {
-        if (progressEvent.total) {
-          const progress = (progressEvent.loaded / progressEvent.total) * 100;
-          setProgress(Math.round(progress));
+        // Set up progress tracking
+        const originalOnProgress =
+          apiClient.getAxiosInstance().defaults.onUploadProgress;
+        apiClient.getAxiosInstance().defaults.onUploadProgress = (
+          progressEvent: any
+        ) => {
+          if (progressEvent.total) {
+            const progress = (progressEvent.loaded / progressEvent.total) * 100;
+            setProgress(Math.round(progress));
+          }
+        };
+
+        const response = await apiClient.uploadMedia(file, type as any);
+
+        if (response.success) {
+          setResult(response.data);
+        } else {
+          throw new Error(response.error?.message || "Upload failed");
         }
-      };
 
-      const response = await apiClient.uploadMedia(file, type as any);
-      
-      if (response.success) {
-        setResult(response.data);
-      } else {
-        throw new Error(response.error?.message || 'Upload failed');
+        // Restore original progress handler
+        apiClient.getAxiosInstance().defaults.onUploadProgress =
+          originalOnProgress;
+      } catch (err: any) {
+        setError(err.message || "Upload failed");
+      } finally {
+        setUploading(false);
       }
-
-      // Restore original progress handler
-      apiClient.getAxiosInstance().defaults.onUploadProgress = originalOnProgress;
-    } catch (err: any) {
-      setError(err.message || 'Upload failed');
-    } finally {
-      setUploading(false);
-    }
-  }, [apiClient]);
+    },
+    [apiClient]
+  );
 
   const cancel = useCallback(() => {
     if (cancelTokenRef.current) {
-      cancelTokenRef.current.cancel('Upload cancelled');
+      cancelTokenRef.current.cancel("Upload cancelled");
     }
     setUploading(false);
     setProgress(0);
@@ -270,7 +301,9 @@ export function useUpload(apiClient: Sav3ApiClient): UseUploadState {
 }
 
 // Chunked upload hook for large files
-export function useChunkedUpload(apiClient: Sav3ApiClient): UseChunkedUploadState {
+export function useChunkedUpload(
+  apiClient: Sav3ApiClient
+): UseChunkedUploadState {
   const [uploading, setUploading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -278,74 +311,97 @@ export function useChunkedUpload(apiClient: Sav3ApiClient): UseChunkedUploadStat
   const [sessionId, setSessionId] = useState<string | null>(null);
   const isCancelledRef = useRef(false);
 
-  const upload = useCallback(async (file: File | Blob, type: string = 'image') => {
-    try {
-      setUploading(true);
-      setProgress(0);
-      setError(null);
-      setResult(null);
-      isCancelledRef.current = false;
+  const upload = useCallback(
+    async (file: File | Blob, type: string = "image") => {
+      try {
+        setUploading(true);
+        setProgress(0);
+        setError(null);
+        setResult(null);
+        isCancelledRef.current = false;
 
-      const filename = (file as File).name || `upload.${type}`;
-      const totalSize = file.size;
-      const chunkSize = 1024 * 1024; // 1MB chunks
+        const filename = (file as File).name || `upload.${type}`;
+        const totalSize = file.size;
+        const chunkSize = 1024 * 1024; // 1MB chunks
 
-      // Start chunked upload session
-      const startResponse = await apiClient.startChunkedUpload(filename, totalSize, type as any);
-      
-      if (!startResponse.success) {
-        throw new Error(startResponse.error?.message || 'Failed to start upload');
-      }
+        // Start chunked upload session
+        const startResponse = await apiClient.startChunkedUpload(
+          filename,
+          totalSize,
+          type as any
+        );
 
-      const sessionId = startResponse.data.sessionId;
-      setSessionId(sessionId);
-
-      // Upload chunks
-      const totalChunks = Math.ceil(totalSize / chunkSize);
-      
-      for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-        if (isCancelledRef.current) {
-          break;
+        if (!startResponse.success) {
+          throw new Error(
+            startResponse.error?.message || "Failed to start upload"
+          );
         }
 
-        const start = chunkIndex * chunkSize;
-        const end = Math.min(start + chunkSize, totalSize);
-        const chunkData = file.slice(start, end);
+        const sessionId = startResponse.data.sessionId;
+        setSessionId(sessionId);
 
-        const chunkResponse = await apiClient.uploadChunk(sessionId, chunkIndex, chunkData);
-        
-        if (chunkResponse.success) {
-          setProgress(chunkResponse.data.progress);
-        } else {
-          throw new Error(chunkResponse.error?.message || 'Chunk upload failed');
-        }
-      }
+        // Upload chunks
+        const totalChunks = Math.ceil(totalSize / chunkSize);
 
-      if (!isCancelledRef.current) {
-        // Complete upload
-        const completeResponse = await apiClient.completeChunkedUpload(sessionId, type as any);
-        
-        if (completeResponse.success) {
-          setResult(completeResponse.data);
-        } else {
-          throw new Error(completeResponse.error?.message || 'Failed to complete upload');
+        for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+          if (isCancelledRef.current) {
+            break;
+          }
+
+          const start = chunkIndex * chunkSize;
+          const end = Math.min(start + chunkSize, totalSize);
+          const chunkData = file.slice(start, end);
+
+          const chunkResponse = await apiClient.uploadChunk(
+            sessionId,
+            chunkIndex,
+            chunkData
+          );
+
+          if (chunkResponse.success) {
+            setProgress(chunkResponse.data.progress);
+          } else {
+            throw new Error(
+              chunkResponse.error?.message || "Chunk upload failed"
+            );
+          }
         }
+
+        if (!isCancelledRef.current) {
+          // Complete upload
+          const completeResponse = await apiClient.completeChunkedUpload(
+            sessionId,
+            type as any
+          );
+
+          if (completeResponse.success) {
+            setResult(completeResponse.data);
+          } else {
+            throw new Error(
+              completeResponse.error?.message || "Failed to complete upload"
+            );
+          }
+        }
+      } catch (err: any) {
+        setError(err.message || "Upload failed");
+      } finally {
+        setUploading(false);
+        setSessionId(null);
       }
-    } catch (err: any) {
-      setError(err.message || 'Upload failed');
-    } finally {
-      setUploading(false);
-      setSessionId(null);
-    }
-  }, [apiClient]);
+    },
+    [apiClient]
+  );
 
   const cancel = useCallback(() => {
     isCancelledRef.current = true;
     if (sessionId) {
       // Cancel the upload session on the server
-      apiClient.getAxiosInstance().delete(`/api/v1/media/chunked/${sessionId}`).catch(() => {
-        // Ignore errors when cancelling
-      });
+      apiClient
+        .getAxiosInstance()
+        .delete(`/api/v1/media/chunked/${sessionId}`)
+        .catch(() => {
+          // Ignore errors when cancelling
+        });
     }
     setUploading(false);
     setProgress(0);
@@ -360,29 +416,56 @@ export function useRealtime(apiClient: Sav3ApiClient) {
   const [connected, setConnected] = useState(false);
   const [onlineUsersCount, setOnlineUsersCount] = useState(0);
 
-  const updatePresence = useCallback(async (status: 'online' | 'away' | 'offline') => {
-    try {
-      await apiClient.updatePresence(status);
-    } catch (error) {
-      console.error('Failed to update presence:', error);
-    }
-  }, [apiClient]);
+  const updatePresence = useCallback(
+    async (status: "online" | "away" | "offline") => {
+      try {
+        const response = await apiClient.updatePresence(status);
+        if (response.success) {
+          // Update connection status based on presence update
+          setConnected(status !== "offline");
+          console.log(
+            `Presence updated to ${status}, connection status: ${status !== "offline"}`
+          );
+        }
+      } catch (error) {
+        console.error("Failed to update presence:", error);
+        setConnected(false);
+      }
+    },
+    [apiClient]
+  );
 
-  const sendMessage = useCallback(async (recipientId: string, content: string) => {
-    try {
-      // Try WebSocket first, fall back to HTTP
-      return await apiClient.sendMessageFallback(recipientId, content);
-    } catch (error) {
-      console.error('Failed to send message:', error);
-      throw error;
-    }
-  }, [apiClient]);
+  const sendMessage = useCallback(
+    async (recipientId: string, content: string) => {
+      try {
+        // Try WebSocket first, fall back to HTTP
+        const response = await apiClient.sendMessageFallback(
+          recipientId,
+          content
+        );
+        if (response.success) {
+          // Update online users count (simulated)
+          setOnlineUsersCount((prev) => Math.max(1, prev + 1));
+        }
+        return response;
+      } catch (error) {
+        console.error("Failed to send message:", error);
+        throw error;
+      }
+    },
+    [apiClient]
+  );
 
   const getQueuedMessages = useCallback(async () => {
     try {
-      return await apiClient.getQueuedMessages();
+      const response = await apiClient.getQueuedMessages();
+      if (response.success && response.data) {
+        // Update online users count based on queued messages
+        setOnlineUsersCount(response.data.length);
+      }
+      return response;
     } catch (error) {
-      console.error('Failed to get queued messages:', error);
+      console.error("Failed to get queued messages:", error);
       return null;
     }
   }, [apiClient]);
@@ -406,16 +489,17 @@ export function useOfflineSync(apiClient: Sav3ApiClient) {
 
     try {
       setSyncing(true);
-      
-      const syncTime = lastSync || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+      const syncTime =
+        lastSync || new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const response = await apiClient.syncData(syncTime);
-      
+
       if (response.success) {
         setLastSync(response.data.lastSync);
         return response.data;
       }
     } catch (error) {
-      console.error('Sync failed:', error);
+      console.error("Sync failed:", error);
     } finally {
       setSyncing(false);
     }

@@ -15,9 +15,24 @@ import bcrypt from "bcrypt";
 // Using shared singleton `prisma` from src/lib/prisma
 
 async function main() {
+  if (!process.env.DATABASE_URL) {
+    console.error(
+      "❌ Missing DATABASE_URL. Set DATABASE_URL in your environment before running the seed."
+    );
+    process.exit(1);
+  }
+
   console.log("🌱 Seeding database...");
 
-  // Create interests
+  // Check if database has already been seeded
+  const existingUsers = await prisma.user.count();
+  if (existingUsers > 0) {
+    console.log(
+      "🔍 Database already contains data, checking for missing records..."
+    );
+  }
+
+  // Create interests (idempotent)
   const interests = [
     { name: "Photography", description: "Taking and editing photos" },
     { name: "Hiking", description: "Outdoor hiking and trekking" },
@@ -34,12 +49,13 @@ async function main() {
   for (const interest of interests) {
     await prisma.interest.upsert({
       where: { name: interest.name },
-      update: {},
+      update: {}, // Don't update existing interests
       create: interest,
     });
   }
+  console.log(`✅ Created/verified ${interests.length} interests`);
 
-  // Create users
+  // Create users (idempotent)
   const hashedPassword = await bcrypt.hash("password123", 10);
 
   const users = [
@@ -121,107 +137,138 @@ async function main() {
     },
   ];
 
-  const createdUsers = [];
+  const createdUsers = [] as any[];
   for (const userData of users) {
     const { profile, interests: userInterests, photos, ...user } = userData;
 
-    const createdUser = await prisma.user.create({
-      data: {
-        ...user,
-        profile: {
-          create: profile,
-        },
-        photos: {
-          create: photos,
-        },
-      },
+    // Find existing user by email or create
+    let createdUser = await prisma.user.findUnique({
+      where: { email: user.email },
     });
+    if (!createdUser) {
+      createdUser = await prisma.user.create({
+        data: {
+          ...user,
+          profile: {
+            create: profile,
+          },
+          photos: {
+            create: photos,
+          },
+        },
+      });
+    } else {
+      // Ensure profile exists
+      const existingProfile = await prisma.profile.findUnique({
+        where: { userId: createdUser.id },
+      });
+      if (!existingProfile) {
+        await prisma.profile.create({
+          data: { ...profile, userId: createdUser.id },
+        });
+      }
+      // Ensure photos exist
+      for (const p of photos) {
+        const found = await prisma.photo.findFirst({
+          where: { userId: createdUser.id, url: p.url },
+        });
+        if (!found) {
+          await prisma.photo.create({ data: { ...p, userId: createdUser.id } });
+        }
+      }
+    }
 
     // Connect interests
     const interestRecords = await prisma.interest.findMany({
       where: { name: { in: userInterests } },
     });
-
-    await prisma.user.update({
-      where: { id: createdUser.id },
-      data: {
-        interests: {
-          connect: interestRecords.map((interest: { id: string }) => ({
-            id: interest.id,
-          })),
+    if (interestRecords.length) {
+      await prisma.user.update({
+        where: { id: createdUser.id },
+        data: {
+          interests: {
+            connect: interestRecords.map((interest: { id: string }) => ({
+              id: interest.id,
+            })),
+          },
         },
-      },
-    });
+      });
+    }
 
     createdUsers.push(createdUser);
   }
 
-  // Create likes
-  await prisma.like.create({
-    data: {
-      likerId: createdUsers[0].id, // Alice likes Bob
+  // Create likes (idempotent check)
+  const likesToCreate = [
+    {
+      likerId: createdUsers[0].id,
       likedId: createdUsers[1].id,
       isSuper: false,
     },
-  });
-
-  await prisma.like.create({
-    data: {
-      likerId: createdUsers[1].id, // Bob likes Alice back
-      likedId: createdUsers[0].id,
-      isSuper: true,
-    },
-  });
-
-  await prisma.like.create({
-    data: {
-      likerId: createdUsers[2].id, // Charlie likes Alice
+    { likerId: createdUsers[1].id, likedId: createdUsers[0].id, isSuper: true },
+    {
+      likerId: createdUsers[2].id,
       likedId: createdUsers[0].id,
       isSuper: false,
     },
-  });
+  ];
+  for (const l of likesToCreate) {
+    const exists = await prisma.like.findFirst({
+      where: { likerId: l.likerId, likedId: l.likedId },
+    });
+    if (!exists) await prisma.like.create({ data: l });
+  }
 
-  // Create a match between Alice and Bob
-  const match = await prisma.match.create({
-    data: {
-      initiatorId: createdUsers[0].id,
+  // Create or find match between Alice and Bob
+  let match = await prisma.match.findFirst({
+    where: { initiatorId: createdUsers[0].id, receiverId: createdUsers[1].id },
+  });
+  if (!match) {
+    match = await prisma.match.create({
+      data: {
+        initiatorId: createdUsers[0].id,
+        receiverId: createdUsers[1].id,
+        status: MatchStatus.ACTIVE,
+      },
+    });
+  }
+
+  // Create messages if not present
+  const messagesToCreate = [
+    {
+      matchId: match.id,
+      senderId: createdUsers[0].id,
       receiverId: createdUsers[1].id,
-      status: MatchStatus.ACTIVE,
+      content: "Hey! Nice to match with you! 😊",
+      messageType: "text",
     },
-  });
-
-  // Create messages
-  await prisma.message.createMany({
-    data: [
-      {
-        matchId: match.id,
-        senderId: createdUsers[0].id,
-        receiverId: createdUsers[1].id,
-        content: "Hey! Nice to match with you! 😊",
-        messageType: "text",
-      },
-      {
-        matchId: match.id,
-        senderId: createdUsers[1].id,
-        receiverId: createdUsers[0].id,
-        content:
-          "Hi Alice! Love your hiking photos! Maybe we can go for a hike sometime?",
-        messageType: "text",
-        isRead: true,
-        readAt: new Date(),
-      },
-      {
-        matchId: match.id,
-        senderId: createdUsers[0].id,
-        receiverId: createdUsers[1].id,
-        content:
-          "That sounds amazing! I know some great trails around the bay area.",
-        messageType: "text",
-        isRead: true,
-        readAt: new Date(),
-      },
-    ],
-  });
+    {
+      matchId: match.id,
+      senderId: createdUsers[1].id,
+      receiverId: createdUsers[0].id,
+      content:
+        "Hi Alice! Love your hiking photos! Maybe we can go for a hike sometime?",
+      messageType: "text",
+      isRead: true,
+      readAt: new Date(),
+    },
+    {
+      matchId: match.id,
+      senderId: createdUsers[0].id,
+      receiverId: createdUsers[1].id,
+      content:
+        "That sounds amazing! I know some great trails around the bay area.",
+      messageType: "text",
+      isRead: true,
+      readAt: new Date(),
+    },
+  ];
+  for (const m of messagesToCreate) {
+    const exists = await prisma.message.findFirst({
+      where: { matchId: m.matchId, senderId: m.senderId, content: m.content },
+    });
+    if (!exists) await prisma.message.create({ data: m });
+  }
 
   console.log("✅ Database seeded successfully!");
 
@@ -301,7 +348,7 @@ async function main() {
     },
   ];
 
-  const createdCategories = [];
+  const createdCategories: any[] = [];
   for (const category of categories) {
     const created = await prisma.category.upsert({
       where: { slug: category.slug },
@@ -311,58 +358,69 @@ async function main() {
     createdCategories.push(created);
   }
 
-  // Create category memberships
-  await prisma.categoryMembership.create({
-    data: {
-      userId: createdUsers[0].id, // Alice joins Art
+  // Create category memberships if missing
+  const categoryMembershipsToCreate = [
+    {
+      userId: createdUsers[0].id,
       categoryId: createdCategories.find((c) => c.slug === "art")!.id,
     },
-  });
-
-  await prisma.categoryMembership.create({
-    data: {
-      userId: createdUsers[1].id, // Bob joins Tech
+    {
+      userId: createdUsers[1].id,
       categoryId: createdCategories.find((c) => c.slug === "tech")!.id,
     },
-  });
-
-  await prisma.categoryMembership.create({
-    data: {
-      userId: createdUsers[2].id, // Charlie joins Sports
+    {
+      userId: createdUsers[2].id,
       categoryId: createdCategories.find((c) => c.slug === "sports")!.id,
     },
-  });
+  ];
+  for (const cm of categoryMembershipsToCreate) {
+    const exists = await prisma.categoryMembership.findFirst({
+      where: { userId: cm.userId, categoryId: cm.categoryId },
+    });
+    if (!exists) await prisma.categoryMembership.create({ data: cm });
+  }
 
   // Create communities
-  const artCommunity = await prisma.community.create({
-    data: {
-      name: "Bay Area Photographers",
-      description:
-        "A community for photographers in the San Francisco Bay Area",
-      visibility: CommunityVisibility.PUBLIC,
-      ownerId: createdUsers[0].id, // Alice owns it
-      categoryId: createdCategories.find((c) => c.slug === "art")!.id,
-    },
+  let artCommunity = await prisma.community.findFirst({
+    where: { name: "Bay Area Photographers" },
   });
+  if (!artCommunity) {
+    artCommunity = await prisma.community.create({
+      data: {
+        name: "Bay Area Photographers",
+        description:
+          "A community for photographers in the San Francisco Bay Area",
+        visibility: CommunityVisibility.PUBLIC,
+        ownerId: createdUsers[0].id,
+        categoryId: createdCategories.find((c) => c.slug === "art")!.id,
+      },
+    });
+  }
 
-  const techCommunity = await prisma.community.create({
-    data: {
-      name: "Tech Meetup SF",
-      description: "Weekly tech discussions and networking in San Francisco",
-      visibility: CommunityVisibility.PUBLIC,
-      ownerId: createdUsers[1].id, // Bob owns it
-      categoryId: createdCategories.find((c) => c.slug === "tech")!.id,
-    },
+  let techCommunity = await prisma.community.findFirst({
+    where: { name: "Tech Meetup SF" },
   });
+  if (!techCommunity) {
+    techCommunity = await prisma.community.create({
+      data: {
+        name: "Tech Meetup SF",
+        description: "Weekly tech discussions and networking in San Francisco",
+        visibility: CommunityVisibility.PUBLIC,
+        ownerId: createdUsers[1].id,
+        categoryId: createdCategories.find((c) => c.slug === "tech")!.id,
+      },
+    });
+  }
 
   // Create community memberships
   await prisma.communityMembership.createMany({
     data: [
-      { userId: createdUsers[0].id, communityId: artCommunity.id }, // Alice joins her own community
-      { userId: createdUsers[1].id, communityId: artCommunity.id }, // Bob joins art community
-      { userId: createdUsers[1].id, communityId: techCommunity.id }, // Bob joins his own community
-      { userId: createdUsers[2].id, communityId: techCommunity.id }, // Charlie joins tech community
+      { userId: createdUsers[0].id, communityId: artCommunity.id },
+      { userId: createdUsers[1].id, communityId: artCommunity.id },
+      { userId: createdUsers[1].id, communityId: techCommunity.id },
+      { userId: createdUsers[2].id, communityId: techCommunity.id },
     ],
+    skipDuplicates: true,
   });
 
   // Create community messages
@@ -386,17 +444,22 @@ async function main() {
         content: "Our next meetup is this Friday. Topic: AI and Dating Apps 😄",
       },
     ],
+    skipDuplicates: true,
   });
 
   // Create friendships
-  await prisma.friendship.create({
-    data: {
-      requesterId: createdUsers[2].id, // Charlie requests friendship with Alice
-      addresseeId: createdUsers[0].id,
-      status: FriendshipStatus.ACCEPTED,
-      respondedAt: new Date(),
-    },
+  const friendshipExists = await prisma.friendship.findFirst({
+    where: { requesterId: createdUsers[2].id, addresseeId: createdUsers[0].id },
   });
+  if (!friendshipExists)
+    await prisma.friendship.create({
+      data: {
+        requesterId: createdUsers[2].id,
+        addresseeId: createdUsers[0].id,
+        status: FriendshipStatus.ACCEPTED,
+        respondedAt: new Date(),
+      },
+    });
 
   // Create boosts
   const tomorrow = new Date();
@@ -424,6 +487,7 @@ async function main() {
         priority: 2,
       },
     ],
+    skipDuplicates: true,
   });
 
   // Create media assets
@@ -448,6 +512,7 @@ async function main() {
         height: 1200,
       },
     ],
+    skipDuplicates: true,
   });
 
   // Create user settings
@@ -468,6 +533,7 @@ async function main() {
         enableSounds: false,
       },
     ],
+    skipDuplicates: true,
   });
 
   // Create privacy settings
@@ -488,6 +554,7 @@ async function main() {
         allowMessagesFrom: "friends",
       },
     ],
+    skipDuplicates: true,
   });
 
   // Create filter settings
@@ -510,6 +577,7 @@ async function main() {
         orientation: Orientation.STRAIGHT,
       },
     ],
+    skipDuplicates: true,
   });
 
   console.log("✅ Extended database seeded successfully!");

@@ -1,10 +1,10 @@
-import { PrismaClient } from "@prisma/client";
 import { prisma } from "../lib/prisma";
 import { Server as HTTPServer } from "http";
 import jwt from "jsonwebtoken";
 import { Socket, Server as SocketIOServer } from "socket.io";
 import { logger } from "../utils/logger";
 import { handleServiceError } from "../utils/error";
+import { CustomPushNotificationService } from "./custom-push-notification.service";
 
 // using shared singleton `prisma` from src/lib/prisma
 
@@ -66,7 +66,7 @@ export class WebSocketService {
   private setupAuth() {
     const io = this.io;
     if (!io) return;
-    io.use(async (socket: any, next: any) => {
+    io.use(async (socket: AuthenticatedSocket, next: any) => {
       try {
         const token =
           socket.handshake.auth.token ||
@@ -105,6 +105,7 @@ export class WebSocketService {
         socket.user = user;
         next();
       } catch (error) {
+        logger.error("Socket authentication error:", error);
         next(new Error("Authentication failed"));
       }
     });
@@ -113,14 +114,14 @@ export class WebSocketService {
   private setupEventHandlers() {
     const io = this.io;
     if (!io) return;
-    io.on("connection", (socket: any) => {
+    io.on("connection", (socket: AuthenticatedSocket) => {
       console.log(`User ${socket.userId} connected`);
 
       // Store user socket mapping
-      this.userSockets.set(socket.userId, socket.id);
+      this.userSockets.set(socket.userId!, socket.id);
 
-      // Update user online status
-      this.updateUserOnlineStatus(socket.userId, true);
+      // Update user presence to online
+      this.updateUserPresence(socket.userId!, "ONLINE", socket);
 
       // Join user to their personal room for direct notifications
       socket.join(`user:${socket.userId}`);
@@ -157,19 +158,22 @@ export class WebSocketService {
       // Handle disconnect
       socket.on("disconnect", () => {
         console.log(`User ${socket.userId} disconnected`);
-        this.userSockets.delete(socket.userId);
-        this.updateUserOnlineStatus(socket.userId, false);
+        this.userSockets.delete(socket.userId!);
+        this.updateUserPresence(socket.userId!, "OFFLINE", socket);
+
+        // Reset retry count on disconnect
+        this.connectionRetryCount.delete(socket.id);
       });
     });
   }
 
-  private async handleJoinMatch(socket: any, matchId: string) {
+  private async handleJoinMatch(socket: AuthenticatedSocket, matchId: string) {
     try {
       // Verify user is part of the match
       const match = await prisma.match.findFirst({
         where: {
           id: matchId,
-          OR: [{ initiatorId: socket.userId }, { receiverId: socket.userId }],
+          OR: [{ initiatorId: socket.userId! }, { receiverId: socket.userId! }],
           status: "ACTIVE",
         },
       });
@@ -187,7 +191,7 @@ export class WebSocketService {
     }
   }
 
-  private async handleSendMessage(socket: any, data: any) {
+  private async handleSendMessage(socket: AuthenticatedSocket, data: any) {
     try {
       const { matchId, content, messageType = "text", clientNonce } = data;
 
@@ -195,7 +199,7 @@ export class WebSocketService {
       const match = await prisma.match.findFirst({
         where: {
           id: matchId,
-          OR: [{ initiatorId: socket.userId }, { receiverId: socket.userId }],
+          OR: [{ initiatorId: socket.userId! }, { receiverId: socket.userId! }],
           status: "ACTIVE",
         },
       });
@@ -210,14 +214,14 @@ export class WebSocketService {
       }
 
       const receiverId =
-        match.initiatorId === socket.userId
+        match.initiatorId === socket.userId!
           ? match.receiverId
           : match.initiatorId;
 
       // Create message in database
       const message = await prisma.message.create({
         data: {
-          senderId: socket.userId,
+          senderId: socket.userId!,
           receiverId,
           matchId,
           content,
@@ -276,27 +280,36 @@ export class WebSocketService {
     }
   }
 
-  private handleTypingStart(socket: any, data: { matchId: string }) {
+  private handleTypingStart(
+    socket: AuthenticatedSocket,
+    data: { matchId: string }
+  ) {
     socket.to(`match:${data.matchId}`).emit("user_typing", {
-      userId: socket.userId,
+      userId: socket.userId!,
       matchId: data.matchId,
     });
   }
 
-  private handleTypingStop(socket: any, data: { matchId: string }) {
+  private handleTypingStop(
+    socket: AuthenticatedSocket,
+    data: { matchId: string }
+  ) {
     socket.to(`match:${data.matchId}`).emit("user_stopped_typing", {
-      userId: socket.userId,
+      userId: socket.userId!,
       matchId: data.matchId,
     });
   }
 
-  private async handleMarkRead(socket: any, data: { matchId: string }) {
+  private async handleMarkRead(
+    socket: AuthenticatedSocket,
+    data: { matchId: string }
+  ) {
     try {
       // Collect unread message ids first for per-message read receipts
       const unread = await prisma.message.findMany({
         where: {
           matchId: data.matchId,
-          receiverId: socket.userId,
+          receiverId: socket.userId!,
           readAt: null,
         },
         select: { id: true },
@@ -305,7 +318,7 @@ export class WebSocketService {
       await prisma.message.updateMany({
         where: {
           matchId: data.matchId,
-          receiverId: socket.userId,
+          receiverId: socket.userId!,
           readAt: null,
         },
         data: {
@@ -316,7 +329,7 @@ export class WebSocketService {
       // Notify sender about read receipt
       socket.to(`match:${data.matchId}`).emit("messages_read", {
         matchId: data.matchId,
-        readBy: socket.userId,
+        readBy: socket.userId!,
         readAt: new Date(),
         messageIds: unread.map((m) => m.id),
       });
@@ -326,18 +339,67 @@ export class WebSocketService {
     }
   }
 
-  private async updateUserOnlineStatus(userId: string, isOnline: boolean) {
+  /**
+   * Update user presence in database and emit events
+   */
+  private async updateUserPresence(
+    userId: string,
+    status: "ONLINE" | "AWAY" | "OFFLINE",
+    socket?: AuthenticatedSocket
+  ) {
     try {
-      await prisma.user.update({
-        where: { id: userId },
-        data: {
-          // lastSeen not in schema new Date(),
-          // You could add an isOnline field to the user model if needed
+      const deviceId = socket?.handshake?.query?.deviceId as string;
+
+      const presence = await prisma.presence.upsert({
+        where: { userId },
+        update: {
+          status,
+          deviceId,
+          lastActivity: new Date(),
+          isActive: status === "ONLINE",
+          updatedAt: new Date(),
+        },
+        create: {
+          userId,
+          status,
+          deviceId,
+          isActive: status === "ONLINE",
         },
       });
+
+      // Emit presence update to user's friends/followers
+      const io = this.io;
+      if (io) {
+        // Get user's friends for presence updates
+        const friendships = await prisma.friendship.findMany({
+          where: {
+            OR: [{ requesterId: userId }, { addresseeId: userId }],
+            status: "ACCEPTED",
+          },
+          select: {
+            requesterId: true,
+            addresseeId: true,
+          },
+        });
+
+        const friendIds = friendships.map((f) =>
+          f.requesterId === userId ? f.addresseeId : f.requesterId
+        );
+
+        // Emit to friends
+        friendIds.forEach((friendId) => {
+          io.to(`user:${friendId}`).emit("presence_update", {
+            userId,
+            status: presence.status,
+            lastActivity: presence.lastActivity,
+            isActive: presence.isActive,
+          });
+        });
+      }
+
+      logger.debug(`User ${userId} presence updated: ${status}`);
     } catch (error) {
-      console.error("Failed to update online status:", error);
-      handleServiceError(error as any);
+      logger.error(`Failed to update presence for user ${userId}:`, error);
     }
   }
 
@@ -348,6 +410,22 @@ export class WebSocketService {
     io.to(`user:${userId}`).emit("notification", notification);
   }
 
+  /**
+   * Public method to trigger a haptic/vibrate event on a specific user's clients.
+   * Frontend clients should listen for the `haptic` event and run platform-specific
+   * haptic/vibration APIs (Expo Haptics / React Native Vibration / navigator.vibrate).
+   *
+   * Payload example: { type: 'success' | 'warning' | 'error' | 'confirm', pattern?: string }
+   */
+  public sendHapticToUser(
+    userId: string,
+    payload: { type?: string; pattern?: string } = {}
+  ) {
+    const io = this.io;
+    if (!io) return;
+    io.to(`user:${userId}`).emit("haptic", payload);
+  }
+
   // Public method to send match notification
   public sendMatchNotification(userId: string, matchData: any) {
     const io = this.io;
@@ -355,43 +433,84 @@ export class WebSocketService {
     io.to(`user:${userId}`).emit("new_match", matchData);
   }
 
-  // Send push notification (placeholder for FCM integration)
+  // Send push notification using custom service
   private async sendPushNotification(userId: string, notification: any) {
     try {
-      // Get user's device tokens
-      const devices = await prisma.device.findMany({
-        where: {
-          userId,
-          fcmToken: { not: null },
-        },
+      // Use custom push notification service instead of Firebase
+      const results = await CustomPushNotificationService.sendToUser(userId, {
+        title: notification.title,
+        body: notification.body,
+        data: notification.data,
       });
 
-      // Here you would integrate with FCM (Firebase Cloud Messaging)
-      // For now, we'll store as a notification in the database
-      await prisma.notification.create({
-        data: {
-          userId,
-          type: "message",
-          title: notification.title,
-          body: notification.body,
-          data: notification.data,
-        },
-      });
+      // Check if any notifications were sent successfully
+      const success = results.some((result) => result.success);
 
-      logger.info(`Push notification sent to user ${userId}:`, notification);
+      if (success) {
+        logger.info(`Push notification sent to user ${userId}:`, notification);
+      } else {
+        logger.warn(
+          `Failed to send push notification to user ${userId}:`,
+          notification
+        );
+      }
+
+      return success;
     } catch (error: any) {
       logger.error("Failed to send push notification:", error);
-      handleServiceError(error as any);
+      handleServiceError(error);
+      return false;
     }
   }
 
-  /**
-   * Setup presence tracking for online/offline status
-   */
   private setupPresenceTracking() {
+    // Presence is now handled via API routes and database
+    // This method can be used for periodic cleanup or stats
     setInterval(() => {
-      this.updatePresenceStatus();
-    }, 30000); // Update every 30 seconds
+      this.cleanupInactivePresence();
+      this.updatePresenceStatus(); // Update presence status periodically
+    }, 300000); // Clean up every 5 minutes
+  }
+
+  /**
+   * Clean up inactive presence records
+   */
+  private async cleanupInactivePresence() {
+    try {
+      const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+
+      // Mark users as offline if they haven't been active for 5 minutes
+      await prisma.presence.updateMany({
+        where: {
+          lastActivity: {
+            lt: fiveMinutesAgo,
+          },
+          status: {
+            not: "OFFLINE",
+          },
+        },
+        data: {
+          status: "OFFLINE",
+          isActive: false,
+          updatedAt: new Date(),
+        },
+      });
+
+      // End activities that have been running too long
+      await prisma.userActivity.updateMany({
+        where: {
+          startedAt: {
+            lt: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes
+          },
+          endedAt: null,
+        },
+        data: {
+          endedAt: new Date(),
+        },
+      });
+    } catch (error) {
+      logger.error("Failed to cleanup inactive presence:", error);
+    }
   }
 
   /**
@@ -407,21 +526,8 @@ export class WebSocketService {
    * Update presence status for all connected users
    */
   private updatePresenceStatus() {
-    this.presence.forEach(async (presence, userId) => {
-      try {
-        // Update user's last seen timestamp (if the field exists in your schema)
-        // await prisma.user.update({
-        //   where: { id: userId },
-        //   data: {
-        //     lastSeen: presence.lastSeen,
-        //   },
-        // });
-
-        logger.debug(`User ${userId} presence: ${presence.status}`);
-      } catch (error: any) {
-        logger.error(`Failed to update presence for user ${userId}:`, error);
-      }
-    });
+    // This method is now handled by the database cleanup
+    // Keeping for potential future use with in-memory optimizations
   }
 
   /**
@@ -510,6 +616,13 @@ export class WebSocketService {
     status: "online" | "away" | "offline",
     deviceInfo?: any
   ) {
+    // Log device info for analytics
+    if (deviceInfo) {
+      console.log(
+        `Setting presence for user ${userId} with device info: ${JSON.stringify(deviceInfo)}`
+      );
+    }
+
     this.presence.set(userId, {
       userId,
       status,

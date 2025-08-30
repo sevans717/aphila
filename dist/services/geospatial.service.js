@@ -11,12 +11,18 @@ class GeospatialService {
      */
     static async updateUserLocation(data) {
         try {
+            const updateData = {
+                latitude: data.latitude,
+                longitude: data.longitude,
+            };
+            // If PostGIS is available, also update the geography column
+            const postgisAvailable = await this.isPostGISAvailable();
+            if (postgisAvailable) {
+                updateData.locationGeography = `POINT(${data.longitude} ${data.latitude})`;
+            }
             await prisma_1.prisma.profile.update({
                 where: { userId: data.userId },
-                data: {
-                    latitude: data.latitude,
-                    longitude: data.longitude,
-                },
+                data: updateData,
             });
             logger_1.logger.info(`Updated location for user ${data.userId}`);
         }
@@ -53,6 +59,74 @@ class GeospatialService {
      * Find nearby users using geospatial queries
      */
     static async findNearbyUsers(query) {
+        try {
+            // Try PostGIS first if available
+            const postgisAvailable = await this.isPostGISAvailable();
+            if (postgisAvailable) {
+                return this.findNearbyUsersPostGIS(query);
+            }
+        }
+        catch (error) {
+            logger_1.logger.warn("PostGIS not available, falling back to geolib:", error);
+        }
+        // Fallback to bounding box + distance calculation
+        return this.findNearbyUsersGeolib(query);
+    }
+    /**
+     * Check if PostGIS is available
+     */
+    static async isPostGISAvailable() {
+        try {
+            const result = await prisma_1.prisma.$queryRaw `SELECT PostGIS_version()`;
+            return !!result;
+        }
+        catch {
+            return false;
+        }
+    }
+    /**
+     * Find nearby users using PostGIS
+     */
+    static async findNearbyUsersPostGIS(query) {
+        const userPoint = `POINT(${query.longitude} ${query.latitude})`;
+        const users = (await prisma_1.prisma.$queryRaw `
+      SELECT
+        u.id,
+        p."displayName",
+        p.bio,
+        p.gender,
+        p."birthdate",
+        p."isVerified",
+        ST_Distance(p."locationGeography", ST_GeogFromText(${userPoint})) / 1000.0 as distance_km,
+        ph.url as "primaryPhoto"
+      FROM users u
+      JOIN profiles p ON u.id = p."userId"
+      LEFT JOIN photos ph ON u.id = ph."userId" AND ph."isPrimary" = true
+      WHERE u."isActive" = true
+        AND p."isVisible" = true
+        AND p."locationGeography" IS NOT NULL
+        AND ST_DWithin(p."locationGeography", ST_GeogFromText(${userPoint}), ${query.radius * 1000})
+        AND u.id != ${query.userId || ""}
+      ORDER BY p."locationGeography" <-> ST_GeogFromText(${userPoint})
+      LIMIT ${query.limit || 50}
+    `);
+        return users.map((user) => ({
+            id: user.id,
+            profile: {
+                displayName: user.displayName,
+                bio: user.bio,
+                gender: user.gender,
+                birthdate: user.birthdate,
+                isVerified: user.isVerified,
+                primaryPhoto: user.primaryPhoto,
+            },
+            distance: Math.round(user.distance_km * 10) / 10,
+        }));
+    }
+    /**
+     * Find nearby users using geolib (fallback)
+     */
+    static async findNearbyUsersGeolib(query) {
         // Use PostGIS if available, otherwise fall back to bounding box + distance calculation
         const boundingBox = this.calculateBoundingBox(query.latitude, query.longitude, query.radius);
         const users = await prisma_1.prisma.user.findMany({
@@ -77,6 +151,7 @@ class GeospatialService {
                         displayName: true,
                         bio: true,
                         gender: true,
+                        birthdate: true,
                         latitude: true,
                         longitude: true,
                         isVerified: true,

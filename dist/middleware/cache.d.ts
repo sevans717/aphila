@@ -1,4 +1,4 @@
-import { NextFunction, Request, Response } from 'express';
+import { NextFunction, Request, Response } from "express";
 export interface CacheOptions {
     ttl?: number;
     vary?: string[];
@@ -14,7 +14,7 @@ export declare function cache(options?: CacheOptions): (req: Request, res: Respo
 /**
  * No-cache middleware for sensitive endpoints
  */
-export declare function noCache(req: Request, res: Response, next: NextFunction): void;
+export declare function noCache(_req: Request, res: Response, next: NextFunction): void;
 /**
  * Short cache for frequently changing data
  */

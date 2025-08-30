@@ -1,0 +1,58 @@
+{
+  "routes": [
+    {
+      "path": "/sharing/post",
+      "method": "POST",
+      "file": "src/routes/sharing.routes.ts",
+      "validated": true,
+      "schema": "sharePostValidation"
+    },
+    {
+      "path": "/sharing/media",
+      "method": "POST",
+      "file": "src/routes/sharing.routes.ts",
+      "validated": true,
+      "schema": "shareMediaValidation"
+    },
+    {
+      "path": "/sharing/:shareId",
+      "method": "DELETE",
+      "file": "src/routes/sharing.routes.ts",
+      "validated": true,
+      "schema": "{ params: { shareId }, query: { type } }"
+    },
+    {
+      "path": "/search/history",
+      "method": "DELETE",
+      "file": "src/routes/search.routes.ts",
+      "validated": true,
+      "schema": "{}"
+    },
+    {
+      "path": "/categories/:categoryId/join",
+      "method": "POST",
+      "file": "src/routes/categories.routes.ts",
+      "validated": true,
+      "schema": "{ params: { categoryId } }"
+    },
+    {
+      "path": "/categories/:categoryId/leave",
+      "method": "DELETE",
+      "file": "src/routes/categories.routes.ts",
+      "validated": true,
+      "schema": "{ params: { categoryId } }"
+    },
+    {
+      "path": "/communities/:id/leave",
+      "method": "DELETE",
+      "file": "src/routes/communities.routes.ts",
+      "validated": true,
+      "schema": "{ params: { id } }"
+    }
+  ],
+  "summary": {
+    "totalRoutesScanned": 7,
+    "validated": 7,
+    "unvalidated": 0
+  }
+}

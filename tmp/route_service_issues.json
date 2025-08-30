@@ -47,11 +47,11 @@
     "methods": {
       "POST /register": {
         "status": "scanned",
-        "handler": "validate(registerSchema"
+        "handler": "validateRequest({"
       },
       "POST /login": {
         "status": "scanned",
-        "handler": "validate(loginSchema"
+        "handler": "validateRequest({"
       },
       "GET /me": {
         "status": "scanned",
@@ -143,11 +143,11 @@
     "methods": {
       "GET /": {
         "status": "scanned",
-        "handler": "async"
+        "handler": "validateRequest({"
       },
       "GET /:id": {
         "status": "scanned",
-        "handler": "async"
+        "handler": "validateRequest({"
       },
       "POST /": {
         "status": "scanned",
@@ -211,7 +211,7 @@
       },
       "GET /communities": {
         "status": "scanned",
-        "handler": "async"
+        "handler": "validateRequest({"
       }
     }
   },

@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
       POSTGRES_DB: ${POSTGRES_DB:-sav3}
     ports:
-      - "5432:5432"
+      - "10000:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
     networks:
@@ -23,7 +23,7 @@ services:
       - ./pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
       - ./pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
     ports:
-      - "6432:6432"
+      - "10002:6432"
     depends_on:
       - db
     networks:
@@ -40,7 +40,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-change_me}
       PORT: ${PORT:-4000}
     ports:
-      - "4000:4000"
+      - "10010:4000"
     volumes:
       - ./:/usr/src/app
     command: sh -c "npm run dev"

@@ -80,6 +80,7 @@ class ModerationService {
     // Create a report
     static async createReport(data) {
         const { reporterId, reportedId, reason, description, contentId } = data;
+        logger_1.logger.info(`Creating report: ${reporterId} reporting ${reportedId} for ${reason}, contentId: ${contentId}, description: ${description}`);
         // Prevent self-reporting
         if (reporterId === reportedId) {
             const err = new Error("Cannot report yourself");
@@ -115,7 +116,7 @@ class ModerationService {
                         profile: { select: { displayName: true } },
                     },
                 },
-                // @ts-ignore
+                // @ts-ignore - reportedUser relation might not exist in schema
                 reportedUser: {
                     select: {
                         profile: { select: { displayName: true } },
@@ -189,8 +190,10 @@ class ModerationService {
         const where = {};
         if (status)
             where.status = status;
-        if (type)
-            where.type = type;
+        if (type) {
+            where.reason = { contains: type }; // Map type to reason field
+            logger_1.logger.info(`Filtering reports by type: ${type}`);
+        }
         const [reports, total] = await Promise.all([
             prisma_1.prisma.report.findMany({
                 where,
@@ -201,7 +204,7 @@ class ModerationService {
                             profile: { select: { displayName: true } },
                         },
                     },
-                    // @ts-ignore
+                    // @ts-ignore - reportedUser relation might not exist in schema
                     reportedUser: {
                         select: {
                             id: true,
@@ -243,11 +246,12 @@ class ModerationService {
             where: { id: reportId },
             data: {
                 status,
-                // @ts-ignore
+                // @ts-ignore - adminNotes field might not exist in schema
                 adminNotes,
                 reviewedAt: new Date(),
             },
         });
+        logger_1.logger.info(`Updated report ${reportId} status to ${status}, admin notes: ${adminNotes || "none"}`);
         // Take action if specified
         if (action && action !== "dismiss") {
             await this.takeActionOnUser(report.reportedId, action);

@@ -1,0 +1,90 @@
+version: "3.8"
+
+services:
+  # Main PostgreSQL with pgBackRest archiving
+  postgres-primary:
+    build:
+      context: ./docker/postgres
+      dockerfile: Dockerfile
+    environment:
+      POSTGRES_DB: sav3_db
+      POSTGRES_USER: sav3_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev_password_change_me}
+      TZ: ${TZ:-UTC}
+    ports:
+      - "10000:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - pgbackrest_config:/etc/pgbackrest
+      - pgbackrest_spool:/var/spool/pgbackrest
+      - ./docker/postgres/backup-init:/docker-entrypoint-initdb.d
+      - ./docker/postgres/init-scripts/chown-data.sh:/usr/local/bin/chown-data.sh:ro
+    command: |
+      postgres
+      -c wal_level=replica
+      -c max_wal_senders=3
+      -c wal_keep_size=100MB
+      -c shared_preload_libraries=pg_stat_statements
+    networks:
+      - sav3_network
+
+  # pgBackRest backup repository
+  pgbackrest:
+    build:
+      context: ./docker/pgbackrest
+      dockerfile: Dockerfile
+    user: "${LOCAL_UID:-1000}:${LOCAL_GID:-1000}"
+    environment:
+      PGBACKREST_STANZA: main
+      PGBACKREST_REPO1_PATH: /var/lib/pgbackrest
+      PGBACKREST_DB1_HOST: postgres-primary
+      PGBACKREST_DB1_HOST_USER: postgres
+      PGBACKREST_DB1_PATH: /var/lib/postgresql/data
+      PGBACKREST_RETENTION_FULL: "7"
+      PGBACKREST_RETENTION_DIFF: "4"
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-dev_password_change_me}
+      TZ: ${TZ:-UTC}
+    volumes:
+      - pgbackrest_repo:/var/lib/pgbackrest
+      - pgbackrest_config:/etc/pgbackrest
+      - pgbackrest_spool:/var/spool/pgbackrest
+      - ./docker/pgbackrest:/etc/pgbackrest/conf.d
+      - ./docker/pgbackrest/init-scripts/chown-repo.sh:/usr/local/bin/chown-repo.sh:ro
+    depends_on:
+      - postgres-primary
+    networks:
+      - sav3_network
+
+  # Backup scheduler and health checker
+  backup-scheduler:
+    build:
+      context: ./docker/backup-scheduler
+    environment:
+      PGBACKREST_STANZA: main
+      BACKUP_SCHEDULE_FULL: "0 2 * * 0" # Weekly full backup at 2 AM Sunday
+      BACKUP_SCHEDULE_DIFF: "0 2 * * 1-6" # Daily diff backup at 2 AM
+      BACKUP_SCHEDULE_INCR: "0 */6 * * *" # Incremental every 6 hours
+      RETENTION_DAYS: 30
+      HEALTH_CHECK_INTERVAL: 300 # 5 minutes
+      TZ: ${TZ:-UTC}
+    volumes:
+      - pgbackrest_repo:/var/lib/pgbackrest
+      - pgbackrest_config:/etc/pgbackrest
+      - backup_logs:/var/log/backups
+      - ./scripts/backup-health:/usr/local/bin/backup-health
+      - ./docker/backup-scheduler/init-scripts/chown-logs.sh:/usr/local/bin/chown-logs.sh:ro
+    depends_on:
+      - pgbackrest
+    networks:
+      - sav3_network
+
+volumes:
+  postgres_data:
+  pgbackrest_repo:
+  pgbackrest_config:
+  pgbackrest_spool:
+  backup_logs:
+
+networks:
+  sav3_network:
+    driver: bridge

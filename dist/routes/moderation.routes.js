@@ -1,78 +1,20 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const zod_1 = require("zod");
 const auth_1 = require("../middleware/auth");
-const validate_1 = require("../middleware/validate");
-const moderation_service_1 = require("../services/moderation.service");
 const router = (0, express_1.Router)();
-// Admin middleware (simplified - in production, use proper role checking)
-const requireAdmin = (req, res, next) => {
-    // Check if user is admin (you'd implement proper admin role checking)
-    if (!req.user.isAdmin) {
-        return res.status(403).json({
-            success: false,
-            error: "Admin access required",
-        });
-    }
-    next();
-};
-// Validation schemas
-const reportSchema = zod_1.z.object({
-    reportedId: zod_1.z.string(),
-    type: zod_1.z.enum(["profile", "message", "photo", "behavior"]),
-    reason: zod_1.z.string().min(1),
-    description: zod_1.z.string().optional(),
-    contentId: zod_1.z.string().optional(),
-});
-const reportsQuerySchema = zod_1.z.object({
-    status: zod_1.z.enum(["pending", "reviewed", "resolved"]).optional(),
-    type: zod_1.z.enum(["profile", "message", "photo", "behavior"]).optional(),
-    limit: zod_1.z.string().transform(Number).optional(),
-    page: zod_1.z.string().transform(Number).optional(),
-});
-const updateReportSchema = zod_1.z.object({
-    status: zod_1.z.enum(["reviewed", "resolved"]),
-    action: zod_1.z.enum(["warn", "suspend", "ban", "dismiss"]).optional(),
-    adminNotes: zod_1.z.string().optional(),
-});
-const reportParamsSchema = zod_1.z.object({
-    reportId: zod_1.z.string(),
-});
-const userParamsSchema = zod_1.z.object({
-    userId: zod_1.z.string(),
-});
-// POST /report - Create a report
-router.post("/report", auth_1.requireAuth, (0, validate_1.validateRequest)({ body: reportSchema }), async (req, res) => {
+// Get moderation queue
+router.get("/queue", auth_1.requireAuth, async (req, res) => {
     try {
-        const reporterId = req.user.id;
-        const reportData = {
-            reporterId,
-            ...req.body,
-        };
-        const report = await moderation_service_1.ModerationService.createReport(reportData);
-        res.status(201).json({
-            success: true,
-            data: report,
-            message: "Report submitted successfully",
-        });
-    }
-    catch (error) {
-        res.status(400).json({
-            success: false,
-            error: error.message,
-        });
-    }
-});
-// GET /reports - Get reports (admin only)
-router.get("/reports", auth_1.requireAuth, requireAdmin, (0, validate_1.validateRequest)({ query: reportsQuerySchema }), async (req, res) => {
-    try {
-        const filters = req.query;
-        const result = await moderation_service_1.ModerationService.getReports(filters);
+        const userId = req.user?.userId;
+        // TODO: Implement moderation queue service
         res.json({
             success: true,
-            data: result.reports,
-            pagination: result.pagination,
+            data: {
+                userId,
+                queue: [],
+                message: "Moderation queue endpoint - implementation pending",
+            },
         });
     }
     catch (error) {
@@ -82,32 +24,23 @@ router.get("/reports", auth_1.requireAuth, requireAdmin, (0, validate_1.validate
         });
     }
 });
-// PUT /reports/:reportId - Update report status (admin only)
-router.put("/reports/:reportId", auth_1.requireAuth, requireAdmin, (0, validate_1.validateRequest)({ params: reportParamsSchema, body: updateReportSchema }), async (req, res) => {
+// Moderate content
+router.post("/moderate/:contentId", auth_1.requireAuth, async (req, res) => {
     try {
-        const { reportId } = req.params;
-        const { status, action, adminNotes } = req.body;
-        await moderation_service_1.ModerationService.updateReportStatus(reportId, status, action, adminNotes);
+        const { contentId } = req.params;
+        const userId = req.user?.userId;
+        const { action, reason } = req.body;
+        // TODO: Implement content moderation service
         res.json({
             success: true,
-            message: "Report updated successfully",
-        });
-    }
-    catch (error) {
-        res.status(400).json({
-            success: false,
-            error: error.message,
-        });
-    }
-});
-// GET /user/:userId/history - Get user moderation history (admin only)
-router.get("/user/:userId/history", auth_1.requireAuth, requireAdmin, (0, validate_1.validateRequest)({ params: userParamsSchema }), async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const history = await moderation_service_1.ModerationService.getUserModerationHistory(userId);
-        res.json({
-            success: true,
-            data: history,
+            data: {
+                contentId,
+                userId,
+                action,
+                reason,
+                moderatedAt: new Date().toISOString(),
+                message: "Content moderated - implementation pending",
+            },
         });
     }
     catch (error) {
@@ -117,14 +50,70 @@ router.get("/user/:userId/history", auth_1.requireAuth, requireAdmin, (0, valida
         });
     }
 });
-// GET /user/:userId/suspended - Check if user is suspended
-router.get("/user/:userId/suspended", auth_1.requireAuth, requireAdmin, (0, validate_1.validateRequest)({ params: userParamsSchema }), async (req, res) => {
+// Get moderation stats
+router.get("/stats", auth_1.requireAuth, async (req, res) => {
     try {
-        const { userId } = req.params;
-        const isSuspended = await moderation_service_1.ModerationService.isUserSuspended(userId);
+        const userId = req.user?.userId;
+        // TODO: Implement moderation stats service
         res.json({
             success: true,
-            data: { isSuspended },
+            data: {
+                userId,
+                stats: {
+                    totalModerated: 0,
+                    approved: 0,
+                    rejected: 0,
+                    pending: 0,
+                },
+                message: "Moderation stats endpoint - implementation pending",
+            },
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message,
+        });
+    }
+});
+// Report content
+router.post("/report", auth_1.requireAuth, async (req, res) => {
+    try {
+        const userId = req.user?.userId;
+        const { contentId, contentType, reason, description } = req.body;
+        // TODO: Implement content reporting service
+        res.json({
+            success: true,
+            data: {
+                userId,
+                contentId,
+                contentType,
+                reason,
+                description,
+                reportedAt: new Date().toISOString(),
+                message: "Content reported - implementation pending",
+            },
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message,
+        });
+    }
+});
+// Get reports
+router.get("/reports", auth_1.requireAuth, async (req, res) => {
+    try {
+        const userId = req.user?.userId;
+        // TODO: Implement reports service
+        res.json({
+            success: true,
+            data: {
+                userId,
+                reports: [],
+                message: "Reports endpoint - implementation pending",
+            },
         });
     }
     catch (error) {

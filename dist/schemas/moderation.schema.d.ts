@@ -35,9 +35,9 @@ export declare const getReportsQuerySchema: z.ZodObject<{
             resolved: "resolved";
         }>>;
         type: z.ZodOptional<z.ZodEnum<{
-            photo: "photo";
             message: "message";
             profile: "profile";
+            photo: "photo";
             behavior: "behavior";
         }>>;
         limit: z.ZodDefault<z.ZodPipe<z.ZodPipe<z.ZodString, z.ZodTransform<number, string>>, z.ZodNumber>>;

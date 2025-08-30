@@ -2,61 +2,137 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_1 = require("../middleware/auth");
-const search_service_1 = require("../services/search.service");
 const router = (0, express_1.Router)();
-router.get('/', auth_1.auth, async (req, res) => {
+// Search posts
+router.get("/posts", async (req, res) => {
     try {
-        const q = req.query.q || '';
-        const userId = req.user.userId;
-        const result = await search_service_1.SearchService.searchAll(userId, q);
-        res.json({ success: true, data: result });
+        const { q, limit, offset } = req.query;
+        // TODO: Implement post search service
+        res.json({
+            success: true,
+            data: {
+                query: q,
+                posts: [],
+                pagination: {
+                    limit: limit || 20,
+                    offset: offset || 0,
+                    total: 0,
+                },
+                message: "Post search endpoint - implementation pending",
+            },
+        });
     }
-    catch (err) {
-        res.status(500).json({ success: false, message: 'Search failed' });
+    catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message,
+        });
     }
 });
-router.get('/posts', auth_1.auth, async (req, res) => {
+// Search users
+router.get("/users", auth_1.requireAuth, async (req, res) => {
     try {
-        const q = req.query.q || '';
-        const { cursor, limit } = req.query;
-        const userId = req.user.userId;
-        const result = await search_service_1.SearchService.searchPosts(userId, q, { cursor, limit: limit ? parseInt(limit, 10) : undefined });
-        res.json({ success: true, data: result });
+        const userId = req.user?.userId;
+        const { q, limit, offset } = req.query;
+        // TODO: Implement user search service
+        res.json({
+            success: true,
+            data: {
+                userId,
+                query: q,
+                users: [],
+                pagination: {
+                    limit: limit || 20,
+                    offset: offset || 0,
+                    total: 0,
+                },
+                message: "User search endpoint - implementation pending",
+            },
+        });
     }
-    catch (err) {
-        res.status(500).json({ success: false, message: 'Post search failed' });
+    catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message,
+        });
     }
 });
-router.get('/users', auth_1.auth, async (req, res) => {
+// Search communities
+router.get("/communities", async (req, res) => {
     try {
-        const q = req.query.q || '';
-        const { cursor, limit } = req.query;
-        const userId = req.user.userId;
-        const result = await search_service_1.SearchService.searchUsers(userId, q, { cursor, limit: limit ? parseInt(limit, 10) : undefined });
-        res.json({ success: true, data: result });
+        const { q, limit, offset } = req.query;
+        // TODO: Implement community search service
+        res.json({
+            success: true,
+            data: {
+                query: q,
+                communities: [],
+                pagination: {
+                    limit: limit || 20,
+                    offset: offset || 0,
+                    total: 0,
+                },
+                message: "Community search endpoint - implementation pending",
+            },
+        });
     }
-    catch (err) {
-        res.status(500).json({ success: false, message: 'User search failed' });
+    catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message,
+        });
     }
 });
-router.get('/history', auth_1.auth, async (req, res) => {
+// Global search
+router.get("/", async (req, res) => {
     try {
-        const userId = req.user.userId;
-        const history = await search_service_1.SearchService.getSearchHistory(userId);
-        res.json({ success: true, data: history });
+        const { q, type, limit, offset } = req.query;
+        // TODO: Implement global search service
+        res.json({
+            success: true,
+            data: {
+                query: q,
+                type,
+                results: {
+                    posts: [],
+                    users: [],
+                    communities: [],
+                },
+                pagination: {
+                    limit: limit || 20,
+                    offset: offset || 0,
+                    total: 0,
+                },
+                message: "Global search endpoint - implementation pending",
+            },
+        });
     }
-    catch (err) {
-        res.status(500).json({ success: false, message: 'Failed to get search history' });
+    catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message,
+        });
     }
 });
-router.delete('/history', auth_1.auth, async (req, res) => {
+// Search suggestions
+router.get("/suggestions", async (req, res) => {
     try {
-        const userId = req.user.userId;
-        const result = await search_service_1.SearchService.clearSearchHistory(userId);
-        res.json({ success: true, data: result });
+        const { q } = req.query;
+        // TODO: Implement search suggestions service
+        res.json({
+            success: true,
+            data: {
+                query: q,
+                suggestions: [],
+                message: "Search suggestions endpoint - implementation pending",
+            },
+        });
     }
-    catch (err) {
-        res.status(500).json({ success: false, message: 'Failed to clear search history' });
+    catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message,
+        });
     }
 });
 exports.default = router;

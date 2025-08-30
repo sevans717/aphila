@@ -1,111 +1,569 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const zod_1 = require("zod");
 const auth_1 = require("../middleware/auth");
-const validate_1 = require("../middleware/validate");
-const sharing_service_1 = require("../services/sharing.service");
-const logger_1 = require("../utils/logger");
+const client_1 = require("@prisma/client");
+const zod_1 = require("zod");
 const router = (0, express_1.Router)();
+const prisma = new client_1.PrismaClient();
 // Validation schemas
-const sharePostValidation = {
-    body: zod_1.z.object({
-        postId: zod_1.z.string(),
-        platform: zod_1.z.string().optional(),
-        comment: zod_1.z.string().optional()
-    })
-};
-const shareMediaValidation = {
-    body: zod_1.z.object({
-        mediaId: zod_1.z.string(),
-        platform: zod_1.z.string().optional(),
-        comment: zod_1.z.string().optional()
-    })
-};
-// Share a post
-router.post('/post', auth_1.auth, (0, validate_1.validateRequest)(sharePostValidation), async (req, res) => {
-    try {
-        const { postId, platform, comment } = req.body;
-        const userId = req.user.userId;
-        const share = await sharing_service_1.SharingService.sharePost({
-            userId,
-            postId,
-            platform,
-            comment,
-        });
-        res.status(201).json({
-            success: true,
-            data: share
-        });
-    }
-    catch (error) {
-        logger_1.logger.error('Error sharing post:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to share post'
-        });
-    }
+const sharePostSchema = zod_1.z.object({
+    platform: zod_1.z.string().optional(),
+    message: zod_1.z.string().optional(),
+    shareType: zod_1.z
+        .enum(["REPOST", "DIRECT", "EXTERNAL", "STORY", "COPY_LINK"])
+        .default("REPOST"),
+    communityId: zod_1.z.string().optional(),
 });
-// Share media
-router.post('/media', auth_1.auth, (0, validate_1.validateRequest)(shareMediaValidation), async (req, res) => {
-    try {
-        const { mediaId, platform, comment } = req.body;
-        const userId = req.user.userId;
-        const share = await sharing_service_1.SharingService.shareMedia({
-            userId,
-            mediaId,
-            platform,
-            comment,
-        });
-        res.status(201).json({
-            success: true,
-            data: share
-        });
-    }
-    catch (error) {
-        logger_1.logger.error('Error sharing media:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to share media'
-        });
-    }
+const shareCommunitySchema = zod_1.z.object({
+    platform: zod_1.z.string().optional(),
+    message: zod_1.z.string().optional(),
+    shareType: zod_1.z
+        .enum(["REPOST", "DIRECT", "EXTERNAL", "STORY", "COPY_LINK"])
+        .default("REPOST"),
 });
-// Get user's shares
-router.get('/my-shares', auth_1.auth, async (req, res) => {
+const shareProfileSchema = zod_1.z.object({
+    platform: zod_1.z.string().optional(),
+    message: zod_1.z.string().optional(),
+    shareType: zod_1.z
+        .enum(["REPOST", "DIRECT", "EXTERNAL", "STORY", "COPY_LINK"])
+        .default("DIRECT"),
+});
+// Share post
+router.post("/post/:postId", auth_1.requireAuth, async (req, res) => {
     try {
-        const userId = req.user.userId;
-        const { limit = 20 } = req.query;
-        const shares = await sharing_service_1.SharingService.getUserShares(userId, parseInt(limit));
+        const { postId } = req.params;
+        const userId = req.user?.userId;
+        const validatedData = sharePostSchema.parse(req.body);
+        // Verify post exists and user has access
+        const post = await prisma.post.findUnique({
+            where: { id: postId },
+            include: {
+                author: true,
+                community: true,
+            },
+        });
+        if (!post) {
+            return res.status(404).json({
+                success: false,
+                error: "Post not found",
+            });
+        }
+        // Check if post is public or user has access
+        if (post.visibility === "PRIVATE" && post.authorId !== userId) {
+            return res.status(403).json({
+                success: false,
+                error: "You don't have permission to share this post",
+            });
+        }
+        // Create share record
+        const share = await prisma.postShare.create({
+            data: {
+                userId,
+                postId,
+                shareType: validatedData.shareType,
+                platform: validatedData.platform,
+                comment: validatedData.message,
+                communityId: validatedData.communityId,
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        profile: {
+                            select: {
+                                displayName: true,
+                            },
+                        },
+                    },
+                },
+                post: {
+                    select: {
+                        id: true,
+                        content: true,
+                        author: {
+                            select: {
+                                id: true,
+                                profile: {
+                                    select: {
+                                        displayName: true,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        });
+        // Update post shares count
+        await prisma.post.update({
+            where: { id: postId },
+            data: {
+                sharesCount: {
+                    increment: 1,
+                },
+            },
+        });
+        // Generate share URL
+        const shareUrl = `${process.env.FRONTEND_URL || "https://sav3.io"}/share/post/${postId}`;
         res.json({
             success: true,
-            data: shares
+            data: {
+                share,
+                shareUrl,
+                sharedAt: share.createdAt,
+            },
         });
     }
     catch (error) {
-        logger_1.logger.error('Error fetching user shares:', error);
+        if (error.name === "ZodError") {
+            return res.status(400).json({
+                success: false,
+                error: "Invalid input data",
+                details: error.issues,
+            });
+        }
+        console.error("Share post error:", error);
         res.status(500).json({
             success: false,
-            message: 'Failed to fetch shares'
+            error: "Failed to share post",
         });
     }
 });
-// Delete share
-router.delete('/:shareId', auth_1.auth, async (req, res) => {
+// Share community
+router.post("/community/:communityId", auth_1.requireAuth, async (req, res) => {
     try {
-        const { shareId } = req.params;
-        const { type } = req.query; // 'post' | 'media'
-        const userId = req.user.userId;
-        await sharing_service_1.SharingService.deleteShare(shareId, userId, type);
+        const { communityId } = req.params;
+        const userId = req.user?.userId;
+        const validatedData = shareCommunitySchema.parse(req.body);
+        // Verify community exists
+        const community = await prisma.community.findUnique({
+            where: { id: communityId },
+            include: {
+                owner: {
+                    select: {
+                        id: true,
+                        profile: {
+                            select: {
+                                displayName: true,
+                            },
+                        },
+                    },
+                },
+                category: true,
+            },
+        });
+        if (!community) {
+            return res.status(404).json({
+                success: false,
+                error: "Community not found",
+            });
+        }
+        // Check if community is private and user is member
+        if (community.visibility === "PRIVATE") {
+            const membership = await prisma.communityMembership.findUnique({
+                where: {
+                    userId_communityId: {
+                        userId,
+                        communityId,
+                    },
+                },
+            });
+            if (!membership) {
+                return res.status(403).json({
+                    success: false,
+                    error: "You don't have permission to share this community",
+                });
+            }
+        }
+        // Create share record (using PostShare for community shares)
+        const share = await prisma.postShare.create({
+            data: {
+                userId,
+                postId: communityId, // Using postId field to store community ID for simplicity
+                shareType: validatedData.shareType,
+                platform: validatedData.platform,
+                comment: validatedData.message,
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        profile: {
+                            select: {
+                                displayName: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+        // Generate share URL
+        const shareUrl = `${process.env.FRONTEND_URL || "https://sav3.io"}/share/community/${communityId}`;
         res.json({
             success: true,
-            message: 'Share deleted successfully'
+            data: {
+                share,
+                community: {
+                    id: community.id,
+                    name: community.name,
+                    description: community.description,
+                    owner: community.owner,
+                    category: community.category,
+                },
+                shareUrl,
+                sharedAt: share.createdAt,
+            },
         });
     }
     catch (error) {
-        logger_1.logger.error('Error deleting share:', error);
+        if (error.name === "ZodError") {
+            return res.status(400).json({
+                success: false,
+                error: "Invalid input data",
+                details: error.issues,
+            });
+        }
+        console.error("Share community error:", error);
         res.status(500).json({
             success: false,
-            message: 'Failed to delete share'
+            error: "Failed to share community",
+        });
+    }
+});
+// Share profile
+router.post("/profile/:userId", auth_1.requireAuth, async (req, res) => {
+    try {
+        const { userId: targetUserId } = req.params;
+        const userId = req.user?.userId;
+        const validatedData = shareProfileSchema.parse(req.body);
+        // Verify target user exists
+        const targetUser = await prisma.user.findUnique({
+            where: { id: targetUserId },
+            select: {
+                id: true,
+                profile: {
+                    select: {
+                        displayName: true,
+                        bio: true,
+                        isVisible: true,
+                    },
+                },
+                privacySetting: {
+                    select: {
+                        searchable: true,
+                        allowMessagesFrom: true,
+                    },
+                },
+            },
+        });
+        if (!targetUser) {
+            return res.status(404).json({
+                success: false,
+                error: "User not found",
+            });
+        }
+        // Check privacy settings
+        if (!targetUser.privacySetting?.searchable) {
+            return res.status(403).json({
+                success: false,
+                error: "This profile is not shareable",
+            });
+        }
+        // Create share record (using MediaShare for profile shares)
+        const share = await prisma.mediaShare.create({
+            data: {
+                userId,
+                mediaId: targetUserId, // Using mediaId field to store user ID for simplicity
+                shareType: validatedData.shareType,
+                platform: validatedData.platform,
+                comment: validatedData.message,
+            },
+            include: {
+                user: {
+                    select: {
+                        id: true,
+                        profile: {
+                            select: {
+                                displayName: true,
+                            },
+                        },
+                    },
+                },
+            },
+        });
+        // Generate share URL
+        const shareUrl = `${process.env.FRONTEND_URL || "https://sav3.io"}/share/profile/${targetUserId}`;
+        res.json({
+            success: true,
+            data: {
+                share,
+                profile: {
+                    id: targetUser.id,
+                    displayName: targetUser.profile?.displayName,
+                    bio: targetUser.profile?.bio,
+                },
+                shareUrl,
+                sharedAt: share.createdAt,
+            },
+        });
+    }
+    catch (error) {
+        if (error.name === "ZodError") {
+            return res.status(400).json({
+                success: false,
+                error: "Invalid input data",
+                details: error.issues,
+            });
+        }
+        console.error("Share profile error:", error);
+        res.status(500).json({
+            success: false,
+            error: "Failed to share profile",
+        });
+    }
+});
+// Get share link
+router.get("/link/:contentType/:contentId", async (req, res) => {
+    try {
+        const { contentType, contentId } = req.params;
+        let shareUrl;
+        let content = null;
+        switch (contentType) {
+            case "post":
+                content = await prisma.post.findUnique({
+                    where: { id: contentId },
+                    select: {
+                        id: true,
+                        visibility: true,
+                        author: {
+                            select: {
+                                id: true,
+                                profile: {
+                                    select: {
+                                        displayName: true,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                });
+                if (!content) {
+                    return res.status(404).json({
+                        success: false,
+                        error: "Post not found",
+                    });
+                }
+                if (content.visibility === "PRIVATE") {
+                    return res.status(403).json({
+                        success: false,
+                        error: "This content is private",
+                    });
+                }
+                shareUrl = `${process.env.FRONTEND_URL || "https://sav3.io"}/share/post/${contentId}`;
+                break;
+            case "community":
+                content = await prisma.community.findUnique({
+                    where: { id: contentId },
+                    select: {
+                        id: true,
+                        name: true,
+                        visibility: true,
+                    },
+                });
+                if (!content) {
+                    return res.status(404).json({
+                        success: false,
+                        error: "Community not found",
+                    });
+                }
+                if (content.visibility === "PRIVATE") {
+                    return res.status(403).json({
+                        success: false,
+                        error: "This community is private",
+                    });
+                }
+                shareUrl = `${process.env.FRONTEND_URL || "https://sav3.io"}/share/community/${contentId}`;
+                break;
+            case "profile":
+                content = await prisma.user.findUnique({
+                    where: { id: contentId },
+                    select: {
+                        id: true,
+                        profile: {
+                            select: {
+                                displayName: true,
+                                isVisible: true,
+                            },
+                        },
+                        privacySetting: {
+                            select: {
+                                searchable: true,
+                            },
+                        },
+                    },
+                });
+                if (!content) {
+                    return res.status(404).json({
+                        success: false,
+                        error: "User not found",
+                    });
+                }
+                if (!content.privacySetting?.searchable ||
+                    !content.profile?.isVisible) {
+                    return res.status(403).json({
+                        success: false,
+                        error: "This profile is not shareable",
+                    });
+                }
+                shareUrl = `${process.env.FRONTEND_URL || "https://sav3.io"}/share/profile/${contentId}`;
+                break;
+            default:
+                return res.status(400).json({
+                    success: false,
+                    error: "Invalid content type",
+                });
+        }
+        res.json({
+            success: true,
+            data: {
+                contentType,
+                contentId,
+                shareUrl,
+                content,
+            },
+        });
+    }
+    catch (error) {
+        console.error("Get share link error:", error);
+        res.status(500).json({
+            success: false,
+            error: "Failed to generate share link",
+        });
+    }
+});
+// Get sharing stats
+router.get("/stats/:contentType/:contentId", auth_1.requireAuth, async (req, res) => {
+    try {
+        const { contentType, contentId } = req.params;
+        const userId = req.user?.userId;
+        const stats = {
+            totalShares: 0,
+            sharesByPlatform: {},
+            recentShares: [],
+        };
+        switch (contentType) {
+            case "post": {
+                // Get post shares
+                const postShares = await prisma.postShare.findMany({
+                    where: { postId: contentId },
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                profile: {
+                                    select: {
+                                        displayName: true,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    orderBy: {
+                        createdAt: "desc",
+                    },
+                    take: 10,
+                });
+                stats.totalShares = postShares.length;
+                stats.sharesByPlatform = postShares.reduce((acc, share) => {
+                    const platform = share.platform || "app";
+                    acc[platform] = (acc[platform] || 0) + 1;
+                    return acc;
+                }, {});
+                stats.recentShares = postShares.slice(0, 5);
+                break;
+            }
+            case "community": {
+                // Get community shares (stored in PostShare with communityId)
+                const communityShares = await prisma.postShare.findMany({
+                    where: { postId: contentId }, // communityId stored in postId field
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                profile: {
+                                    select: {
+                                        displayName: true,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    orderBy: {
+                        createdAt: "desc",
+                    },
+                    take: 10,
+                });
+                stats.totalShares = communityShares.length;
+                stats.sharesByPlatform = communityShares.reduce((acc, share) => {
+                    const platform = share.platform || "app";
+                    acc[platform] = (acc[platform] || 0) + 1;
+                    return acc;
+                }, {});
+                stats.recentShares = communityShares.slice(0, 5);
+                break;
+            }
+            case "profile": {
+                // Get profile shares (stored in MediaShare with userId in mediaId field)
+                const profileShares = await prisma.mediaShare.findMany({
+                    where: { mediaId: contentId }, // userId stored in mediaId field
+                    include: {
+                        user: {
+                            select: {
+                                id: true,
+                                profile: {
+                                    select: {
+                                        displayName: true,
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    orderBy: {
+                        createdAt: "desc",
+                    },
+                    take: 10,
+                });
+                stats.totalShares = profileShares.length;
+                stats.sharesByPlatform = profileShares.reduce((acc, share) => {
+                    const platform = share.platform || "app";
+                    acc[platform] = (acc[platform] || 0) + 1;
+                    return acc;
+                }, {});
+                stats.recentShares = profileShares.slice(0, 5);
+                break;
+            }
+            default:
+                return res.status(400).json({
+                    success: false,
+                    error: "Invalid content type",
+                });
+        }
+        res.json({
+            success: true,
+            data: {
+                contentType,
+                contentId,
+                userId,
+                stats,
+            },
+        });
+    }
+    catch (error) {
+        console.error("Get sharing stats error:", error);
+        res.status(500).json({
+            success: false,
+            error: "Failed to get sharing stats",
         });
     }
 });

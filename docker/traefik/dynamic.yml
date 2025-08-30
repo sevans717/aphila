@@ -1,0 +1,248 @@
+# ===========================================
+# TRAEFIK DYNAMIC CONFIGURATION FOR APHILA.IO
+# ===========================================
+# Dynamic routing rules, middleware, and TLS configuration
+
+# ===========================================
+# TLS CONFIGURATION
+# ===========================================
+tls:
+  options:
+    default:
+      minVersion: "VersionTLS12"
+      sslProtocols: ["TLSv1.2", "TLSv1.3"]
+      cipherSuites:
+        - "TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384"
+        - "TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305"
+        - "TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256"
+
+# ===========================================
+# MIDDLEWARE DEFINITIONS
+# ===========================================
+http:
+  middlewares:
+    # Security headers
+    security-headers:
+      headers:
+        accessControlAllowOrigin: "https://aphila.io,https://www.aphila.io"
+        accessControlAllowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+        accessControlAllowHeaders: ["Content-Type", "Authorization"]
+        accessControlMaxAge: 86400
+        addVaryHeader: true
+        browserXssFilter: true
+        contentTypeNosniff: true
+        forceSTSHeader: true
+        frameDeny: true
+        referrerPolicy: "strict-origin-when-cross-origin"
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 31536000
+        customFrameOptionsValue: "DENY"
+
+    # Rate limiting
+    rate-limit:
+      rateLimit:
+        average: 50
+        burst: 100
+        period: "1m"
+
+    # API rate limiting (stricter)
+    api-rate-limit:
+      rateLimit:
+        average: 30
+        burst: 60
+        period: "1m"
+
+    # Admin rate limiting (very strict)
+    admin-rate-limit:
+      rateLimit:
+        average: 10
+        burst: 20
+        period: "1m"
+
+    # CORS for API
+    api-cors:
+      headers:
+        accessControlAllowOrigin: "https://aphila.io,https://www.aphila.io"
+        accessControlAllowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+        accessControlAllowHeaders:
+          ["Content-Type", "Authorization", "X-Requested-With"]
+        accessControlAllowCredentials: true
+
+    # Compression
+    gzip-compression:
+      compress: {}
+
+    # Redirect to www
+    redirect-to-www:
+      redirectRegex:
+        regex: "^https://aphila\\.io/(.*)"
+        replacement: "https://www.aphila.io/${1}"
+
+    # Auth middleware for admin panels
+    auth-admin:
+      basicAuth:
+        users:
+          - "admin:$2y$10$X8S0QcJKGz0uAK4B5Y6k5.rJ3PzQ9F0mN2X4V7Z8A1B2C3D4E5F6G7"
+
+  # ===========================================
+  # ROUTING RULES
+  # ===========================================
+  routers:
+    # Main website (www.aphila.io)
+    web-main:
+      rule: "Host(`www.aphila.io`)"
+      entryPoints:
+        - websecure
+      service: api-service
+      middlewares:
+        - security-headers
+        - rate-limit
+        - gzip-compression
+      tls:
+        certResolver: letsencrypt
+
+    # Redirect aphila.io to www.aphila.io
+    web-redirect:
+      rule: "Host(`aphila.io`)"
+      entryPoints:
+        - websecure
+      middlewares:
+        - redirect-to-www
+      service: api-service
+      tls:
+        certResolver: letsencrypt
+
+    # API endpoints (api.aphila.io)
+    api:
+      rule: "Host(`api.aphila.io`)"
+      entryPoints:
+        - websecure
+      service: api-service
+      middlewares:
+        - security-headers
+        - api-rate-limit
+        - api-cors
+        - gzip-compression
+      tls:
+        certResolver: letsencrypt
+
+    # MinIO Console (minio.aphila.io)
+    minio-console:
+      rule: "Host(`minio.aphila.io`)"
+      entryPoints:
+        - websecure
+      service: minio-console-service
+      middlewares:
+        - security-headers
+        - admin-rate-limit
+        - auth-admin
+      tls:
+        certResolver: letsencrypt
+
+    # MinIO API (for direct API access)
+    minio-api:
+      rule: "Host(`storage.aphila.io`)"
+      entryPoints:
+        - websecure
+      service: minio-api-service
+      middlewares:
+        - security-headers
+        - rate-limit
+      tls:
+        certResolver: letsencrypt
+
+    # Grafana (grafana.aphila.io)
+    grafana:
+      rule: "Host(`grafana.aphila.io`)"
+      entryPoints:
+        - websecure
+      service: grafana-service
+      middlewares:
+        - security-headers
+        - admin-rate-limit
+      tls:
+        certResolver: letsencrypt
+
+    # Traefik Dashboard (traefik.aphila.io)
+    traefik-dashboard:
+      rule: "Host(`traefik.aphila.io`)"
+      entryPoints:
+        - websecure
+      service: api@internal
+      middlewares:
+        - security-headers
+        - admin-rate-limit
+        - auth-admin
+      tls:
+        certResolver: letsencrypt
+
+    # Vault (vault.aphila.io)
+    vault:
+      rule: "Host(`vault.aphila.io`)"
+      entryPoints:
+        - websecure
+      service: vault-service
+      middlewares:
+        - security-headers
+        - admin-rate-limit
+        - auth-admin
+      tls:
+        certResolver: letsencrypt
+
+    # Prometheus (metrics.aphila.io) - Optional external access
+    prometheus:
+      rule: "Host(`metrics.aphila.io`)"
+      entryPoints:
+        - websecure
+      service: prometheus-service
+      middlewares:
+        - security-headers
+        - admin-rate-limit
+        - auth-admin
+      tls:
+        certResolver: letsencrypt
+
+  # ===========================================
+  # SERVICE DEFINITIONS
+  # ===========================================
+  services:
+    # Main API service
+    api-service:
+      loadBalancer:
+        servers:
+          - url: "http://api:4000"
+        healthCheck:
+          path: "/api/v1/health"
+          interval: "30s"
+          timeout: "5s"
+
+    # MinIO Console
+    minio-console-service:
+      loadBalancer:
+        servers:
+          - url: "http://minio:9001"
+
+    # MinIO API
+    minio-api-service:
+      loadBalancer:
+        servers:
+          - url: "http://minio:9000"
+
+    # Grafana
+    grafana-service:
+      loadBalancer:
+        servers:
+          - url: "http://grafana:3000"
+
+    # Vault
+    vault-service:
+      loadBalancer:
+        servers:
+          - url: "http://vault:8200"
+
+    # Prometheus
+    prometheus-service:
+      loadBalancer:
+        servers:
+          - url: "http://prometheus:9090"

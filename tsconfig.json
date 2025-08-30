@@ -2,15 +2,11 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
-    "module": "commonjs",
+    "module": "Node16",
     "target": "ES2022",
-    "lib": [
-      "ES2022"
-    ],
-    "moduleResolution": "node",
-    "types": [
-      "node"
-    ],
+    "lib": ["ES2022"],
+    "moduleResolution": "node16",
+    "types": ["node"],
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
@@ -29,11 +25,14 @@
     "prisma/**/*",
     "node_modules",
     "dist",
+    "src/client/**/*",
     "**/*.test.ts",
-    "**/*.spec.ts"
+    "**/*.spec.ts",
+    "src/utils/errorFixerBrowser.ts",
+    "src/utils/sav3ErrorFixerBrowser.ts",
+    "src/utils/sav3ErrorFixerConfig.ts",
+    "**/errorFixer*.ts",
+    "**/*ErrorFixer*.ts"
   ],
-  "include": [
-    "src/**/*",
-    "src/types/**/*"
-  ]
+  "include": ["src/**/*", "src/types/**/*"]
 }

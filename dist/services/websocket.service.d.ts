@@ -24,14 +24,29 @@ export declare class WebSocketService {
     private handleTypingStart;
     private handleTypingStop;
     private handleMarkRead;
-    private updateUserOnlineStatus;
+    /**
+     * Update user presence in database and emit events
+     */
+    private updateUserPresence;
     sendNotificationToUser(userId: string, notification: any): void;
+    /**
+     * Public method to trigger a haptic/vibrate event on a specific user's clients.
+     * Frontend clients should listen for the `haptic` event and run platform-specific
+     * haptic/vibration APIs (Expo Haptics / React Native Vibration / navigator.vibrate).
+     *
+     * Payload example: { type: 'success' | 'warning' | 'error' | 'confirm', pattern?: string }
+     */
+    sendHapticToUser(userId: string, payload?: {
+        type?: string;
+        pattern?: string;
+    }): void;
     sendMatchNotification(userId: string, matchData: any): void;
     private sendPushNotification;
-    /**
-     * Setup presence tracking for online/offline status
-     */
     private setupPresenceTracking;
+    /**
+     * Clean up inactive presence records
+     */
+    private cleanupInactivePresence;
     /**
      * Setup message queue for offline users
      */

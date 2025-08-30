@@ -311,8 +311,10 @@ export declare class StoryService {
         id: string;
         userId: string;
         createdAt: Date;
-        expiresAt: Date;
         duration: number;
+        content: string | null;
+        expiresAt: Date;
+        isPublic: boolean;
         viewsCount: number;
         mediaId: string;
         caption: string | null;
@@ -330,8 +332,8 @@ export declare class StoryService {
             };
             media: {
                 id: string;
+                type: import("@prisma/client").$Enums.MediaType;
                 url: string;
-                type: import(".prisma/client").$Enums.MediaType;
             };
             views: number;
         }[];

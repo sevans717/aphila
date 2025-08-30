@@ -1,0 +1,76 @@
+? GitHub Copilot CLI loaded for HApiGraS project!
+[project.ts]: detectFrameworks
+[project.ts]: detectBuildSystem
+[project.ts]: detectWorkspaces
+[project.ts]: detectPackageManager
+[project.ts]: detectFrameworksInPath - undefined
+ΓÇï
+Γ¥» Initial build environment
+config: C:\Users\evans\Desktop\sav3-backend\netlify.toml
+context: dev
+cwd: C:\Users\evans\Desktop\sav3-backend
+featureFlags: []
+mode: cli
+repositoryRoot: C:\Users\evans\Desktop\sav3-backend
+ ┬╗   Warning: Error: Failed retrieving user account: Unauthorized. Double-check your login status with 'netlify status' or contact support with details of your error.
+ ┬╗       at getError (file:///C:/Users/evans/AppData/Roaming/npm/node_modules/netlify-cli/node_modules/@netlify/config/lib/error.js:14:16)
+ ┬╗       at throwUserError (file:///C:/Users/evans/AppData/Roaming/npm/node_modules/netlify-cli/node_modules/@netlify/config/lib/error.js:4:20)
+ ┬╗       at getAccounts (file:///C:/Users/evans/AppData/Roaming/npm/node_modules/netlify-cli/node_modules/@netlify/config/lib/api/site_info.js:79:16)
+ ┬╗       at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+ ┬╗       at async Promise.all (index 1)
+ ┬╗       at async getSiteInfo (file:///C:/Users/evans/AppData/Roaming/npm/node_modules/netlify-cli/node_modules/@netlify/config/lib/api/site_info.js:41:46)
+ ┬╗   Warning: Failed to resolve config, falling back to offline resolution
+ ┬╗       at async resolveConfig (file:///C:/Users/evans/AppData/Roaming/npm/node_modules/netlify-cli/node_modules/@netlify/config/lib/main.js:51:33)
+ ┬╗       at async BaseCommand.getConfig (file:///C:/Users/evans/AppData/Roaming/npm/node_modules/netlify-cli/dist/commands/base-command.js:568:20)
+ ┬╗       at async BaseCommand.init (file:///C:/Users/evans/AppData/Roaming/npm/node_modules/netlify-cli/dist/commands/base-command.js:468:30)
+ ┬╗       at async Object.callback (file:///C:/Users/evans/AppData/Roaming/npm/node_modules/netlify-cli/dist/commands/base-command.js:166:13)
+ΓÇï
+Γ¥» Initial build environment
+config: C:\Users\evans\Desktop\sav3-backend\netlify.toml
+context: dev
+cwd: C:\Users\evans\Desktop\sav3-backend
+featureFlags: []
+mode: cli
+repositoryRoot: C:\Users\evans\Desktop\sav3-backend
+ΓÇï
+Γ¥» UI build settings
+baseRelDir: true
+ΓÇï
+Γ¥» Resolved build environment
+branch: main
+buildDir: C:\Users\evans\Desktop\sav3-backend
+configPath: C:\Users\evans\Desktop\sav3-backend\netlify.toml
+context: dev
+env:
+  - DEPLOY_ID
+  - BUILD_ID
+  - NETLIFY_LOCAL
+  - HEAD
+  - COMMIT_REF
+  - CACHED_COMMIT_REF
+  - PULL_REQUEST
+  - LANG
+  - LANGUAGE
+  - LC_ALL
+  - GATSBY_TELEMETRY_DISABLED
+  - NEXT_TELEMETRY_DISABLED
+ΓÇï
+Γ¥» Resolved config
+build:
+  publish: C:\Users\evans\Desktop\sav3-backend\public
+  publishOrigin: config
+functionsDirectory: C:\Users\evans\Desktop\sav3-backend\netlify\functions
+winston:create-logger: Define prototype method for "error"
+winston:create-logger: Define prototype method for "warn"
+winston:create-logger: Define prototype method for "info"
+winston:create-logger: Define prototype method for "http"
+winston:create-logger: Define prototype method for "verbose"
+winston:create-logger: Define prototype method for "debug"
+winston:create-logger: Define prototype method for "silly"
+winston:create-logger: Define prototype method for "error"
+winston:create-logger: Define prototype method for "warn"
+winston:create-logger: Define prototype method for "info"
+winston:create-logger: Define prototype method for "http"
+winston:create-logger: Define prototype method for "verbose"
+winston:create-logger: Define prototype method for "debug"
+winston:create-logger: Define prototype method for "silly"

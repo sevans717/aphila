@@ -2,19 +2,16 @@ version: "3.8"
 
 services:
   traefik:
-    image: traefik:v2.13
+    image: traefik:latest
     restart: unless-stopped
     command:
       - --providers.docker=true
       - --providers.docker.exposedbydefault=false
       - --entrypoints.web.address=:80
       - --entrypoints.websecure.address=:443
-      - --certificatesresolvers.le.acme.email=ops@aphila.io
-      - --certificatesresolvers.le.acme.storage=/letsencrypt/acme.json
-      - --certificatesresolvers.le.acme.tlschallenge=true
     ports:
-      - "80:80"
-      - "443:443"
+      - "10080:80"
+      - "10143:443"
     volumes:
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
       - ./traefik/acme:/letsencrypt
@@ -23,7 +20,7 @@ services:
       - aphila-network
 
   pgbouncer:
-    image: edoburu/pgbouncer:1.16.0
+    image: edoburu/pgbouncer:latest
     restart: unless-stopped
     environment:
       # PgBouncer needs to know the upstream Postgres; keep this pointing at the
@@ -32,7 +29,7 @@ services:
     volumes:
       - ./pgbouncer:/etc/pgbouncer
     ports:
-      - "6432:6432"
+      - "10002:6432"
     depends_on:
       - db
     networks:
@@ -56,17 +53,85 @@ services:
     networks:
       - aphila-network
 
+  # MinIO - Self-hosted S3-compatible storage
+  minio:
+    image: minio/minio:RELEASE.2024-08-17T01-24-54Z
+    container_name: sav3_minio_prod
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio_admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minio_admin_password123}
+      MINIO_DOMAIN: ${MINIO_DOMAIN:-minio.aphila.io}
+      MINIO_BROWSER: ${MINIO_BROWSER:-on}
+      MINIO_CONSOLE_ADDRESS: ":9001"
+      MINIO_API_CORS_ALLOW_ORIGIN: "*"
+    ports:
+      - "10030:9000" # MinIO API
+      - "10031:9001" # MinIO Console
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - aphila-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 40s
+
+  # MinIO Client - Initialize buckets and policies
+  minio-init:
+    image: minio/mc:latest
+    container_name: sav3_minio_init_prod
+    depends_on:
+      minio:
+        condition: service_healthy
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minio_admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minio_admin_password123}
+    volumes:
+      - ./docker/minio-init:/scripts:ro
+    entrypoint: /scripts/init-buckets.sh
+    networks:
+      - aphila-network
+
+  # Redis for caching and session management
+  redis:
+    image: redis:7.2-alpine
+    container_name: sav3_redis_prod
+    restart: unless-stopped
+    ports:
+      - "10033:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    networks:
+      - aphila-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
   api:
     build: .
+    env_file:
+      - .env.production
     environment:
-      # In production, point DATABASE_URL at PgBouncer (service name `pgbouncer`, port 6432).
-      # Example override in environment or .env: DATABASE_URL="postgresql://postgres:postgres@pgbouncer:6432/sav3"
-  # Default runtime to PgBouncer so deployed containers use pooling by default.
-  # Override with DATABASE_URL in your environment if necessary.
-  DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@pgbouncer:6432/sav3}
+      # All environment variables will be loaded from .env.production
       JWT_SECRET: ${JWT_SECRET}
       NODE_ENV: production
       PORT: ${PORT:-4000}
+      # MinIO Configuration
+      MINIO_ENDPOINT: minio
+      MINIO_PORT: 9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-media_access_key}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-media_secret_key}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-sav3-media-prod}
+      MINIO_USE_SSL: "false"
+      # Redis Configuration
+      REDIS_URL: redis://redis:6379
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.aphila.rule=Host(`aphila.io`, `www.aphila.io`)"
@@ -75,6 +140,8 @@ services:
     depends_on:
       - db
       - pgbouncer
+      - minio-init
+      - redis
     networks:
       - aphila-network
 
@@ -92,6 +159,14 @@ services:
 
 volumes:
   db-data:
+    driver: local
+    name: sav3_db_prod_data
+  minio_data:
+    driver: local
+    name: sav3_minio_prod_data
+  redis_data:
+    driver: local
+    name: sav3_redis_prod_data
 
 networks:
   aphila-network:

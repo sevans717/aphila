@@ -1,282 +1,392 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const zod_1 = require("zod");
-const prisma_1 = require("../lib/prisma");
 const auth_1 = require("../middleware/auth");
-const validate_1 = require("../middleware/validate");
-const analytics_service_1 = require("../services/analytics.service");
-const logger_1 = require("../utils/logger");
+const client_1 = require("@prisma/client");
+const zod_1 = require("zod");
 const router = (0, express_1.Router)();
+const prisma = new client_1.PrismaClient();
 // Validation schemas
-const trackEventSchema = zod_1.z.object({
-    body: zod_1.z.object({
-        event: zod_1.z.string().min(1),
-        properties: zod_1.z.record(zod_1.z.string(), zod_1.z.any()).optional(),
-        platform: zod_1.z.string().optional(),
-        appVersion: zod_1.z.string().optional(),
-        deviceInfo: zod_1.z.record(zod_1.z.string(), zod_1.z.any()).optional(),
-    }),
+const recordEventSchema = zod_1.z.object({
+    eventType: zod_1.z.string().min(1).max(100),
+    eventData: zod_1.z.any().optional(),
+    metadata: zod_1.z.any().optional(),
+    timestamp: zod_1.z.string().datetime().optional(),
+    sessionId: zod_1.z.string().optional(),
 });
-const sessionSchema = zod_1.z.object({
-    body: zod_1.z.object({
-        platform: zod_1.z.string().min(1),
-        appVersion: zod_1.z.string().optional(),
-        sessionDuration: zod_1.z.number().optional(),
-    }),
+const getEventsQuerySchema = zod_1.z.object({
+    eventType: zod_1.z.string().optional(),
+    startDate: zod_1.z.string().datetime().optional(),
+    endDate: zod_1.z.string().datetime().optional(),
+    limit: zod_1.z
+        .string()
+        .transform((val) => parseInt(val))
+        .refine((val) => val > 0 && val <= 1000)
+        .optional()
+        .default(100),
+    offset: zod_1.z
+        .string()
+        .transform((val) => parseInt(val))
+        .refine((val) => val >= 0)
+        .optional()
+        .default(0),
 });
-/**
- * Track user event
- * POST /api/v1/analytics/event
- */
-router.post('/event', auth_1.auth, (0, validate_1.validateRequest)({ body: trackEventSchema.shape.body }), async (req, res) => {
+// Get analytics events
+router.get("/events", auth_1.requireAuth, async (req, res) => {
     try {
-        const { event, properties, platform, appVersion, deviceInfo } = req.body;
         const userId = req.user.userId;
-        await analytics_service_1.AnalyticsService.trackEvent({
+        const validatedQuery = getEventsQuerySchema.parse(req.query);
+        const whereClause = {
             userId,
-            event,
-            properties,
-            platform: platform || req.headers['user-agent']?.includes('Mobile') ? 'mobile' : 'web',
-            appVersion,
-            deviceInfo,
+        };
+        if (validatedQuery.eventType) {
+            whereClause.eventType = validatedQuery.eventType;
+        }
+        if (validatedQuery.startDate || validatedQuery.endDate) {
+            whereClause.timestamp = {};
+            if (validatedQuery.startDate) {
+                whereClause.timestamp.gte = new Date(validatedQuery.startDate);
+            }
+            if (validatedQuery.endDate) {
+                whereClause.timestamp.lte = new Date(validatedQuery.endDate);
+            }
+        }
+        const events = await prisma.analyticsEvent.findMany({
+            where: whereClause,
+            orderBy: {
+                timestamp: "desc",
+            },
+            take: validatedQuery.limit,
+            skip: validatedQuery.offset,
+        });
+        const totalCount = await prisma.analyticsEvent.count({
+            where: whereClause,
         });
         res.json({
             success: true,
-            message: 'Event tracked successfully',
+            data: {
+                userId,
+                events,
+                pagination: {
+                    total: totalCount,
+                    limit: validatedQuery.limit,
+                    offset: validatedQuery.offset,
+                    hasMore: validatedQuery.offset + validatedQuery.limit < totalCount,
+                },
+            },
         });
     }
     catch (error) {
-        logger_1.logger.error('Failed to track event:', error);
+        if (error.name === "ZodError") {
+            return res.status(400).json({
+                success: false,
+                error: "Invalid query parameters",
+                details: error.issues,
+            });
+        }
+        console.error("Get analytics events error:", error);
         res.status(500).json({
-            error: 'InternalServerError',
-            message: 'Failed to track event',
+            success: false,
+            error: "Failed to retrieve analytics events",
         });
     }
 });
-/**
- * Track session start
- * POST /api/v1/analytics/session/start
- */
-router.post('/session/start', auth_1.auth, (0, validate_1.validateRequest)({ body: sessionSchema.shape.body }), async (req, res) => {
+// Record analytics event
+router.post("/events", auth_1.requireAuth, async (req, res) => {
     try {
-        const { platform, appVersion } = req.body;
         const userId = req.user.userId;
-        await analytics_service_1.AnalyticsService.trackSessionStart(userId, platform, appVersion);
+        const validatedData = recordEventSchema.parse(req.body);
+        const event = await prisma.analyticsEvent.create({
+            data: {
+                userId,
+                eventType: validatedData.eventType,
+                eventData: validatedData.eventData || {},
+                metadata: validatedData.metadata || {},
+                timestamp: validatedData.timestamp
+                    ? new Date(validatedData.timestamp)
+                    : new Date(),
+                sessionId: validatedData.sessionId,
+            },
+        });
         res.json({
             success: true,
-            message: 'Session start tracked',
+            data: {
+                event,
+                recordedAt: event.timestamp,
+            },
         });
     }
     catch (error) {
-        logger_1.logger.error('Failed to track session start:', error);
+        if (error.name === "ZodError") {
+            return res.status(400).json({
+                success: false,
+                error: "Invalid event data",
+                details: error.issues,
+            });
+        }
+        console.error("Record analytics event error:", error);
         res.status(500).json({
-            error: 'InternalServerError',
-            message: 'Failed to track session start',
+            success: false,
+            error: "Failed to record analytics event",
         });
     }
 });
-/**
- * Track session end
- * POST /api/v1/analytics/session/end
- */
-router.post('/session/end', auth_1.auth, (0, validate_1.validateRequest)({ body: zod_1.z.object({
-        platform: zod_1.z.string().min(1),
-        sessionDuration: zod_1.z.number().min(0),
-        appVersion: zod_1.z.string().optional(),
-    }) }), async (req, res) => {
+// Get user metrics
+router.get("/metrics", auth_1.requireAuth, async (req, res) => {
     try {
-        const { platform, sessionDuration, appVersion } = req.body;
-        const userId = req.user.userId;
-        await analytics_service_1.AnalyticsService.trackSessionEnd(userId, platform, sessionDuration, appVersion);
+        const userId = req.user.id;
+        // Get user profile and basic info
+        const [user, userCounts] = await Promise.all([
+            prisma.user.findUnique({
+                where: { id: userId },
+                select: {
+                    id: true,
+                    createdAt: true,
+                    lastLogin: true,
+                    profile: {
+                        select: {
+                            displayName: true,
+                        },
+                    },
+                },
+            }),
+            prisma.user.findUnique({
+                where: { id: userId },
+                select: {
+                    _count: {
+                        select: {
+                            posts: true,
+                            sentLikes: true,
+                            receivedLikes: true,
+                            sentMessages: true,
+                            receivedMessages: true,
+                            friendshipsInitiated: true,
+                            friendshipsReceived: true,
+                            postLikes: true,
+                            postComments: true,
+                            postBookmarks: true,
+                            postShares: true,
+                            mediaShares: true,
+                            stories: true,
+                            storyViews: true,
+                            contentViews: true,
+                            searchQueries: true,
+                        },
+                    },
+                },
+            }),
+        ]);
+        if (!user || !userCounts) {
+            return res.status(404).json({
+                success: false,
+                error: "User not found",
+            });
+        }
+        const counts = userCounts._count;
+        // Calculate engagement metrics
+        const totalInteractions = counts.sentLikes +
+            counts.receivedLikes +
+            counts.sentMessages +
+            counts.receivedMessages +
+            counts.postLikes +
+            counts.postComments +
+            counts.postShares +
+            counts.mediaShares +
+            counts.storyViews +
+            counts.contentViews;
+        // Calculate engagement rate (interactions per day since account creation)
+        const daysSinceCreation = Math.max(1, Math.floor((Date.now() - user.createdAt.getTime()) / (1000 * 60 * 60 * 24)));
+        const engagementRate = totalInteractions / daysSinceCreation;
+        // Get recent activity (last 30 days)
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const recentActivity = await prisma.analyticsEvent.findMany({
+            where: {
+                userId,
+                timestamp: {
+                    gte: thirtyDaysAgo,
+                },
+            },
+            select: {
+                eventType: true,
+                timestamp: true,
+            },
+            orderBy: {
+                timestamp: "desc",
+            },
+            take: 50,
+        });
+        // Get content view analytics
+        const contentViews = await prisma.contentView.groupBy({
+            by: ["postId", "storyId"],
+            where: {
+                userId,
+                viewedAt: {
+                    gte: thirtyDaysAgo,
+                },
+            },
+            _count: {
+                id: true,
+            },
+            _sum: {
+                duration: true,
+            },
+            orderBy: {
+                _count: {
+                    id: "desc",
+                },
+            },
+            take: 10,
+        });
+        // Get search analytics
+        const searchAnalytics = await prisma.searchQuery.aggregate({
+            where: {
+                userId,
+                createdAt: {
+                    gte: thirtyDaysAgo,
+                },
+            },
+            _count: {
+                id: true,
+            },
+            _avg: {
+                results: true,
+            },
+        });
         res.json({
             success: true,
-            message: 'Session end tracked',
+            data: {
+                userId,
+                profile: {
+                    displayName: user.profile?.displayName,
+                    accountAge: daysSinceCreation,
+                    lastLogin: user.lastLogin,
+                },
+                metrics: {
+                    totalPosts: counts.posts,
+                    totalInteractions,
+                    engagementRate: Math.round(engagementRate * 100) / 100,
+                    lastActive: user.lastLogin || user.createdAt,
+                    // Detailed counts
+                    likes: {
+                        sent: counts.sentLikes,
+                        received: counts.receivedLikes,
+                    },
+                    messages: {
+                        sent: counts.sentMessages,
+                        received: counts.receivedMessages,
+                    },
+                    friendships: {
+                        initiated: counts.friendshipsInitiated,
+                        received: counts.friendshipsReceived,
+                    },
+                    content: {
+                        posts: counts.posts,
+                        stories: counts.stories,
+                        postLikes: counts.postLikes,
+                        postComments: counts.postComments,
+                        postBookmarks: counts.postBookmarks,
+                        postShares: counts.postShares,
+                        mediaShares: counts.mediaShares,
+                        storyViews: counts.storyViews,
+                        contentViews: counts.contentViews,
+                    },
+                    analytics: {
+                        searchQueries: counts.searchQueries,
+                        events: 0, // Will be calculated separately
+                    },
+                },
+                recentActivity: {
+                    events: recentActivity,
+                    contentViews,
+                    searchStats: {
+                        totalSearches: searchAnalytics._count.id,
+                        averageResults: Math.round((searchAnalytics._avg.results || 0) * 100) / 100,
+                    },
+                },
+            },
         });
     }
     catch (error) {
-        logger_1.logger.error('Failed to track session end:', error);
+        console.error("Get user metrics error:", error);
         res.status(500).json({
-            error: 'InternalServerError',
-            message: 'Failed to track session end',
+            success: false,
+            error: "Failed to retrieve user metrics",
         });
     }
 });
-/**
- * Track swipe action
- * POST /api/v1/analytics/swipe
- */
-router.post('/swipe', auth_1.auth, (0, validate_1.validateRequest)({ body: zod_1.z.object({
-        targetUserId: zod_1.z.string().min(1),
-        action: zod_1.z.enum(['like', 'pass', 'super_like']),
-        platform: zod_1.z.string().min(1),
-    }) }), async (req, res) => {
-    try {
-        const { targetUserId, action, platform } = req.body;
-        const userId = req.user.userId;
-        await analytics_service_1.AnalyticsService.trackSwipe(userId, targetUserId, action, platform);
-        res.json({
-            success: true,
-            message: 'Swipe action tracked',
-        });
-    }
-    catch (error) {
-        logger_1.logger.error('Failed to track swipe:', error);
-        res.status(500).json({
-            error: 'InternalServerError',
-            message: 'Failed to track swipe',
-        });
-    }
-});
-/**
- * Track feature usage
- * POST /api/v1/analytics/feature
- */
-router.post('/feature', auth_1.auth, (0, validate_1.validateRequest)({ body: zod_1.z.object({
-        feature: zod_1.z.string().min(1),
-        action: zod_1.z.string().min(1),
-        platform: zod_1.z.string().min(1),
-        metadata: zod_1.z.record(zod_1.z.string(), zod_1.z.any()).optional(),
-    }) }), async (req, res) => {
-    try {
-        const { feature, action, platform, metadata } = req.body;
-        const userId = req.user.userId;
-        await analytics_service_1.AnalyticsService.trackFeatureUsage(userId, feature, action, platform, metadata);
-        res.json({
-            success: true,
-            message: 'Feature usage tracked',
-        });
-    }
-    catch (error) {
-        logger_1.logger.error('Failed to track feature usage:', error);
-        res.status(500).json({
-            error: 'InternalServerError',
-            message: 'Failed to track feature usage',
-        });
-    }
-});
-/**
- * Get user metrics (admin only)
- * GET /api/v1/analytics/metrics/users
- */
-router.get('/metrics/users', auth_1.auth, async (req, res) => {
+// Get aggregated analytics (admin endpoint)
+router.get("/aggregated", auth_1.requireAuth, async (req, res) => {
     try {
         const userId = req.user.userId;
         // Check if user is admin
-        const user = await prisma_1.prisma.user.findUnique({
+        const user = await prisma.user.findUnique({
             where: { id: userId },
             select: { isAdmin: true },
         });
         if (!user?.isAdmin) {
             return res.status(403).json({
-                error: 'Forbidden',
-                message: 'Admin access required',
+                success: false,
+                error: "Admin access required",
             });
         }
-        const { startDate, endDate } = req.query;
-        const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-        const end = endDate ? new Date(endDate) : new Date();
-        const metrics = await analytics_service_1.AnalyticsService.getUserMetrics(start, end);
-        res.json(metrics);
+        // Get aggregated metrics for the platform
+        const [totalUsers, totalPosts, totalStories, totalCommunities, eventStats, recentEvents,] = await Promise.all([
+            prisma.user.count(),
+            prisma.post.count(),
+            prisma.story.count(),
+            prisma.community.count(),
+            prisma.analyticsEvent.groupBy({
+                by: ["eventType"],
+                _count: {
+                    id: true,
+                },
+                orderBy: {
+                    _count: {
+                        id: "desc",
+                    },
+                },
+                take: 10,
+            }),
+            prisma.analyticsEvent.findMany({
+                take: 20,
+                orderBy: {
+                    timestamp: "desc",
+                },
+                include: {
+                    user: {
+                        select: {
+                            profile: {
+                                select: {
+                                    displayName: true,
+                                },
+                            },
+                        },
+                    },
+                },
+            }),
+        ]);
+        res.json({
+            success: true,
+            data: {
+                platform: {
+                    totalUsers,
+                    totalPosts,
+                    totalStories,
+                    totalCommunities,
+                },
+                events: {
+                    stats: eventStats,
+                    recent: recentEvents,
+                },
+                generatedAt: new Date().toISOString(),
+            },
+        });
     }
     catch (error) {
-        logger_1.logger.error('Failed to get user metrics:', error);
+        console.error("Get aggregated analytics error:", error);
         res.status(500).json({
-            error: 'InternalServerError',
-            message: 'Failed to get user metrics',
-        });
-    }
-});
-/**
- * Get engagement metrics (admin only)
- * GET /api/v1/analytics/metrics/engagement
- */
-router.get('/metrics/engagement', auth_1.auth, async (req, res) => {
-    try {
-        const userId = req.user.userId;
-        // Check if user is admin
-        const user = await prisma_1.prisma.user.findUnique({
-            where: { id: userId },
-            select: { isAdmin: true },
-        });
-        if (!user?.isAdmin) {
-            return res.status(403).json({
-                error: 'Forbidden',
-                message: 'Admin access required',
-            });
-        }
-        const { startDate, endDate } = req.query;
-        const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-        const end = endDate ? new Date(endDate) : new Date();
-        const metrics = await analytics_service_1.AnalyticsService.getEngagementMetrics(start, end);
-        res.json(metrics);
-    }
-    catch (error) {
-        logger_1.logger.error('Failed to get engagement metrics:', error);
-        res.status(500).json({
-            error: 'InternalServerError',
-            message: 'Failed to get engagement metrics',
-        });
-    }
-});
-/**
- * Get platform distribution (admin only)
- * GET /api/v1/analytics/metrics/platforms
- */
-router.get('/metrics/platforms', auth_1.auth, async (req, res) => {
-    try {
-        const userId = req.user.userId;
-        // Check if user is admin
-        const user = await prisma_1.prisma.user.findUnique({
-            where: { id: userId },
-            select: { isAdmin: true },
-        });
-        if (!user?.isAdmin) {
-            return res.status(403).json({
-                error: 'Forbidden',
-                message: 'Admin access required',
-            });
-        }
-        const distribution = await analytics_service_1.AnalyticsService.getPlatformDistribution();
-        res.json(distribution);
-    }
-    catch (error) {
-        logger_1.logger.error('Failed to get platform distribution:', error);
-        res.status(500).json({
-            error: 'InternalServerError',
-            message: 'Failed to get platform distribution',
-        });
-    }
-});
-/**
- * Get conversion funnel (admin only)
- * GET /api/v1/analytics/funnel
- */
-router.get('/funnel', auth_1.auth, async (req, res) => {
-    try {
-        const userId = req.user.userId;
-        // Check if user is admin
-        const user = await prisma_1.prisma.user.findUnique({
-            where: { id: userId },
-            select: { isAdmin: true },
-        });
-        if (!user?.isAdmin) {
-            return res.status(403).json({
-                error: 'Forbidden',
-                message: 'Admin access required',
-            });
-        }
-        const { startDate, endDate } = req.query;
-        const start = startDate ? new Date(startDate) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-        const end = endDate ? new Date(endDate) : new Date();
-        const funnel = await analytics_service_1.AnalyticsService.getConversionFunnel(start, end);
-        res.json(funnel);
-    }
-    catch (error) {
-        logger_1.logger.error('Failed to get conversion funnel:', error);
-        res.status(500).json({
-            error: 'InternalServerError',
-            message: 'Failed to get conversion funnel',
+            success: false,
+            error: "Failed to retrieve aggregated analytics",
         });
     }
 });

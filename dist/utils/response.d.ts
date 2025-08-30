@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Response } from "express";
 export interface ApiResponse<T = any> {
     success: boolean;
     data?: T;
@@ -53,6 +53,10 @@ export declare class ResponseHelper {
      * Handle forbidden errors
      */
     static forbidden(res: Response, message?: string): Response;
+    /**
+     * Handle bad request errors
+     */
+    static badRequest(res: Response, message?: string): Response;
     /**
      * Handle rate limit errors
      */

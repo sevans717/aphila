@@ -1,59 +1,63 @@
 import { Router } from "express";
 import { z } from "zod";
-import { auth } from "../middleware/auth";
-import { validateRequest, commonValidation } from "../middleware/validate";
-import { AnalyticsService } from "../services/analytics.service";
+import { requireAuth } from "../middleware/auth";
+import { validateRequest } from "../middleware/validate";
 import { GeospatialService } from "../services/geospatial.service";
+import { AnalyticsService } from "../services/analytics.service";
+import { ResponseHelper } from "../utils/response";
 import { logger } from "../utils/logger";
 
 const router = Router();
 
 // Validation schemas
-const updateLocationSchema = {
+const locationUpdateSchema = z.object({
   body: z.object({
     latitude: z.number().min(-90).max(90),
     longitude: z.number().min(-180).max(180),
   }),
-};
+});
 
-const nearbyQuerySchema = {
+const discoveryQuerySchema = z.object({
   query: z.object({
-    latitude: z.string().transform((val) => parseFloat(val)),
-    longitude: z.string().transform((val) => parseFloat(val)),
-    radius: z
-      .string()
-      .optional()
-      .transform((val) => (val ? parseFloat(val) : 10)),
-    type: z.enum(["users", "communities", "all"]).optional().default("all"),
-    limit: z
-      .string()
-      .optional()
-      .transform((val) => (val ? parseInt(val) : 50)),
+    limit: z.number().optional().default(20),
   }),
-};
+});
 
-const discoveryQuerySchema = {
+const nearbyQuerySchema = z.object({
   query: z.object({
-    limit: z
-      .string()
-      .optional()
-      .transform((val) => (val ? parseInt(val) : 20)),
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
+    radius: z.number().optional().default(50),
+    type: z.enum(["users", "communities", "both"]).optional().default("both"),
+    limit: z.number().optional().default(20),
   }),
-};
+});
 
-/**
- * Update user's current location
- * POST /api/v1/geospatial/location
- */
+const inRangeParamsSchema = z.object({
+  params: z.object({
+    userId: z.string().min(1),
+  }),
+});
+
+const updateAndDiscoverSchema = z.object({
+  body: z.object({
+    latitude: z.number().min(-90).max(90),
+    longitude: z.number().min(-180).max(180),
+    radius: z.number().optional().default(50),
+  }),
+});
+
+// POST /api/v1/geospatial/location - Update user location
 router.post(
   "/location",
-  auth,
-  validateRequest(updateLocationSchema),
+  requireAuth,
+  validateRequest({ body: locationUpdateSchema }),
   async (req, res) => {
     try {
+      const userId = req.user!.id;
       const { latitude, longitude } = req.body;
-      const userId = req.user!.userId;
 
+      // Update user location
       await GeospatialService.updateUserLocation({
         userId,
         latitude,
@@ -64,165 +68,100 @@ router.post(
       await AnalyticsService.trackEvent({
         userId,
         event: "location_updated",
-        platform: req.headers["user-agent"]?.includes("Mobile")
-          ? "mobile"
-          : "web",
         properties: {
           latitude,
           longitude,
+          platform: req.headers["user-agent"]?.includes("Mobile")
+            ? "mobile"
+            : "web",
         },
+      }).catch((err) => {
+        logger.warn("Failed to track location update analytics:", err);
       });
 
-      res.json({
-        success: true,
+      logger.info("Location updated:", { userId, latitude, longitude });
+      return ResponseHelper.success(res, {
         message: "Location updated successfully",
       });
     } catch (error: any) {
       logger.error("Failed to update location:", error);
-      res.status(500).json({
-        error: "InternalServerError",
-        message: "Failed to update location",
-      });
+      return ResponseHelper.serverError(res, "Failed to update location");
     }
   }
 );
 
-/**
- * Get user's current location
- * GET /api/v1/geospatial/location
- */
-router.get("/location", auth, async (req, res) => {
+// GET /api/v1/geospatial/location - Get user's current location
+router.get("/location", requireAuth, async (req, res) => {
   try {
-    const userId = req.user!.userId;
+    const userId = req.user!.id;
     const location = await GeospatialService.getUserLocation(userId);
 
     if (!location) {
-      return res.status(404).json({
-        error: "NotFound",
-        message: "Location not available",
-      });
+      return ResponseHelper.notFound(res, "Location not available");
     }
 
-    res.json(location);
+    return ResponseHelper.success(res, location);
   } catch (error: any) {
     logger.error("Failed to get location:", error);
-    res.status(500).json({
-      error: "InternalServerError",
-      message: "Failed to get location",
-    });
+    return ResponseHelper.serverError(res, "Failed to get location");
   }
 });
 
-/**
- * Find nearby users and communities
- * GET /api/v1/geospatial/nearby
- */
-router.get(
-  "/nearby",
-  auth,
-  validateRequest(nearbyQuerySchema),
-  async (req, res) => {
-    try {
-      const { latitude, longitude, radius, type, limit } = req.query;
-      const userId = req.user!.userId;
-
-      const results = await GeospatialService.findNearby({
-        latitude: Number(latitude),
-        longitude: Number(longitude),
-        radius: Number(radius),
-        userId,
-        type: type as any,
-        limit: Number(limit),
-      });
-
-      // Track analytics
-      await AnalyticsService.trackEvent({
-        userId,
-        event: "nearby_search",
-        platform: req.headers["user-agent"]?.includes("Mobile")
-          ? "mobile"
-          : "web",
-        properties: {
-          radius,
-          type,
-          resultsCount: results.users.length + results.communities.length,
-        },
-      });
-
-      res.json(results);
-    } catch (error: any) {
-      logger.error("Failed to find nearby entities:", error);
-      res.status(500).json({
-        error: "InternalServerError",
-        message: "Failed to find nearby entities",
-      });
-    }
-  }
-);
-
-/**
- * Get discovery feed based on location and preferences
- * GET /api/v1/geospatial/discovery
- */
+// GET /api/v1/geospatial/discovery - Get discovery feed based on location
 router.get(
   "/discovery",
-  auth,
-  validateRequest(discoveryQuerySchema),
+  requireAuth,
+  validateRequest({ query: discoveryQuerySchema }),
   async (req, res) => {
     try {
-      const { limit } = req.query;
-      const userId = req.user!.userId;
+      const userId = req.user!.id;
+      const { limit } = req.validatedQuery;
 
       const discoveryFeed = await GeospatialService.getDiscoveryFeed(
         userId,
-        Number(limit)
+        limit
       );
 
       // Track analytics
       await AnalyticsService.trackEvent({
         userId,
         event: "discovery_feed_viewed",
-        platform: req.headers["user-agent"]?.includes("Mobile")
-          ? "mobile"
-          : "web",
         properties: {
           feedSize: discoveryFeed.length,
+          platform: req.headers["user-agent"]?.includes("Mobile")
+            ? "mobile"
+            : "web",
         },
+      }).catch((err) => {
+        logger.warn("Failed to track discovery feed analytics:", err);
       });
 
-      res.json({
+      logger.info("Discovery feed viewed:", {
+        userId,
+        feedSize: discoveryFeed.length,
+      });
+      return ResponseHelper.success(res, {
         users: discoveryFeed,
         hasMore: discoveryFeed.length === Number(limit),
       });
     } catch (error: any) {
       logger.error("Failed to get discovery feed:", error);
-      res.status(500).json({
-        error: "InternalServerError",
-        message: "Failed to get discovery feed",
-      });
+      return ResponseHelper.serverError(res, "Failed to get discovery feed");
     }
   }
 );
 
-/**
- * Update location and get nearby users in one call (optimized for mobile)
- * POST /api/v1/geospatial/update-and-discover
- */
+// POST /api/v1/geospatial/update-and-discover - Update location and get nearby
 router.post(
   "/update-and-discover",
-  auth,
-  validateRequest({
-    body: z.object({
-      latitude: z.number().min(-90).max(90),
-      longitude: z.number().min(-180).max(180),
-      radius: z.number().optional().default(50),
-    }),
-  }),
+  requireAuth,
+  validateRequest({ body: updateAndDiscoverSchema }),
   async (req, res) => {
     try {
+      const userId = req.user!.id;
       const { latitude, longitude, radius } = req.body;
-      const userId = req.user!.userId;
 
+      // Update location and get nearby results
       const results = await GeospatialService.updateLocationAndGetNearby(
         userId,
         latitude,
@@ -234,50 +173,136 @@ router.post(
       await AnalyticsService.trackEvent({
         userId,
         event: "location_updated_and_discovered",
-        platform: req.headers["user-agent"]?.includes("Mobile")
-          ? "mobile"
-          : "web",
         properties: {
           latitude,
           longitude,
           radius,
           nearbyUsersCount: results.users.length,
           nearbyCommunitiesCount: results.communities.length,
+          platform: req.headers["user-agent"]?.includes("Mobile")
+            ? "mobile"
+            : "web",
         },
+      }).catch((err) => {
+        logger.warn("Failed to track update and discover analytics:", err);
       });
 
-      res.json(results);
+      logger.info("Location updated and discovery completed:", {
+        userId,
+        resultsCount: results.users.length + results.communities.length,
+      });
+      return ResponseHelper.success(res, results);
     } catch (error: any) {
       logger.error("Failed to update location and discover:", error);
-      res.status(500).json({
-        error: "InternalServerError",
-        message: "Failed to update location and discover",
-      });
+      return ResponseHelper.serverError(
+        res,
+        "Failed to update location and discover"
+      );
     }
   }
 );
 
-/**
- * Check if two users are within range
- * GET /api/v1/geospatial/in-range/:userId
- */
-router.get("/in-range/:userId", auth, async (req, res) => {
+// GET /api/v1/geospatial/nearby - Find nearby users and communities
+router.get(
+  "/nearby",
+  requireAuth,
+  validateRequest({ query: nearbyQuerySchema }),
+  async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const { latitude, longitude, radius, type, limit } = req.validatedQuery;
+
+      const results = await GeospatialService.findNearby({
+        latitude,
+        longitude,
+        radius,
+        userId,
+        type: type as any,
+        limit,
+      });
+
+      // Track analytics
+      await AnalyticsService.trackEvent({
+        userId,
+        event: "nearby_search",
+        properties: {
+          latitude,
+          longitude,
+          radius,
+          type,
+          resultsCount: results.users.length + results.communities.length,
+          platform: req.headers["user-agent"]?.includes("Mobile")
+            ? "mobile"
+            : "web",
+        },
+      }).catch((err) => {
+        logger.warn("Failed to track nearby search analytics:", err);
+      });
+
+      logger.info("Nearby search:", {
+        userId,
+        resultsCount: results.users.length + results.communities.length,
+      });
+      return ResponseHelper.success(res, results);
+    } catch (error: any) {
+      logger.error("Failed to find nearby entities:", error);
+      return ResponseHelper.serverError(res, "Failed to find nearby entities");
+    }
+  }
+);
+
+// GET /api/v1/geospatial/in-range/:userId - Check if user is in range
+router.get(
+  "/in-range/:userId",
+  requireAuth,
+  validateRequest({ params: inRangeParamsSchema }),
+  async (req, res) => {
+    try {
+      const userId = req.user!.id;
+      const { userId: targetUserId } = req.params;
+
+      // Use areUsersInRange method instead
+      const inRange = await GeospatialService.areUsersInRange(
+        userId,
+        targetUserId
+      );
+
+      return ResponseHelper.success(res, { inRange });
+    } catch (error: any) {
+      logger.error("Failed to check user range:", error);
+      return ResponseHelper.serverError(res, "Failed to check user range");
+    }
+  }
+);
+
+// GET /api/v1/geospatial/stats - Get geospatial statistics
+router.get("/stats", requireAuth, async (req, res) => {
   try {
-    const userId = req.user!.userId;
-    const targetUserId = req.params.userId;
+    const _userId = req.user!.id;
 
-    const inRange = await GeospatialService.areUsersInRange(
-      userId,
-      targetUserId
-    );
-
-    res.json({ inRange });
-  } catch (error: any) {
-    logger.error("Failed to check user range:", error);
-    res.status(500).json({
-      error: "InternalServerError",
-      message: "Failed to check user range",
+    // Log analytics for geospatial stats access
+    await AnalyticsService.trackEvent({
+      userId: _userId,
+      event: "geospatial_stats_accessed",
+      properties: {
+        timestamp: new Date().toISOString(),
+        endpoint: "/api/v1/geospatial/stats",
+      },
+    }).catch((err) => {
+      logger.warn("Failed to track geospatial stats analytics:", err);
     });
+
+    // Return basic stats for now
+    const stats = {
+      totalNearbyUsers: 0,
+      totalNearbyCommunities: 0,
+      lastLocationUpdate: new Date().toISOString(),
+    };
+
+    return ResponseHelper.success(res, stats);
+  } catch (error: any) {
+    logger.error("Failed to get geospatial stats:", error);
+    return ResponseHelper.serverError(res, "Failed to get geospatial stats");
   }
 });
 

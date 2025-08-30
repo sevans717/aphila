@@ -20,14 +20,7 @@ export declare class SubscriptionService {
     private static mapPlanIdToSubscriptionEnum;
     static getFeatures(subscriptionType: string): string[];
     static hasFeature(userId: string, feature: string): Promise<boolean>;
-    static createSubscription(userId: string, planId: string, paymentToken?: string): Promise<{
-        success: boolean;
-        subscription: {
-            type: string;
-            endDate: Date;
-            features: string[];
-        };
-    }>;
+    static createSubscription(userId: string, planId: string, paymentToken?: string): Promise<any>;
     static cancelSubscription(userId: string): Promise<{
         success: boolean;
     }>;
@@ -56,9 +49,9 @@ export declare class SubscriptionService {
     static useBoost(userId: string): Promise<{
         id: string;
         userId: string;
+        type: import("@prisma/client").$Enums.BoostType;
         createdAt: Date;
-        status: import(".prisma/client").$Enums.BoostStatus;
-        type: import(".prisma/client").$Enums.BoostType;
+        status: import("@prisma/client").$Enums.BoostStatus;
         categoryId: string | null;
         communityId: string | null;
         startAt: Date;

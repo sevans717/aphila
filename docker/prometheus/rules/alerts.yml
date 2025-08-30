@@ -1,0 +1,174 @@
+groups:
+  - name: postgres_alerts
+    rules:
+      # Database Connection Alerts
+      - alert: PostgreSQLDown
+        expr: up{job="postgres"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL is down"
+          description: "PostgreSQL database is down for more than 1 minute."
+
+      - alert: PostgreSQLTooManyConnections
+        expr: sum(pg_stat_database_numbackends) BY (instance) / pg_settings_max_connections * 100 > 80
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL too many connections"
+          description: "PostgreSQL instance {{ $labels.instance }} has {{ $value }}% of max connections in use."
+
+      - alert: PostgreSQLMaxConnectionsReached
+        expr: sum(pg_stat_database_numbackends) BY (instance) / pg_settings_max_connections * 100 > 95
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL maximum connections reached"
+          description: "PostgreSQL instance {{ $labels.instance }} has reached {{ $value }}% of max connections."
+
+      # Replication Alerts
+      - alert: PostgreSQLReplicationLag
+        expr: pg_replication_lag > 30
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL replication lag is high"
+          description: "PostgreSQL replication lag is {{ $value }} seconds on {{ $labels.instance }}."
+
+      - alert: PostgreSQLReplicationLagCritical
+        expr: pg_replication_lag > 60
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL replication lag is critical"
+          description: "PostgreSQL replication lag is {{ $value }} seconds on {{ $labels.instance }}."
+
+      - alert: PostgreSQLReplicationBroken
+        expr: pg_stat_replication_pg_wal_lsn_diff == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PostgreSQL replication is broken"
+          description: "PostgreSQL replication appears to be broken on {{ $labels.instance }}."
+
+      # Performance Alerts
+      - alert: PostgreSQLSlowQueries
+        expr: rate(pg_stat_database_tup_fetched[5m]) / rate(pg_stat_database_tup_returned[5m]) < 0.1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL slow queries detected"
+          description: "PostgreSQL may be executing slow queries on {{ $labels.instance }}."
+
+      - alert: PostgreSQLHighCacheHitRatio
+        expr: rate(pg_stat_database_blks_hit[5m]) / (rate(pg_stat_database_blks_hit[5m]) + rate(pg_stat_database_blks_read[5m])) < 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL low cache hit ratio"
+          description: "PostgreSQL cache hit ratio is {{ $value | humanizePercentage }} on {{ $labels.instance }}."
+
+      - alert: PostgreSQLHighDeadlocks
+        expr: rate(pg_stat_database_deadlocks[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL high deadlock rate"
+          description: "PostgreSQL deadlock rate is {{ $value }} per second on {{ $labels.instance }}."
+
+      # Disk and Storage Alerts
+      - alert: PostgreSQLDiskUsage
+        expr: (pg_database_size_bytes / 1024 / 1024 / 1024) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL database size is large"
+          description: "PostgreSQL database {{ $labels.datname }} is {{ $value }}GB in size."
+
+      - alert: PostgreSQLTempFiles
+        expr: rate(pg_stat_database_temp_files[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PostgreSQL creating many temp files"
+          description: "PostgreSQL is creating {{ $value }} temp files per second on {{ $labels.instance }}."
+
+  - name: pgbouncer_alerts
+    rules:
+      # PgBouncer Connection Pool Alerts
+      - alert: PgBouncerDown
+        expr: up{job="pgbouncer"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "PgBouncer is down"
+          description: "PgBouncer connection pooler is down for more than 1 minute."
+
+      - alert: PgBouncerHighActiveConnections
+        expr: pgbouncer_pools_cl_active / pgbouncer_pools_maxwait > 0.8
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PgBouncer high active connections"
+          description: "PgBouncer pool {{ $labels.database }} has {{ $value | humanizePercentage }} active connections."
+
+      - alert: PgBouncerWaitingConnections
+        expr: pgbouncer_pools_cl_waiting > 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "PgBouncer connections waiting"
+          description: "PgBouncer pool {{ $labels.database }} has {{ $value }} waiting connections."
+
+  - name: system_alerts
+    rules:
+      # System Resource Alerts
+      - alert: HighCPUUsage
+        expr: (100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value }}% on {{ $labels.instance }}."
+
+      - alert: HighMemoryUsage
+        expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value }}% on {{ $labels.instance }}."
+
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 20
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disk space is low"
+          description: "Disk space is {{ $value }}% full on {{ $labels.instance }} mount {{ $labels.mountpoint }}."
+
+      - alert: DiskSpaceCritical
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) * 100 < 10
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Disk space is critically low"
+          description: "Disk space is {{ $value }}% full on {{ $labels.instance }} mount {{ $labels.mountpoint }}."

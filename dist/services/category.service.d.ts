@@ -6,12 +6,12 @@ export declare class CategoryService {
         };
     } & {
         id: string;
+        type: import("@prisma/client").$Enums.CategoryType | null;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
         description: string | null;
-        type: import(".prisma/client").$Enums.CategoryType | null;
         slug: string;
     })[]>;
     static getCategoryBySlug(slug: string): Promise<({
@@ -26,7 +26,7 @@ export declare class CategoryService {
             id: string;
             userId: string;
             categoryId: string;
-            role: import(".prisma/client").$Enums.MembershipRole;
+            role: import("@prisma/client").$Enums.MembershipRole;
             joinedAt: Date;
         })[];
         communities: ({
@@ -41,48 +41,48 @@ export declare class CategoryService {
             description: string | null;
             categoryId: string | null;
             ownerId: string;
-            visibility: import(".prisma/client").$Enums.CommunityVisibility;
+            visibility: import("@prisma/client").$Enums.CommunityVisibility;
         })[];
     } & {
         id: string;
+        type: import("@prisma/client").$Enums.CategoryType | null;
         name: string;
         isActive: boolean;
         createdAt: Date;
         updatedAt: Date;
         description: string | null;
-        type: import(".prisma/client").$Enums.CategoryType | null;
         slug: string;
     }) | null>;
     static joinCategory(userId: string, categoryId: string): Promise<{
         id: string;
         userId: string;
         categoryId: string;
-        role: import(".prisma/client").$Enums.MembershipRole;
+        role: import("@prisma/client").$Enums.MembershipRole;
         joinedAt: Date;
     }>;
     static leaveCategory(userId: string, categoryId: string): Promise<{
         id: string;
         userId: string;
         categoryId: string;
-        role: import(".prisma/client").$Enums.MembershipRole;
+        role: import("@prisma/client").$Enums.MembershipRole;
         joinedAt: Date;
     }>;
     static getUserCategories(userId: string): Promise<({
         category: {
             id: string;
+            type: import("@prisma/client").$Enums.CategoryType | null;
             name: string;
             isActive: boolean;
             createdAt: Date;
             updatedAt: Date;
             description: string | null;
-            type: import(".prisma/client").$Enums.CategoryType | null;
             slug: string;
         };
     } & {
         id: string;
         userId: string;
         categoryId: string;
-        role: import(".prisma/client").$Enums.MembershipRole;
+        role: import("@prisma/client").$Enums.MembershipRole;
         joinedAt: Date;
     })[]>;
 }

@@ -1,7 +1,7 @@
-import { NextFunction, Request, Response } from 'express';
-import { ZodError, ZodObject, ZodRawShape, ZodSchema, z } from 'zod';
-import { logger } from '../utils/logger';
-import { ResponseHelper } from '../utils/response';
+import { NextFunction, Request, Response } from "express";
+import { ZodError, ZodObject, ZodRawShape, ZodSchema, z } from "zod";
+import { logger } from "../utils/logger";
+import { ResponseHelper } from "../utils/response";
 
 export interface ValidationOptions {
   body?: ZodSchema;
@@ -16,23 +16,23 @@ export const validateRequest = (options: ValidationOptions) => {
   return (req: Request, res: Response, next: NextFunction) => {
     try {
       // Validate content type for POST/PUT/PATCH requests
-      if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
-        const contentType = req.headers['content-type'] || '';
+      if (["POST", "PUT", "PATCH"].includes(req.method)) {
+        const contentType = req.headers["content-type"] || "";
         const allowedTypes = options.allowedContentTypes || [
-          'application/json',
-          'multipart/form-data',
-          'application/x-www-form-urlencoded'
+          "application/json",
+          "multipart/form-data",
+          "application/x-www-form-urlencoded",
         ];
 
-        const isValidContentType = allowedTypes.some(type => 
+        const isValidContentType = allowedTypes.some((type) =>
           contentType.includes(type)
         );
 
         if (!isValidContentType) {
           return ResponseHelper.error(
             res,
-            'INVALID_CONTENT_TYPE',
-            `Content-Type must be one of: ${allowedTypes.join(', ')}`,
+            "INVALID_CONTENT_TYPE",
+            `Content-Type must be one of: ${allowedTypes.join(", ")}`,
             415,
             { contentType, allowedTypes },
             false
@@ -41,12 +41,12 @@ export const validateRequest = (options: ValidationOptions) => {
       }
 
       // Validate body size
-      if (options.maxBodySize && req.headers['content-length']) {
-        const contentLength = parseInt(req.headers['content-length']);
+      if (options.maxBodySize && req.headers["content-length"]) {
+        const contentLength = parseInt(req.headers["content-length"]);
         if (contentLength > options.maxBodySize) {
           return ResponseHelper.error(
             res,
-            'PAYLOAD_TOO_LARGE',
+            "PAYLOAD_TOO_LARGE",
             `Request body too large. Maximum size: ${options.maxBodySize} bytes`,
             413,
             { contentLength, maxBodySize: options.maxBodySize },
@@ -60,7 +60,9 @@ export const validateRequest = (options: ValidationOptions) => {
         req.body = options.body.parse(req.body);
       }
       if (options.query) {
-        (req as any).query = options.query.parse(req.query);
+        // Validate query without modifying the read-only req.query
+        const validatedQuery = options.query.parse(req.query);
+        (req as any).validatedQuery = validatedQuery;
       }
       if (options.params) {
         (req as any).params = options.params.parse(req.params);
@@ -72,7 +74,7 @@ export const validateRequest = (options: ValidationOptions) => {
       next();
     } catch (error) {
       if (error instanceof ZodError) {
-        logger.warn('Request validation failed:', {
+        logger.warn("Request validation failed:", {
           path: req.path,
           method: req.method,
           errors: error.issues,
@@ -80,8 +82,8 @@ export const validateRequest = (options: ValidationOptions) => {
         });
 
         return ResponseHelper.validationError(res, {
-          errors: error.issues.map(err => ({
-            field: err.path.join('.'),
+          errors: error.issues.map((err) => ({
+            field: err.path.join("."),
             message: err.message,
             code: err.code,
             received: (err as any).received,
@@ -89,7 +91,7 @@ export const validateRequest = (options: ValidationOptions) => {
         });
       }
 
-      logger.error('Validation middleware error:', error);
+      logger.error("Validation middleware error:", error);
       next(error);
     }
   };
@@ -102,7 +104,9 @@ function validate(schema: ZodObject<ZodRawShape>) {
       schema.parse(req.body);
       next();
     } catch (err: any) {
-      return res.status(400).json({ error: 'ValidationError', issues: err.errors });
+      return res
+        .status(400)
+        .json({ error: "ValidationError", issues: err.errors });
     }
   };
 }
@@ -112,14 +116,14 @@ function validate(schema: ZodObject<ZodRawShape>) {
  */
 export const commonValidation = {
   pagination: z.object({
-    page: z.string().optional().default('1').transform(Number),
-    limit: z.string().optional().default('10').transform(Number),
+    page: z.string().optional().default("1").transform(Number),
+    limit: z.string().optional().default("10").transform(Number),
     sortBy: z.string().optional(),
-    sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
+    sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
   }),
-  
-  uuid: z.string().uuid('Invalid UUID format'),
-  
+
+  uuid: z.string().uuid("Invalid UUID format"),
+
   coordinates: z.object({
     latitude: z.number().min(-90).max(90),
     longitude: z.number().min(-180).max(180),

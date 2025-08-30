@@ -35,7 +35,7 @@ router.get(
   validateRequest({ query: discoverQuerySchema }),
   async (req: any, res: any) => {
     try {
-      const userId = req.user.id;
+      const userId = req.user!.id;
       const filters = {
         userId,
         ...req.query,
@@ -105,7 +105,7 @@ router.post(
   validateRequest({ body: swipeSchema }),
   async (req: any, res: any) => {
     try {
-      const swiperId = req.user.id;
+      const swiperId = req.user!.id;
       const { swipedId, isLike, isSuper } = req.body;
 
       // Prevent self-swiping
@@ -137,90 +137,102 @@ router.post(
 );
 
 // GET /matches - Get user's matches
-router.get("/matches", requireAuth, async (req: any, res: any) => {
-  try {
-    const userId = req.user.id;
-    const matches = await DiscoveryService.getUserMatches(userId);
+router.get(
+  "/matches",
+  requireAuth,
+  validateRequest({ query: z.object({}), params: z.object({}) }),
+  async (req: any, res: any) => {
+    try {
+      const userId = req.user!.id;
+      const matches = await DiscoveryService.getUserMatches(userId);
 
-    res.json({
-      success: true,
-      data: matches.map((match: any) => {
-        const otherUser =
-          match.initiatorId === userId ? match.receiver : match.initiator;
-        const lastMessage = match.messages[0];
+      res.json({
+        success: true,
+        data: matches.map((match: any) => {
+          const otherUser =
+            match.initiatorId === userId ? match.receiver : match.initiator;
+          const lastMessage = match.messages[0];
 
-        return {
-          id: match.id,
-          user: {
-            id: otherUser.id,
-            displayName: otherUser.profile?.displayName,
-            bio: otherUser.profile?.bio,
-            photo: otherUser.photos[0]?.url,
-          },
-          lastMessage: lastMessage
-            ? {
-                content: lastMessage.content,
-                sentAt: lastMessage.createdAt,
-                isFromMe: lastMessage.senderId === userId,
-              }
-            : null,
-          matchedAt: match.createdAt,
-          status: match.status,
-        };
-      }),
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
+          return {
+            id: match.id,
+            user: {
+              id: otherUser.id,
+              displayName: otherUser.profile?.displayName,
+              bio: otherUser.profile?.bio,
+              photo: otherUser.photos[0]?.url,
+            },
+            lastMessage: lastMessage
+              ? {
+                  content: lastMessage.content,
+                  sentAt: lastMessage.createdAt,
+                  isFromMe: lastMessage.senderId === userId,
+                }
+              : null,
+            matchedAt: match.createdAt,
+            status: match.status,
+          };
+        }),
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message,
+      });
+    }
   }
-});
+);
 
 // GET /likes - Get likes received
-router.get("/likes", requireAuth, async (req: any, res: any) => {
-  try {
-    const userId = req.user.id;
-    const likes = await DiscoveryService.getReceivedLikes(userId);
+router.get(
+  "/likes",
+  requireAuth,
+  validateRequest({ query: z.object({}), params: z.object({}) }),
+  async (req: any, res: any) => {
+    try {
+      const userId = req.user!.id;
+      const likes = await DiscoveryService.getReceivedLikes(userId);
 
-    res.json({
-      success: true,
-      data: likes.map((like: any) => ({
-        id: like.id,
-        user: {
-          id: like.liker.id,
-          displayName: like.liker.profile?.displayName,
-          bio: like.liker.profile?.bio,
-          photo: like.liker.photos[0]?.url,
-        },
-        isSuper: like.isSuper,
-        likedAt: like.createdAt,
-      })),
-    });
-  } catch (error: any) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-    });
+      res.json({
+        success: true,
+        data: likes.map((like: any) => ({
+          id: like.id,
+          user: {
+            id: like.liker.id,
+            displayName: like.liker.profile?.displayName,
+            bio: like.liker.profile?.bio,
+            photo: like.liker.photos[0]?.url,
+          },
+          isSuper: like.isSuper,
+          likedAt: like.createdAt,
+        })),
+      });
+    } catch (error: any) {
+      res.status(500).json({
+        success: false,
+        error: error.message,
+      });
+    }
   }
-});
+);
 
 // GET /communities - simple passthrough for communities listing (compatibility)
-router.get("/communities", async (req, res) => {
-  try {
-    const { categoryId } = req.query as { categoryId?: string };
-    const communities = await CommunityService.getAllCommunities(
-      categoryId || undefined
-    );
-    res.json(communities);
-  } catch (error: any) {
-    res
-      .status(500)
-      .json({
+router.get(
+  "/communities",
+  validateRequest({ query: z.object({ categoryId: z.string().optional() }) }),
+  async (req, res) => {
+    try {
+      const { categoryId } = req.query as { categoryId?: string };
+      const communities = await CommunityService.getAllCommunities(
+        categoryId || undefined
+      );
+      res.json(communities);
+    } catch (error: any) {
+      res.status(500).json({
         success: false,
         error: error.message || "Failed to fetch communities",
       });
+    }
   }
-});
+);
 
 export default router;

@@ -1,5 +1,5 @@
-import { NextFunction, Request, Response } from 'express';
-import { ZodObject, ZodRawShape, ZodSchema, z } from 'zod';
+import { NextFunction, Request, Response } from "express";
+import { ZodObject, ZodRawShape, ZodSchema, z } from "zod";
 export interface ValidationOptions {
     body?: ZodSchema;
     query?: ZodSchema;

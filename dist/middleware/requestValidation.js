@@ -10,7 +10,11 @@ const validate = (schema) => (req, res, next) => {
         });
         // merge parsed values back to request to keep types predictable
         req.body = parsed.body ?? req.body;
-        req.query = parsed.query ?? req.query;
+        // Don't modify req.query as it's read-only in newer Node.js versions
+        // Instead, store validated query separately if needed
+        if (parsed.query) {
+            req.validatedQuery = parsed.query;
+        }
         req.params = parsed.params ?? req.params;
         return next();
     }
@@ -18,9 +22,7 @@ const validate = (schema) => (req, res, next) => {
         const issues = err?.errors ?? [
             { message: err?.message ?? "Invalid request" },
         ];
-        return res
-            .status(400)
-            .json({
+        return res.status(400).json({
             success: false,
             message: "Validation failed",
             details: issues,

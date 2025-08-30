@@ -1,125 +1,120 @@
 import { Router } from "express";
-import { z } from "zod";
-import { auth } from "../middleware/auth";
-import { SocialService } from "../services/social.service";
-import { validateRequest, commonValidation } from "../middleware/validate";
+import { requireAuth } from "../middleware/auth";
 
 const router = Router();
 
-// Comments
-const createCommentValidation = {
-  body: z.object({
-    content: z.string().min(1).max(1000),
-    parentCommentId: commonValidation.uuid.optional(),
-  }),
-};
-
-router.post(
-  "/posts/:postId/comments",
-  auth,
-  validateRequest(createCommentValidation),
-  async (req, res) => {
-    try {
-      const userId = (req.user as any).userId;
-      const comment = await SocialService.createComment(userId, {
-        postId: req.params.postId,
-        content: req.body.content,
-        parentId: req.body.parentCommentId,
-      });
-      res.status(201).json({ success: true, data: comment });
-    } catch (err) {
-      res
-        .status(500)
-        .json({ success: false, message: "Failed to create comment" });
-    }
-  }
-);
-
-router.get("/posts/:postId/comments", auth, async (req, res) => {
+// Get user's social feed
+router.get("/feed", requireAuth, async (req, res) => {
   try {
-    const limit = req.query.limit
-      ? parseInt(req.query.limit as string, 10)
-      : 20;
-    const comments = await SocialService.getPostComments(
-      req.params.postId,
-      (req.user as any).userId,
-      limit
-    );
-    res.json({ success: true, data: { comments } });
-  } catch (err) {
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to fetch comments" });
-  }
-});
+    const userId = (req as any).user?.userId;
 
-router.get("/comments/:commentId/replies", auth, async (req, res) => {
-  try {
-    const limit = req.query.limit
-      ? parseInt(req.query.limit as string, 10)
-      : 10;
-    const offset = req.query.offset
-      ? parseInt(req.query.offset as string, 10)
-      : 0;
-    const result = await SocialService.getCommentReplies(
-      req.params.commentId,
-      limit,
-      offset
-    );
-    res.json({ success: true, data: result });
-  } catch (err) {
-    res
-      .status(500)
-      .json({ success: false, message: "Failed to fetch replies" });
-  }
-});
-
-// Likes
-const toggleLikeValidation = {
-  body: z.object({
-    type: z.enum(["post", "comment"]).optional(),
-  }),
-};
-
-router.post(
-  "/posts/:postId/likes/toggle",
-  auth,
-  validateRequest(toggleLikeValidation),
-  async (req, res) => {
-    try {
-      const userId = (req.user as any).userId;
-      const result = await SocialService.togglePostLike(
-        req.params.postId,
+    // TODO: Implement social feed service
+    res.json({
+      success: true,
+      data: {
+        posts: [],
         userId,
-        req.body.type
-      );
-      res.json({ success: true, data: result });
-    } catch (err) {
-      res
-        .status(500)
-        .json({ success: false, message: "Failed to toggle like" });
-    }
+        message: "Social feed endpoint - implementation pending",
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
   }
-);
+});
 
-router.post(
-  "/comments/:commentId/likes/toggle",
-  auth,
-  validateRequest(toggleLikeValidation),
-  async (req, res) => {
-    try {
-      const userId = (req.user as any).userId;
-      const result = await SocialService.toggleCommentLike(
-        req.params.commentId,
-        userId
-      );
-      res.json({ success: true, data: result });
-    } catch (err) {
-      res
-        .status(500)
-        .json({ success: false, message: "Failed to toggle like" });
-    }
+// Get user's followers
+router.get("/followers", requireAuth, async (req, res) => {
+  try {
+    const userId = (req as any).user?.userId;
+
+    // TODO: Implement followers service
+    res.json({
+      success: true,
+      data: {
+        followers: [],
+        userId,
+        message: "Followers endpoint - implementation pending",
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
   }
-);
+});
+
+// Get users the current user is following
+router.get("/following", requireAuth, async (req, res) => {
+  try {
+    const userId = (req as any).user?.userId;
+
+    // TODO: Implement following service
+    res.json({
+      success: true,
+      data: {
+        following: [],
+        userId,
+        message: "Following endpoint - implementation pending",
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Follow a user
+router.post("/follow/:userId", requireAuth, async (req, res) => {
+  try {
+    const currentUserId = (req as any).user?.userId;
+    const { userId: targetUserId } = req.params;
+
+    // TODO: Implement follow functionality
+    res.json({
+      success: true,
+      data: {
+        followerId: currentUserId,
+        followingId: targetUserId,
+        followedAt: new Date().toISOString(),
+        message: "User followed - implementation pending",
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Unfollow a user
+router.post("/unfollow/:userId", requireAuth, async (req, res) => {
+  try {
+    const currentUserId = (req as any).user?.userId;
+    const { userId: targetUserId } = req.params;
+
+    // TODO: Implement unfollow functionality
+    res.json({
+      success: true,
+      data: {
+        followerId: currentUserId,
+        unfollowedId: targetUserId,
+        unfollowedAt: new Date().toISOString(),
+        message: "User unfollowed - implementation pending",
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+    });
+  }
+});
 
 export default router;

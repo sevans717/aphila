@@ -1,17 +1,11 @@
-version: "3.8"
-
 services:
-  # In local dev we usually don't run Traefik; expose the API directly
-  traefik:
-    scale: 0
-
   # Disable pgbouncer in simple local dev unless explicitly testing pooling
   pgbouncer:
     scale: 0
 
   db:
     ports:
-      - "5432:5432"
+      - "10000:5432"
 
   api:
     environment:
@@ -19,11 +13,12 @@ services:
       # Local dev: by default connect directly to the DB service. To test pooling
       # set DATABASE_URL to point at pgbouncer:6432 (eg. export DATABASE_URL=postgresql://postgres:postgres@pgbouncer:6432/sav3)
       DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@db:5432/sav3}
+      PORT: ${PORT:-4000}
       # If you want to test PgBouncer locally, set USE_PGBOUNCER=true in your .env
       # and ensure a local pgbouncer service is started in the compose override.
       USE_PGBOUNCER: ${USE_PGBOUNCER:-false}
     ports:
-      - "4000:4000"
+      - "10010:4000"
     volumes:
       - ./:/usr/src/app
-    command: sh -c "npm run dev"
+    # command: sh -c "npm run dev"

@@ -12,20 +12,22 @@ export const validate =
       });
       // merge parsed values back to request to keep types predictable
       req.body = (parsed as any).body ?? req.body;
-      req.query = (parsed as any).query ?? (req.query as any);
+      // Don't modify req.query as it's read-only in newer Node.js versions
+      // Instead, store validated query separately if needed
+      if ((parsed as any).query) {
+        (req as any).validatedQuery = (parsed as any).query;
+      }
       req.params = (parsed as any).params ?? (req.params as any);
       return next();
     } catch (err: any) {
       const issues = err?.errors ?? [
         { message: err?.message ?? "Invalid request" },
       ];
-      return res
-        .status(400)
-        .json({
-          success: false,
-          message: "Validation failed",
-          details: issues,
-        });
+      return res.status(400).json({
+        success: false,
+        message: "Validation failed",
+        details: issues,
+      });
     }
   };
 

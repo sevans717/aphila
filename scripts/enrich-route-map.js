@@ -59,13 +59,16 @@ function resolveHandlerToken(token, routeFile, srcFiles) {
   }
 
   // fallback: search across src files for function name
+  // Escape token for safe regex usage
+  const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   for (const [file, content] of Object.entries(srcFiles)) {
+    const t = esc(token);
     const fnRegex = new RegExp(
-      `function\\s+${token}\\s*\\(|const\\s+${token}\\s*=\\s*\\(|${token}\\s*:\s*function\\s*\\(`
+      `(?:function\\s+${t}\\s*\\(|const\\s+${t}\\s*=\\s*\\(|let\\s+${t}\\s*=\\s*\\(|var\\s+${t}\\s*=\\s*\\(|${t}\\s*:\\s*function\\s*\\()`
     );
     if (fnRegex.test(content)) return { token, resolved: `file:${file}` };
     const exportRegex = new RegExp(
-      `export\\s+(async\\s+)?function\\s+${token}\\s*\\(`
+      `export\\s+(?:async\\s+)?function\\s+${t}\\s*\\(`
     );
     if (exportRegex.test(content))
       return { token, resolved: `file-export:${file}` };

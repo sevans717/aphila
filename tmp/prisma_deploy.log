@@ -1,0 +1,22 @@
+? GitHub Copilot CLI loaded for HApiGraS project!
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "sav3", schema "public" at "localhost:5433"
+
+9 migrations found in prisma/migrations
+
+Applying migration `001_init.obsolete`
+Error: P3018
+
+A migration failed to apply. New migrations cannot be applied before the error is recovered from. Read more about how to resolve migration issues in a production database: https://pris.ly/d/migrate-resolve
+
+Migration name: 001_init.obsolete
+
+Database error code: 42710
+
+Database error:
+ERROR: type "Gender" already exists
+
+DbError { severity: "ERROR", parsed_severity: Some(Error), code: SqlState(E42710), message: "type \"Gender\" already exists", detail: None, hint: None, position: None, where_: None, schema: None, table: None, column: None, datatype: None, constraint: None, file: Some("typecmds.c"), line: Some(1167), routine: Some("DefineEnum") }
+
+

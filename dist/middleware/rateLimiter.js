@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createRateLimiter = void 0;
+exports.createAuthRateLimiter = exports.createRateLimiter = void 0;
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const ioredis_1 = __importDefault(require("ioredis"));
 const env_1 = require("../config/env");
@@ -27,6 +27,7 @@ const createRateLimiter = () => {
         }
         catch (err) {
             // optional Redis store not available — fall back to in-memory limiter
+            console.warn("Redis store not available for rate limiter, falling back to in-memory:", err);
             return (0, express_rate_limit_1.default)({
                 windowMs,
                 max,
@@ -44,4 +45,41 @@ const createRateLimiter = () => {
 };
 exports.createRateLimiter = createRateLimiter;
 exports.default = exports.createRateLimiter;
+const createAuthRateLimiter = () => {
+    const windowMs = env_1.env.rateLimitWindowMs
+        ? Math.min(env_1.env.rateLimitWindowMs, 60 * 60 * 1000)
+        : 15 * 60 * 1000; // cap at 1h
+    // Default to stricter limits for auth endpoints
+    const max = env_1.env.rateLimitMax && env_1.env.rateLimitMax < 50 ? env_1.env.rateLimitMax : 10;
+    if (env_1.env.rateLimitRedisUrl) {
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const RedisStore = require("rate-limit-redis");
+            const client = new ioredis_1.default(env_1.env.rateLimitRedisUrl);
+            return (0, express_rate_limit_1.default)({
+                windowMs,
+                max,
+                store: new RedisStore({ client }),
+                standardHeaders: true,
+                legacyHeaders: false,
+            });
+        }
+        catch (err) {
+            console.warn("Redis store not available for auth rate limiter, falling back to in-memory:", err);
+            return (0, express_rate_limit_1.default)({
+                windowMs,
+                max,
+                standardHeaders: true,
+                legacyHeaders: false,
+            });
+        }
+    }
+    return (0, express_rate_limit_1.default)({
+        windowMs,
+        max,
+        standardHeaders: true,
+        legacyHeaders: false,
+    });
+};
+exports.createAuthRateLimiter = createAuthRateLimiter;
 //# sourceMappingURL=rateLimiter.js.map

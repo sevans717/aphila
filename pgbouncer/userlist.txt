@@ -1,1 +1,1 @@
-"postgres" "md5$(echo -n 'postgres' | md5sum | awk '{print $1}')"
+"postgres" "postgres"

@@ -39,6 +39,18 @@ export declare class GeospatialService {
      */
     private static findNearbyUsers;
     /**
+     * Check if PostGIS is available
+     */
+    private static isPostGISAvailable;
+    /**
+     * Find nearby users using PostGIS
+     */
+    private static findNearbyUsersPostGIS;
+    /**
+     * Find nearby users using geolib (fallback)
+     */
+    private static findNearbyUsersGeolib;
+    /**
      * Find nearby communities
      */
     private static findNearbyCommunities;

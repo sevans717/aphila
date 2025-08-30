@@ -1,0 +1,36 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:PutObjectAcl",
+        "s3:AbortMultipartUpload",
+        "s3:ListMultipartUploadParts"
+      ],
+      "Resource": [
+        "arn:aws:s3:::sav3-media/uploads/*",
+        "arn:aws:s3:::sav3-media/temp/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["s3:GetObject"],
+      "Resource": [
+        "arn:aws:s3:::sav3-media/processed/*",
+        "arn:aws:s3:::sav3-thumbnails/*"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["s3:ListBucket"],
+      "Resource": ["arn:aws:s3:::sav3-media", "arn:aws:s3:::sav3-thumbnails"],
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": ["uploads/*", "temp/*", "processed/*"]
+        }
+      }
+    }
+  ]
+}

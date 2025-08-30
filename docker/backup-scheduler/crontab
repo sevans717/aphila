@@ -1,0 +1,12 @@
+# pgBackRest scheduled backups
+# Full backup weekly on Sunday at 2 AM
+0 2 * * 0 /usr/local/bin/run-backup.sh full
+
+# Differential backup daily (Monday-Saturday) at 2 AM
+0 2 * * 1-6 /usr/local/bin/run-backup.sh diff
+
+# Incremental backup every 6 hours
+0 */6 * * * /usr/local/bin/run-backup.sh incr
+
+# Health check and cleanup every hour
+0 * * * * /usr/local/bin/backup-maintenance.sh

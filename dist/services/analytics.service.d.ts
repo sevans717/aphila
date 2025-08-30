@@ -165,9 +165,29 @@ export declare class AnalyticsService {
      */
     static trackSubscription(userId: string, action: "subscribe" | "cancel" | "renew" | "expire", subscriptionType: string, platform: string): Promise<void>;
     /**
-     * Track feature usage
+     * Track detailed session data
      */
-    static trackFeatureUsage(userId: string, feature: string, action: string, platform: string, metadata?: Record<string, any>): Promise<void>;
+    static trackSessionData(sessionData: SessionData): Promise<void>;
+    /**
+     * Track detailed swipe analytics
+     */
+    static trackSwipeAnalytics(swipeData: SwipeAnalytics): Promise<void>;
+    /**
+     * Track detailed match analytics
+     */
+    static trackMatchAnalytics(matchData: MatchAnalytics): Promise<void>;
+    /**
+     * Track detailed message analytics
+     */
+    static trackMessageAnalytics(messageData: MessageAnalytics): Promise<void>;
+    /**
+     * Track detailed subscription analytics
+     */
+    static trackSubscriptionAnalytics(subscriptionData: SubscriptionAnalytics): Promise<void>;
+    /**
+     * Track detailed feature usage analytics
+     */
+    static trackFeatureUsageAnalytics(featureData: FeatureUsageAnalytics): Promise<void>;
     /**
      * Get user metrics for dashboard
      */
@@ -181,9 +201,21 @@ export declare class AnalyticsService {
      */
     static getPlatformDistribution(): Promise<Record<string, number>>;
     /**
-     * Get conversion funnel data
+     * Get detailed conversion funnel data
      */
-    static getConversionFunnel(startDate: Date, endDate: Date): Promise<any>;
+    static getDetailedConversionFunnel(startDate: Date, endDate: Date): Promise<ConversionFunnelData>;
+    /**
+     * Get detailed platform distribution
+     */
+    static getDetailedPlatformDistribution(): Promise<PlatformDistribution>;
+    /**
+     * Get retention metrics
+     */
+    static getRetentionMetrics(startDate: Date, endDate: Date): Promise<RetentionMetrics>;
+    /**
+     * Get revenue metrics
+     */
+    static getRevenueMetrics(startDate: Date, endDate: Date): Promise<RevenueMetrics>;
     /**
      * Clean up old analytics data
      */

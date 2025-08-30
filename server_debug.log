@@ -1,0 +1,13 @@
+[dotenv@17.2.1] injecting env (0) from .env -- tip: ΓÜÖ∩╕Å  specify custom .env file path with { path: '/custom/path/.env' }
+{"level":40,"time":1756360609046,"pid":15288,"hostname":"LAPTOP-47D13BVE","msg":"Stripe secret not set ΓÇö payments may be disabled or misconfigured"}
+≡ƒÜÇ Starting server on port 4000...
+≡ƒôü Current working directory: C:\Users\evans\Desktop\sav3-backend
+≡ƒîÉ Environment: development
+Γ£à Database connectivity OK
+Γ£à Server successfully listening on http://0.0.0.0:4000
+≡ƒöù Health check: http://localhost:4000/health
+≡ƒöù API base: http://localhost:4000/api/v1
+≡ƒöº Initializing WebSocket service...
+{"level":30,"time":1756360609453,"pid":15288,"hostname":"LAPTOP-47D13BVE","msg":"Server listening WITHOUT WebSocket support (debugging)"}
+Γ£à WebSocket service initialized successfully
+≡ƒÜÇ Server fully initialized and ready!

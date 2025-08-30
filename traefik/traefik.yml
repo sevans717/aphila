@@ -10,4 +10,5 @@ providers:
 
 certificatesResolvers:
   le:
-    tlschallenge: {}
+    acme:
+      tlsChallenge: {}

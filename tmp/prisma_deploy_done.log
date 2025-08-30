@@ -1,0 +1,24 @@
+? GitHub Copilot CLI loaded for HApiGraS project!
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+Datasource "db": PostgreSQL database "sav3", schema "public" at "localhost:5433"
+
+8 migrations found in prisma/migrations
+
+Applying migration `003_enable_postgis_geospatial`
+Error: P3018
+
+A migration failed to apply. New migrations cannot be applied before the error is recovered from. Read more about how to resolve migration issues in a production database: https://pris.ly/d/migrate-resolve
+
+Migration name: 003_enable_postgis_geospatial
+
+Database error code: 0A000
+
+Database error:
+ERROR: extension "postgis" is not available
+DETAIL: Could not open extension control file "/usr/share/postgresql/16/extension/postgis.control": No such file or directory.
+HINT: The extension must first be installed on the system where PostgreSQL is running.
+
+DbError { severity: "ERROR", parsed_severity: Some(Error), code: SqlState(E0A000), message: "extension \"postgis\" is not available", detail: Some("Could not open extension control file \"/usr/share/postgresql/16/extension/postgis.control\": No such file or directory."), hint: Some("The extension must first be installed on the system where PostgreSQL is running."), position: None, where_: None, schema: None, table: None, column: None, datatype: None, constraint: None, file: Some("extension.c"), line: Some(543), routine: Some("parse_extension_control_file") }
+
+

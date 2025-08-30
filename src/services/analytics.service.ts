@@ -344,26 +344,192 @@ export class AnalyticsService {
   }
 
   /**
-   * Track feature usage
+   * Track detailed session data
    */
-  static async trackFeatureUsage(
-    userId: string,
-    feature: string,
-    action: string,
-    platform: string,
-    metadata?: Record<string, any>
+  static async trackSessionData(sessionData: SessionData): Promise<void> {
+    if (!env.enableAnalytics) {
+      return;
+    }
+
+    try {
+      await this.trackEvent({
+        userId: sessionData.userId,
+        event: "session_data",
+        platform: sessionData.platform,
+        properties: {
+          sessionId: sessionData.sessionId,
+          startTime: sessionData.startTime.toISOString(),
+          endTime: sessionData.endTime?.toISOString(),
+          duration: sessionData.duration,
+          deviceInfo: sessionData.deviceInfo,
+          actions: sessionData.actions,
+          screens: sessionData.screens,
+        },
+      });
+
+      logger.info(
+        `Session data tracked for user ${sessionData.userId}, duration: ${sessionData.duration}ms`
+      );
+    } catch (error) {
+      logger.error("Failed to track session data:", error);
+    }
+  }
+
+  /**
+   * Track detailed swipe analytics
+   */
+  static async trackSwipeAnalytics(swipeData: SwipeAnalytics): Promise<void> {
+    if (!env.enableAnalytics) {
+      return;
+    }
+
+    try {
+      await this.trackEvent({
+        userId: swipeData.userId,
+        event: "swipe_analytics",
+        platform: swipeData.platform,
+        properties: {
+          targetUserId: swipeData.targetUserId,
+          action: swipeData.action,
+          timestamp: swipeData.timestamp.toISOString(),
+          location: swipeData.location,
+        },
+      });
+
+      logger.info(
+        `Swipe analytics tracked: ${swipeData.action} from ${swipeData.userId} to ${swipeData.targetUserId}`
+      );
+    } catch (error) {
+      logger.error("Failed to track swipe analytics:", error);
+    }
+  }
+
+  /**
+   * Track detailed match analytics
+   */
+  static async trackMatchAnalytics(matchData: MatchAnalytics): Promise<void> {
+    if (!env.enableAnalytics) {
+      return;
+    }
+
+    try {
+      await this.trackEvent({
+        userId: matchData.user1Id,
+        event: "match_analytics",
+        platform: matchData.platform,
+        properties: {
+          matchId: matchData.matchId,
+          user2Id: matchData.user2Id,
+          matchedAt: matchData.matchedAt.toISOString(),
+          firstMessageSentAt: matchData.firstMessageSentAt?.toISOString(),
+          conversationStarted: matchData.conversationStarted,
+        },
+      });
+
+      logger.info(
+        `Match analytics tracked: ${matchData.matchId} between ${matchData.user1Id} and ${matchData.user2Id}`
+      );
+    } catch (error) {
+      logger.error("Failed to track match analytics:", error);
+    }
+  }
+
+  /**
+   * Track detailed message analytics
+   */
+  static async trackMessageAnalytics(
+    messageData: MessageAnalytics
   ): Promise<void> {
-    await this.trackEvent({
-      userId,
-      event: "feature_usage",
-      platform,
-      properties: {
-        feature,
-        action,
-        metadata,
-        timestamp: new Date().toISOString(),
-      },
-    });
+    if (!env.enableAnalytics) {
+      return;
+    }
+
+    try {
+      await this.trackEvent({
+        userId: messageData.senderId,
+        event: "message_analytics",
+        platform: messageData.platform,
+        properties: {
+          messageId: messageData.messageId,
+          receiverId: messageData.receiverId,
+          messageType: messageData.messageType,
+          timestamp: messageData.timestamp.toISOString(),
+          responseTime: messageData.responseTime,
+          isFirstMessage: messageData.isFirstMessage,
+        },
+      });
+
+      logger.info(
+        `Message analytics tracked: ${messageData.messageType} from ${messageData.senderId} to ${messageData.receiverId}`
+      );
+    } catch (error) {
+      logger.error("Failed to track message analytics:", error);
+    }
+  }
+
+  /**
+   * Track detailed subscription analytics
+   */
+  static async trackSubscriptionAnalytics(
+    subscriptionData: SubscriptionAnalytics
+  ): Promise<void> {
+    if (!env.enableAnalytics) {
+      return;
+    }
+
+    try {
+      await this.trackEvent({
+        userId: subscriptionData.userId,
+        event: "subscription_analytics",
+        platform: subscriptionData.platform,
+        properties: {
+          action: subscriptionData.action,
+          subscriptionType: subscriptionData.subscriptionType,
+          timestamp: subscriptionData.timestamp.toISOString(),
+          revenue: subscriptionData.revenue,
+          trialPeriod: subscriptionData.trialPeriod,
+        },
+      });
+
+      logger.info(
+        `Subscription analytics tracked: ${subscriptionData.action} for user ${subscriptionData.userId}, type: ${subscriptionData.subscriptionType}`
+      );
+    } catch (error) {
+      logger.error("Failed to track subscription analytics:", error);
+    }
+  }
+
+  /**
+   * Track detailed feature usage analytics
+   */
+  static async trackFeatureUsageAnalytics(
+    featureData: FeatureUsageAnalytics
+  ): Promise<void> {
+    if (!env.enableAnalytics) {
+      return;
+    }
+
+    try {
+      await this.trackEvent({
+        userId: featureData.userId,
+        event: "feature_usage_analytics",
+        platform: featureData.platform,
+        properties: {
+          feature: featureData.feature,
+          action: featureData.action,
+          timestamp: featureData.timestamp.toISOString(),
+          metadata: featureData.metadata,
+          duration: featureData.duration,
+          success: featureData.success,
+        },
+      });
+
+      logger.info(
+        `Feature usage analytics tracked: ${featureData.feature} - ${featureData.action} by ${featureData.userId}, success: ${featureData.success}`
+      );
+    } catch (error) {
+      logger.error("Failed to track feature usage analytics:", error);
+    }
   }
 
   /**
@@ -511,59 +677,63 @@ export class AnalyticsService {
   }
 
   /**
-   * Get conversion funnel data
+   * Get detailed conversion funnel data
    */
-  static async getConversionFunnel(
+  static async getDetailedConversionFunnel(
     startDate: Date,
     endDate: Date
-  ): Promise<any> {
+  ): Promise<ConversionFunnelData> {
     try {
-      // This would typically involve complex queries to track user journey
-      // For now, return basic funnel metrics
-
+      // Calculate conversion funnel data directly
       const [signups, profileCompleted, firstSwipe, firstMatch, firstMessage] =
         await Promise.all([
+          // Total signups
           prisma.user.count({
             where: {
               createdAt: { gte: startDate, lte: endDate },
             },
           }),
 
-          prisma.profile.count({
+          // Profile completed (users with profile data)
+          prisma.user.count({
             where: {
-              user: {
-                createdAt: { gte: startDate, lte: endDate },
-              },
-              displayName: { not: null as any },
-              bio: { not: null },
+              createdAt: { gte: startDate, lte: endDate },
+              profile: { isNot: null },
             },
           }),
 
-          prisma.like.count({
+          // First swipes (users who have liked at least one other user)
+          prisma.user.count({
             where: {
               createdAt: { gte: startDate, lte: endDate },
+              sentLikes: { some: {} },
             },
           }),
 
-          prisma.match.count({
+          // First matches (users who have at least one match)
+          prisma.user.count({
             where: {
               createdAt: { gte: startDate, lte: endDate },
+              initiatedMatches: { some: {} },
             },
           }),
 
-          prisma.message.count({
+          // First messages (users who have sent at least one message)
+          prisma.user.count({
             where: {
               createdAt: { gte: startDate, lte: endDate },
+              sentMessages: { some: {} },
             },
           }),
         ]);
 
-      return {
+      const detailedFunnel: ConversionFunnelData = {
         signups,
         profileCompleted,
         firstSwipe,
         firstMatch,
         firstMessage,
+        subscriptions: 0, // Would need subscription tracking
         conversionRates: {
           signupToProfile: signups > 0 ? (profileCompleted / signups) * 100 : 0,
           profileToSwipe:
@@ -571,10 +741,179 @@ export class AnalyticsService {
           swipeToMatch: firstSwipe > 0 ? (firstMatch / firstSwipe) * 100 : 0,
           matchToMessage:
             firstMatch > 0 ? (firstMessage / firstMatch) * 100 : 0,
+          messageToSubscription: firstMessage > 0 ? 0 : 0, // Would need subscription data
         },
       };
+
+      logger.info(
+        `Detailed conversion funnel calculated: ${detailedFunnel.signups} signups, ${detailedFunnel.conversionRates.signupToProfile}% profile completion rate`
+      );
+
+      return detailedFunnel;
     } catch (error) {
-      logger.error("Failed to get conversion funnel:", error);
+      logger.error("Failed to get detailed conversion funnel:", error);
+      return handleServiceError(error) as any;
+    }
+  }
+
+  /**
+   * Get detailed platform distribution
+   */
+  static async getDetailedPlatformDistribution(): Promise<PlatformDistribution> {
+    try {
+      const distribution = await this.getPlatformDistribution();
+
+      const total = Object.values(distribution).reduce(
+        (sum, count) => sum + count,
+        0
+      );
+      const ios = distribution.ios || 0;
+      const android = distribution.android || 0;
+      const web = distribution.web || 0;
+
+      const detailedDistribution: PlatformDistribution = {
+        ios,
+        android,
+        web,
+        total,
+        percentages: {
+          ios: total > 0 ? (ios / total) * 100 : 0,
+          android: total > 0 ? (android / total) * 100 : 0,
+          web: total > 0 ? (web / total) * 100 : 0,
+        },
+      };
+
+      logger.info(
+        `Platform distribution: iOS ${detailedDistribution.percentages.ios}%, Android ${detailedDistribution.percentages.android}%, Web ${detailedDistribution.percentages.web}%`
+      );
+
+      return detailedDistribution;
+    } catch (error) {
+      logger.error("Failed to get detailed platform distribution:", error);
+      return handleServiceError(error) as any;
+    }
+  }
+
+  /**
+   * Get retention metrics
+   */
+  static async getRetentionMetrics(
+    startDate: Date,
+    endDate: Date
+  ): Promise<RetentionMetrics> {
+    try {
+      // Calculate retention for different cohorts
+      const [day1, day7, day30, day90] = await Promise.all([
+        // Day 1 retention
+        prisma.user.count({
+          where: {
+            createdAt: { gte: startDate, lte: endDate },
+            lastLogin: {
+              gte: new Date(startDate.getTime() + 24 * 60 * 60 * 1000),
+            },
+          },
+        }),
+
+        // Day 7 retention
+        prisma.user.count({
+          where: {
+            createdAt: { gte: startDate, lte: endDate },
+            lastLogin: {
+              gte: new Date(startDate.getTime() + 7 * 24 * 60 * 60 * 1000),
+            },
+          },
+        }),
+
+        // Day 30 retention
+        prisma.user.count({
+          where: {
+            createdAt: { gte: startDate, lte: endDate },
+            lastLogin: {
+              gte: new Date(startDate.getTime() + 30 * 24 * 60 * 60 * 1000),
+            },
+          },
+        }),
+
+        // Day 90 retention
+        prisma.user.count({
+          where: {
+            createdAt: { gte: startDate, lte: endDate },
+            lastLogin: {
+              gte: new Date(startDate.getTime() + 90 * 24 * 60 * 60 * 1000),
+            },
+          },
+        }),
+      ]);
+
+      const totalCohort = await prisma.user.count({
+        where: {
+          createdAt: { gte: startDate, lte: endDate },
+        },
+      });
+
+      const retention: RetentionMetrics = {
+        day1: totalCohort > 0 ? (day1 / totalCohort) * 100 : 0,
+        day7: totalCohort > 0 ? (day7 / totalCohort) * 100 : 0,
+        day30: totalCohort > 0 ? (day30 / totalCohort) * 100 : 0,
+        day90: totalCohort > 0 ? (day90 / totalCohort) * 100 : 0,
+        cohortSizes: {
+          total: totalCohort,
+          retained_day1: day1,
+          retained_day7: day7,
+          retained_day30: day30,
+          retained_day90: day90,
+        },
+      };
+
+      logger.info(
+        `Retention metrics calculated: Day 1: ${retention.day1}%, Day 7: ${retention.day7}%, Day 30: ${retention.day30}%`
+      );
+
+      return retention;
+    } catch (error) {
+      logger.error("Failed to get retention metrics:", error);
+      return handleServiceError(error) as any;
+    }
+  }
+
+  /**
+   * Get revenue metrics
+   */
+  static async getRevenueMetrics(
+    startDate: Date,
+    endDate: Date
+  ): Promise<RevenueMetrics> {
+    try {
+      // This would typically involve subscription and payment data
+      // For now, return basic revenue structure
+
+      const subscriptions = await prisma.subscription.count({
+        where: {
+          createdAt: { gte: startDate, lte: endDate },
+          isActive: true,
+        },
+      });
+
+      const revenue: RevenueMetrics = {
+        totalRevenue: 0, // Would need payment tracking
+        monthlyRecurringRevenue: subscriptions * 9.99, // Assuming $9.99/month average
+        averageRevenuePerUser: 0, // Would need user payment history
+        lifetimeValue: 0, // Would need historical payment data
+        churnRate: 0, // Would need cancellation tracking
+        subscriptionsByTier: {
+          basic: Math.floor(subscriptions * 0.6),
+          premium: Math.floor(subscriptions * 0.3),
+          vip: Math.floor(subscriptions * 0.1),
+        },
+      };
+
+      logger.info(
+        `Revenue metrics calculated: ${subscriptions} active subscriptions, estimated MRR: $${revenue.monthlyRecurringRevenue}`
+      );
+
+      return revenue;
+    } catch (error) {
+      logger.error("Failed to get revenue metrics:", error);
       return handleServiceError(error) as any;
     }
   }

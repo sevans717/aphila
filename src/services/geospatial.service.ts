@@ -39,12 +39,20 @@ export class GeospatialService {
    */
   static async updateUserLocation(data: LocationUpdate): Promise<void> {
     try {
+      const updateData: any = {
+        latitude: data.latitude,
+        longitude: data.longitude,
+      };
+
+      // If PostGIS is available, also update the geography column
+      const postgisAvailable = await this.isPostGISAvailable();
+      if (postgisAvailable) {
+        updateData.locationGeography = `POINT(${data.longitude} ${data.latitude})`;
+      }
+
       await prisma.profile.update({
         where: { userId: data.userId },
-        data: {
-          latitude: data.latitude,
-          longitude: data.longitude,
-        },
+        data: updateData,
       });
 
       logger.info(`Updated location for user ${data.userId}`);
@@ -85,6 +93,82 @@ export class GeospatialService {
    * Find nearby users using geospatial queries
    */
   private static async findNearbyUsers(query: NearbyQuery): Promise<any[]> {
+    try {
+      // Try PostGIS first if available
+      const postgisAvailable = await this.isPostGISAvailable();
+      if (postgisAvailable) {
+        return this.findNearbyUsersPostGIS(query);
+      }
+    } catch (error) {
+      logger.warn("PostGIS not available, falling back to geolib:", error);
+    }
+
+    // Fallback to bounding box + distance calculation
+    return this.findNearbyUsersGeolib(query);
+  }
+
+  /**
+   * Check if PostGIS is available
+   */
+  private static async isPostGISAvailable(): Promise<boolean> {
+    try {
+      const result = await prisma.$queryRaw`SELECT PostGIS_version()`;
+      return !!result;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Find nearby users using PostGIS
+   */
+  private static async findNearbyUsersPostGIS(
+    query: NearbyQuery
+  ): Promise<any[]> {
+    const userPoint = `POINT(${query.longitude} ${query.latitude})`;
+
+    const users = (await prisma.$queryRaw`
+      SELECT
+        u.id,
+        p."displayName",
+        p.bio,
+        p.gender,
+        p."birthdate",
+        p."isVerified",
+        ST_Distance(p."locationGeography", ST_GeogFromText(${userPoint})) / 1000.0 as distance_km,
+        ph.url as "primaryPhoto"
+      FROM users u
+      JOIN profiles p ON u.id = p."userId"
+      LEFT JOIN photos ph ON u.id = ph."userId" AND ph."isPrimary" = true
+      WHERE u."isActive" = true
+        AND p."isVisible" = true
+        AND p."locationGeography" IS NOT NULL
+        AND ST_DWithin(p."locationGeography", ST_GeogFromText(${userPoint}), ${query.radius * 1000})
+        AND u.id != ${query.userId || ""}
+      ORDER BY p."locationGeography" <-> ST_GeogFromText(${userPoint})
+      LIMIT ${query.limit || 50}
+    `) as any[];
+
+    return users.map((user: any) => ({
+      id: user.id,
+      profile: {
+        displayName: user.displayName,
+        bio: user.bio,
+        gender: user.gender,
+        birthdate: user.birthdate,
+        isVerified: user.isVerified,
+        primaryPhoto: user.primaryPhoto,
+      },
+      distance: Math.round((user.distance_km as number) * 10) / 10,
+    }));
+  }
+
+  /**
+   * Find nearby users using geolib (fallback)
+   */
+  private static async findNearbyUsersGeolib(
+    query: NearbyQuery
+  ): Promise<any[]> {
     // Use PostGIS if available, otherwise fall back to bounding box + distance calculation
     const boundingBox = this.calculateBoundingBox(
       query.latitude,
@@ -114,6 +198,7 @@ export class GeospatialService {
             displayName: true,
             bio: true,
             gender: true,
+            birthdate: true,
             latitude: true,
             longitude: true,
             isVerified: true,

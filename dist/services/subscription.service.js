@@ -4,8 +4,8 @@ exports.SubscriptionService = exports.SUBSCRIPTION_PLANS = void 0;
 // avoid importing generated enum types directly; use strings for type-safety compatibility
 const prisma_1 = require("../lib/prisma");
 const env_1 = require("../config/env");
-const uuid_1 = require("uuid");
 const error_1 = require("../utils/error");
+const stripe_service_1 = require("./stripe.service");
 // Subscription plans configuration
 exports.SUBSCRIPTION_PLANS = [
     {
@@ -71,6 +71,7 @@ exports.SUBSCRIPTION_PLANS = [
 class SubscriptionService {
     // Get all available subscription plans
     static getPlans() {
+        console.log(`Getting subscription plans for environment: ${env_1.env.nodeEnv}`);
         return exports.SUBSCRIPTION_PLANS;
     }
     // Get user's current subscription
@@ -150,11 +151,33 @@ class SubscriptionService {
             const err = new Error("Invalid subscription plan");
             return (0, error_1.handleServiceError)(err);
         }
+        // Log payment token usage for security auditing
+        if (paymentToken) {
+            console.log(`Processing subscription for user ${userId} with payment token: ${paymentToken.substring(0, 8)}...`);
+        }
         // In a real app, you'd integrate with Stripe here
-        if (plan.price > 0 && !paymentToken) {
-            // Allow bypassing real payments in dev environments when explicitly configured
-            if (!env_1.env.disablePayments) {
+        if (plan.price > 0) {
+            // If payments are disabled in env, we do NOT grant paid entitlements automatically.
+            // We return the checkout session info (if configured) or an informative error so
+            // that the frontend can handle the flow. Paid entitlements are only granted
+            // after a verified webhook event (checkout.session.completed / invoice.payment_succeeded).
+            if (plan.stripePriceId) {
+                const user = await prisma_1.prisma.user.findUnique({ where: { id: userId } });
+                const session = await (0, stripe_service_1.createStripeCheckoutSession)(user?.email, plan.stripePriceId, `${env_1.env.appUrl}/billing/success`, `${env_1.env.appUrl}/billing/cancel`);
+                return {
+                    success: true,
+                    checkoutSessionUrl: session.url,
+                    message: "Redirect user to checkout to complete subscription",
+                };
+            }
+            // If no stripe price configured and payments enabled, require a payment token.
+            if (!env_1.env.disablePayments && !paymentToken) {
                 const err = new Error("Payment token required for paid plans");
+                return (0, error_1.handleServiceError)(err);
+            }
+            // If payments are disabled and no stripe price available, do not auto-upgrade.
+            if (env_1.env.disablePayments && !plan.stripePriceId) {
+                const err = new Error("Payments are disabled in this environment. Paid plans must be enabled via Stripe webhooks.");
                 return (0, error_1.handleServiceError)(err);
             }
         }
@@ -188,17 +211,10 @@ class SubscriptionService {
             body: `Your ${plan.name} subscription is now active`,
             data: { planId, endDate: endDate.toISOString() },
         };
-        // If payments are disabled for dev, add a mock receipt payload
-        if (env_1.env.disablePayments) {
-            notificationData.data.mockPayment = true;
-            notificationData.data.payment = {
-                id: `mock_${(0, uuid_1.v4)()}`,
-                amount: plan.price,
-                currency: "USD",
-                status: "succeeded",
-                createdAt: new Date().toISOString(),
-            };
-        }
+        // Do NOT grant entitlements for paid plans here. Only create a notification
+        // indicating that the subscription flow was initiated. The webhook handler
+        // will grant entitlements once payment is confirmed.
+        notificationData.data.flowInitiated = true;
         await prisma_1.prisma.notification.create({ data: notificationData });
         return {
             success: true,
@@ -206,6 +222,9 @@ class SubscriptionService {
                 type: planId,
                 endDate,
                 features: plan.features,
+                note: plan.price > 0
+                    ? "Awaiting payment confirmation via webhook to finalize subscription"
+                    : "Free plan activated",
             },
         };
     }

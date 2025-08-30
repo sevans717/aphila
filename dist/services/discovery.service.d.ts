@@ -42,9 +42,9 @@ export declare class DiscoveryService {
             id: string;
             createdAt: Date;
             updatedAt: Date;
+            status: import("@prisma/client").$Enums.MatchStatus;
             initiatorId: string;
             receiverId: string;
-            status: import(".prisma/client").$Enums.MatchStatus;
         };
         isSuper: boolean;
         like?: undefined;
@@ -62,6 +62,11 @@ export declare class DiscoveryService {
         match?: undefined;
     }>;
     static getUserMatches(userId: string): Promise<({
+        messages: {
+            createdAt: Date;
+            senderId: string;
+            content: string;
+        }[];
         initiator: {
             id: string;
             profile: {
@@ -82,18 +87,13 @@ export declare class DiscoveryService {
                 url: string;
             }[];
         };
-        messages: {
-            createdAt: Date;
-            senderId: string;
-            content: string;
-        }[];
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        status: import("@prisma/client").$Enums.MatchStatus;
         initiatorId: string;
         receiverId: string;
-        status: import(".prisma/client").$Enums.MatchStatus;
     })[]>;
     static getReceivedLikes(userId: string): Promise<({
         liker: {

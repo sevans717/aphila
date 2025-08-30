@@ -1,0 +1,46 @@
+version: "3.8"
+
+services:
+  pg-primary:
+    image: postgres:15
+    container_name: pg-primary
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: sav3
+      REPLICATION_PASSWORD: repl_password
+    volumes:
+      - pgdata_primary:/var/lib/postgresql/data
+      - ./docker/postgres/primary/init:/docker-entrypoint-initdb.d:ro
+    ports:
+      - "10000:5432"
+    command:
+      - "-c"
+      - "wal_level=replica"
+      - "-c"
+      - "max_wal_senders=10"
+      - "-c"
+      - "max_replication_slots=10"
+      - "-c"
+      - "wal_keep_size=512MB"
+
+  pg-replica:
+    image: postgres:15
+    container_name: pg-replica
+    depends_on:
+      - pg-primary
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: example
+      POSTGRES_DB: sav3
+      REPLICATION_PASSWORD: repl_password
+    volumes:
+      - pgdata_replica:/var/lib/postgresql/data
+      - ./scripts/replica-entrypoint.sh:/scripts/replica-entrypoint.sh:ro
+    ports:
+      - "10001:5432"
+    entrypoint: ["/bin/bash", "/scripts/replica-entrypoint.sh"]
+
+volumes:
+  pgdata_primary:
+  pgdata_replica:

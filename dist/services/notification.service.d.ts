@@ -7,22 +7,22 @@ export interface CreateNotificationInput {
 }
 export declare class NotificationService {
     static create(input: CreateNotificationInput): Promise<{
+        data: import("@prisma/client/runtime/library").JsonValue | null;
         id: string;
         userId: string;
+        type: string;
         createdAt: Date;
         isRead: boolean;
-        type: string;
-        data: import("@prisma/client/runtime/library").JsonValue | null;
         title: string;
         body: string;
     }>;
     static bulkCreate(notifications: CreateNotificationInput[]): Promise<{
+        data: import("@prisma/client/runtime/library").JsonValue | null;
         id: string;
         userId: string;
+        type: string;
         createdAt: Date;
         isRead: boolean;
-        type: string;
-        data: import("@prisma/client/runtime/library").JsonValue | null;
         title: string;
         body: string;
     }[]>;
@@ -31,12 +31,12 @@ export declare class NotificationService {
         cursor?: string;
     }): Promise<{
         items: {
+            data: import("@prisma/client/runtime/library").JsonValue | null;
             id: string;
             userId: string;
+            type: string;
             createdAt: Date;
             isRead: boolean;
-            type: string;
-            data: import("@prisma/client/runtime/library").JsonValue | null;
             title: string;
             body: string;
         }[];
