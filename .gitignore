@@ -9,3 +9,12 @@ node_modules
 
 # Mobile WIP directory
 mobile-wip
+
+# Archive large binary files
+sav3-frontend/legacy-archive/**/*.exe
+sav3-frontend/legacy-archive/**/*.asar
+sav3-frontend/legacy-archive/**/*.dmg
+sav3-frontend/legacy-archive/**/*.pkg
+sav3-frontend/legacy-archive/**/*.msi
+sav3-frontend/legacy-archive/**/*.deb
+sav3-frontend/legacy-archive/**/*.rpm
