@@ -8,7 +8,7 @@ export default async function globalSetup() {
 
   // Ensure .env.test is loaded by setting ENV
   process.env.NODE_ENV = "test";
-  const testDbUrl = "postgresql://test:test@localhost:10001/sav3_test";
+  const testDbUrl = "postgresql://postgres:postgres@localhost:10001/postgres";
   process.env.DATABASE_URL = testDbUrl;
 
   const root = path.resolve(__dirname, "..");

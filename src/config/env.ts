@@ -58,8 +58,9 @@ const envSchema = z.object({
   DISABLE_PAYMENTS: z.string().optional(),
   MAX_FILE_SIZE: z.string().optional(),
   ALLOWED_FILE_TYPES: z.string().optional(),
-  VAPID_PUBLIC_KEY: z.string().optional(),
-  VAPID_PRIVATE_KEY: z.string().optional(),
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
+  STRIPE_PUBLISHABLE_KEY: z.string().optional(),
 });
 const safeStart =
   process.argv.includes("--safe-start") || process.env.SAFE_START === "true";
@@ -146,6 +147,9 @@ export const env = {
   bcryptRounds: parseInt(parsed.BCRYPT_ROUNDS || "12", 10),
   vapidPublicKey: parsed.VAPID_PUBLIC_KEY,
   vapidPrivateKey: parsed.VAPID_PRIVATE_KEY,
+  stripeSecretKey: parsed.STRIPE_SECRET_KEY,
+  stripeWebhookSecret: parsed.STRIPE_WEBHOOK_SECRET,
+  stripePublishableKey: parsed.STRIPE_PUBLISHABLE_KEY,
   minioEndpoint: parsed.MINIO_ENDPOINT,
   minioPort: parsed.MINIO_PORT,
   minioAccessKey: parsed.MINIO_ACCESS_KEY,

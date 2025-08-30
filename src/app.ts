@@ -57,13 +57,13 @@ if (!fs.existsSync(uploadsDir)) {
 // }
 
 // --- Body parsers & static files ---
-// // Mount webhooks (Stripe requires raw body for signature verification)
-// import stripeWebhookRoutes from "./routes/webhooks/stripe";
-// app.use(
-//   "/webhooks",
-//   // This route expects the raw request body — use the handler which reads raw body directly
-//   stripeWebhookRoutes as any
-// );
+// Mount webhooks (Stripe requires raw body for signature verification)
+import stripeWebhookRoutes from "./routes/webhooks/stripe";
+app.use(
+  "/webhooks",
+  // This route expects the raw request body — use the handler which reads raw body directly
+  stripeWebhookRoutes as any
+);
 
 // --- Body parsers & static files ---
 // app.use(express.json({ limit: "25mb" }));

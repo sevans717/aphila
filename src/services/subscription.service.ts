@@ -2,7 +2,13 @@
 import { prisma } from "../lib/prisma";
 import { env } from "../config/env";
 import { handleServiceError } from "../utils/error";
-import { createStripeCheckoutSession } from "./stripe.service";
+import {
+  createStripeCheckoutSession,
+  createOrRetrieveCustomer,
+  createSubscription,
+  cancelSubscription,
+  updateSubscription,
+} from "./stripe.service";
 
 // using shared singleton `prisma` from src/lib/prisma
 
@@ -175,7 +181,7 @@ export class SubscriptionService {
   static async createSubscription(
     userId: string,
     planId: string,
-    paymentToken?: string
+    paymentMethodId?: string
   ) {
     const plan = SUBSCRIPTION_PLANS.find((p) => p.id === planId);
     if (!plan) {
@@ -183,122 +189,170 @@ export class SubscriptionService {
       return handleServiceError(err);
     }
 
-    // Log payment token usage for security auditing
-    if (paymentToken) {
-      console.log(
-        `Processing subscription for user ${userId} with payment token: ${paymentToken.substring(0, 8)}...`
-      );
-    }
+    try {
+      // Get user details
+      const user = await prisma.user.findUnique({ where: { id: userId } });
+      if (!user) {
+        throw new Error("User not found");
+      }
 
-    // In a real app, you'd integrate with Stripe here
-    if (plan.price > 0) {
-      // If payments are disabled in env, we do NOT grant paid entitlements automatically.
-      // We return the checkout session info (if configured) or an informative error so
-      // that the frontend can handle the flow. Paid entitlements are only granted
-      // after a verified webhook event (checkout.session.completed / invoice.payment_succeeded).
-      if (plan.stripePriceId) {
-        const user = await prisma.user.findUnique({ where: { id: userId } });
-        const session = await createStripeCheckoutSession(
-          user?.email,
-          plan.stripePriceId,
-          `${env.appUrl}/billing/success`,
-          `${env.appUrl}/billing/cancel`
-        );
+      // Calculate end date
+      const endDate = new Date();
+      endDate.setDate(endDate.getDate() + plan.duration);
+
+      // For free plans, create immediately
+      if (plan.price === 0) {
+        // Update user subscription
+        const planEnum = this.mapPlanIdToSubscriptionEnum(planId);
+        await prisma.subscription.upsert({
+          where: { userId },
+          update: {
+            type: planEnum as any,
+            isActive: true,
+            startDate: new Date(),
+            endDate,
+          },
+          create: {
+            userId,
+            type: planEnum as any,
+            isActive: true,
+            startDate: new Date(),
+            endDate,
+          },
+        });
+
+        // Create notification
+        await prisma.notification.create({
+          data: {
+            userId,
+            type: "subscription",
+            title: "Subscription Activated! 🎉",
+            body: `Your ${plan.name} subscription is now active`,
+            data: { planId, endDate: endDate.toISOString() },
+          },
+        });
 
         return {
           success: true,
-          checkoutSessionUrl: session.url,
-          message: "Redirect user to checkout to complete subscription",
-        } as any;
+          subscription: {
+            type: planId,
+            endDate,
+            features: plan.features,
+            note: "Free plan activated",
+          },
+        };
       }
 
-      // If no stripe price configured and payments enabled, require a payment token.
-      if (!env.disablePayments && !paymentToken) {
-        const err = new Error("Payment token required for paid plans");
-        return handleServiceError(err);
-      }
-
-      // If payments are disabled and no stripe price available, do not auto-upgrade.
-      if (env.disablePayments && !plan.stripePriceId) {
-        const err = new Error(
-          "Payments are disabled in this environment. Paid plans must be enabled via Stripe webhooks."
+      // For paid plans, use Stripe
+      if (plan.stripePriceId) {
+        // Create or retrieve Stripe customer
+        const customer = await createOrRetrieveCustomer(
+          user.email,
+          user.email // Using email as name for now
         );
-        return handleServiceError(err);
+
+        // Create Stripe subscription
+        const stripeSubscription = await createSubscription(
+          customer.id,
+          plan.stripePriceId,
+          paymentMethodId
+        );
+
+        // Update local subscription record
+        const planEnum = this.mapPlanIdToSubscriptionEnum(planId);
+        await prisma.subscription.upsert({
+          where: { userId },
+          update: {
+            type: planEnum as any,
+            isActive: true,
+            startDate: new Date(),
+            endDate,
+            stripeCustomerId: customer.id,
+            stripeSubscriptionId: stripeSubscription.id,
+            stripePriceId: plan.stripePriceId,
+          },
+          create: {
+            userId,
+            type: planEnum as any,
+            isActive: true,
+            startDate: new Date(),
+            endDate,
+            stripeCustomerId: customer.id,
+            stripeSubscriptionId: stripeSubscription.id,
+            stripePriceId: plan.stripePriceId,
+          },
+        });
+
+        // Create notification
+        await prisma.notification.create({
+          data: {
+            userId,
+            type: "subscription",
+            title: "Subscription Processing",
+            body: `Your ${plan.name} subscription is being processed`,
+            data: { planId, stripeSubscriptionId: stripeSubscription.id },
+          },
+        });
+
+        return {
+          success: true,
+          subscription: {
+            type: planId,
+            endDate,
+            features: plan.features,
+            stripeSubscriptionId: stripeSubscription.id,
+            note: "Subscription created, awaiting payment confirmation",
+          },
+        };
       }
+
+      // Fallback for plans without Stripe configuration
+      throw new Error("Payment configuration not available for this plan");
+    } catch (error: any) {
+      return handleServiceError(error);
     }
-
-    // Calculate end date
-    const endDate = new Date();
-    endDate.setDate(endDate.getDate() + plan.duration);
-
-    // Update user subscription
-    // Upsert subscription record for the user
-    const planEnum = this.mapPlanIdToSubscriptionEnum(planId);
-    await prisma.subscription.upsert({
-      where: { userId },
-      update: {
-        type: planEnum as any,
-        isActive: true,
-        startDate: new Date(),
-        endDate,
-      },
-      create: {
-        userId,
-        type: planEnum as any,
-        isActive: true,
-        startDate: new Date(),
-        endDate,
-      },
-    });
-
-    // Create subscription record (you might want a separate subscriptions table)
-    const notificationData: any = {
-      userId,
-      type: "subscription",
-      title: "Subscription Activated! 🎉",
-      body: `Your ${plan.name} subscription is now active`,
-      data: { planId, endDate: endDate.toISOString() },
-    };
-
-    // Do NOT grant entitlements for paid plans here. Only create a notification
-    // indicating that the subscription flow was initiated. The webhook handler
-    // will grant entitlements once payment is confirmed.
-    notificationData.data.flowInitiated = true;
-    await prisma.notification.create({ data: notificationData });
-
-    return {
-      success: true,
-      subscription: {
-        type: planId,
-        endDate,
-        features: plan.features,
-        note:
-          plan.price > 0
-            ? "Awaiting payment confirmation via webhook to finalize subscription"
-            : "Free plan activated",
-      },
-    };
   }
 
   // Cancel subscription
   static async cancelSubscription(userId: string) {
-    // Mark subscription as inactive and disable autoRenew
-    await prisma.subscription.updateMany({
-      where: { userId },
-      data: { isActive: false, autoRenew: false },
-    });
+    try {
+      const subscription = await prisma.subscription.findUnique({
+        where: { userId },
+      });
 
-    await prisma.notification.create({
-      data: {
-        userId,
-        type: "subscription",
-        title: "Subscription Cancelled",
-        body: "Your subscription has been cancelled and will not renew",
-        data: { action: "cancelled" },
-      },
-    });
+      if (!subscription) {
+        throw new Error("No subscription found");
+      }
 
-    return { success: true };
+      // If there's a Stripe subscription, cancel it there too
+      if (subscription.stripeSubscriptionId) {
+        await cancelSubscription(subscription.stripeSubscriptionId);
+      }
+
+      // Mark local subscription as inactive
+      await prisma.subscription.update({
+        where: { userId },
+        data: {
+          isActive: false,
+          autoRenew: false,
+          endDate: subscription.endDate, // Keep current end date
+        },
+      });
+
+      await prisma.notification.create({
+        data: {
+          userId,
+          type: "subscription",
+          title: "Subscription Cancelled",
+          body: "Your subscription has been cancelled and will not renew",
+          data: { action: "cancelled" },
+        },
+      });
+
+      return { success: true };
+    } catch (error: any) {
+      return handleServiceError(error);
+    }
   }
 
   // Get subscription usage/limits
